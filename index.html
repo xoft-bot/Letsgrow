@@ -2,19 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Let's Grow Investment Club — v4</title>
-
-<!-- ============================================================
-  STEP 1 OF 3: PASTE YOUR FIREBASE CONFIG HERE
-  How to get it:
-  1. Go to console.firebase.google.com
-  2. Create project → name it "letsGrow"
-  3. Project Settings (gear icon) → Your apps → Add web app
-  4. Copy the firebaseConfig object and paste it below
-  5. Also in Firebase Console: Authentication → Sign-in method → Enable Google
-  6. Firestore Database → Create database → Start in production mode
-============================================================ -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=5.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0a2e1a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Let's Grow">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<script>if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));}</script>
+<title>Let's Grow Investment Club — v5</title>
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged }
@@ -22,40 +19,23 @@
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
     onSnapshot, addDoc, deleteDoc, serverTimestamp, query, where }
     from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-  // ▼▼▼ PASTE YOUR CONFIG HERE ▼▼▼
   const firebaseConfig = {
     apiKey: "AIzaSyBAqSyHInBIfwOKzWf0whgWwFP3-YUQ3vQ",
     authDomain: "letsgrowinvestmentclub-26878.firebaseapp.com",
     projectId: "letsgrowinvestmentclub-26878",
     storageBucket: "letsgrowinvestmentclub-26878.firebasestorage.app",
     messagingSenderId: "209749782294",
-    appId: "1:209749782294:web:069f8353e806da0d6a2a37",
-    measurementId: "G-L3215N99KY"
+    appId: "1:209749782294:web:069f8353e806da0d6a2a37"
   };
-  // ▲▲▲ END OF CONFIG ▲▲▲
-
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
   const provider = new GoogleAuthProvider();
-
-  // Make Firebase available globally so the rest of the script can use it
   window._FB = { auth, db, provider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged,
-    doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, deleteDoc,
-    serverTimestamp, query, where };
-
-  // ============================================================
-  // WHAT THIS DOES:
-  // Firebase SDK loads as a module (most secure way).
-  // We expose the tools we need on window._FB so the main
-  // script below can call them without needing to be a module.
-  // ============================================================
+    doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, deleteDoc, serverTimestamp, query, where };
 </script>
-
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-/* ── DESIGN TOKENS ── */
 :root{
   --g1:#0a2e1a;--g2:#134d2e;--g3:#1e7a47;--g4:#3ab870;--g5:#7ddba8;
   --gold:#c9920c;--gold2:#f0b429;--gold3:#fde68a;--gold4:#fff8e1;
@@ -73,22 +53,15 @@ body{font-family:'Sora',sans-serif;background:var(--cream);color:var(--dark);min
 button{cursor:pointer;font-family:'Sora',sans-serif}
 input,select,textarea{font-family:'Sora',sans-serif}
 
-/* ── LOADING SCREEN ── */
-#loading-screen{
-  position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;
-  align-items:center;justify-content:center;z-index:9999;gap:16px;
-}
+/* LOADING */
+#loading-screen{position:fixed;inset:0;background:var(--g1);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
 .loading-logo{width:64px;height:64px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px;}
 .loading-text{color:rgba(255,255,255,.7);font-size:13px;}
 .spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--gold2);border-radius:50%;animation:spin .8s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── LOGIN ── */
-#login-screen{
-  min-height:100vh;display:none;align-items:center;justify-content:center;
-  background:linear-gradient(145deg,#061812 0%,var(--g1) 40%,#0f3d22 100%);
-  position:relative;overflow:hidden;
-}
+/* LOGIN */
+#login-screen{min-height:100vh;display:none;align-items:center;justify-content:center;background:linear-gradient(145deg,#061812 0%,var(--g1) 40%,#0f3d22 100%);position:relative;overflow:hidden;}
 #login-screen.visible{display:flex}
 .login-wrap{display:grid;grid-template-columns:1fr 1fr;max-width:900px;width:95vw;border-radius:24px;overflow:hidden;box-shadow:0 40px 100px rgba(0,0,0,.5);position:relative;z-index:1;}
 .login-left{background:linear-gradient(165deg,var(--g2) 0%,#0c3520 100%);padding:48px 40px;display:flex;flex-direction:column;justify-content:space-between;border-right:1px solid rgba(255,255,255,.06);}
@@ -110,46 +83,57 @@ input,select,textarea{font-family:'Sora',sans-serif}
 .demo-btn:hover{border-color:var(--g3);color:var(--g2)}
 .lr-note{font-size:11px;color:var(--light);margin-top:16px;line-height:1.7;text-align:center}
 
-/* ── SESSION TIMEOUT BANNER ── */
-#timeout-banner{
-  display:none;position:fixed;bottom:0;left:0;right:0;
-  background:#7c2d12;color:#fff;padding:12px 20px;z-index:500;
-  display:none;align-items:center;justify-content:space-between;font-size:13px;
-}
+/* SESSION TIMEOUT */
+#timeout-banner{display:none;position:fixed;bottom:0;left:0;right:0;background:#7c2d12;color:#fff;padding:12px 20px;z-index:500;align-items:center;justify-content:space-between;font-size:13px;padding-bottom:max(12px,env(safe-area-inset-bottom));}
 #timeout-banner.show{display:flex}
 .timeout-btn{background:var(--gold2);color:var(--g1);border:none;padding:6px 16px;border-radius:8px;font-weight:700;font-size:12px;}
 
-/* ── APP SHELL ── */
+/* APP SHELL */
 #app{display:none;min-height:100vh;flex-direction:column}
 #app.visible{display:flex}
-.topbar{background:var(--g1);color:#fff;height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.3);}
+
+/* TOPBAR */
+.topbar{background:var(--g1);color:#fff;height:56px;display:flex;align-items:center;padding:0 16px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));gap:10px;position:sticky;top:0;z-index:200;box-shadow:0 2px 20px rgba(0,0,0,.3);}
 .topbar-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--gold),var(--gold2));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .topbar-name{font-family:'Playfair Display',serif;font-size:16px}
 .topbar-badge{font-size:9px;color:var(--g5);letter-spacing:.1em;text-transform:uppercase;margin-top:1px}
 .topbar-spacer{flex:1}
+.menu-btn{background:none;border:none;color:rgba(255,255,255,.85);font-size:22px;cursor:pointer;padding:6px 8px;line-height:1;border-radius:8px;transition:background .2s;flex-shrink:0;}
+.menu-btn:hover{background:rgba(255,255,255,.12);}
 .user-pill{display:flex;align-items:center;gap:8px;padding:4px 12px;background:rgba(255,255,255,.1);border-radius:20px;font-size:12px}
 .user-avatar{width:26px;height:26px;border-radius:50%;background:var(--g3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;overflow:hidden}
 .user-avatar img{width:100%;height:100%;object-fit:cover}
 .admin-badge{font-size:10px;background:var(--gold2);color:var(--g1);padding:1px 7px;border-radius:10px;font-weight:700}
-.logout-btn{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.65);padding:5px 12px;border-radius:8px;font-size:12px;transition:all .2s}
-.logout-btn:hover{background:rgba(255,255,255,.2);color:#fff}
+.logout-btn{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 12px;border-radius:8px;font-size:12px;font-weight:600;transition:all .2s}
+.logout-btn:hover{background:rgba(255,255,255,.25)}
 .notif-btn{background:none;border:none;color:rgba(255,255,255,.65);font-size:18px;position:relative;padding:4px}
 .notif-dot{width:8px;height:8px;background:var(--gold2);border-radius:50%;position:absolute;top:2px;right:0;border:2px solid var(--g1)}
 
-/* ── NAV ── */
-.navbar{background:var(--g2);display:flex;overflow-x:auto;padding:0 12px;scrollbar-width:none;border-bottom:2px solid rgba(255,255,255,.04);}
-.navbar::-webkit-scrollbar{display:none}
-.nav-btn{background:none;border:none;color:rgba(255,255,255,.55);font-size:12px;font-weight:500;padding:10px 14px;white-space:nowrap;border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;gap:5px;}
-.nav-btn:hover{color:#fff}
-.nav-btn.active{color:var(--gold3);border-bottom-color:var(--gold2);font-weight:600}
-.nav-btn.admin-only{display:none}
-.nav-btn.admin-only.show{display:flex}
+/* SIDEBAR */
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:399;transition:opacity .25s;}
+.sidebar-overlay.show{display:block;}
+.sidebar{position:fixed;top:0;left:0;width:268px;height:100vh;background:var(--g1);z-index:400;transform:translateX(-268px);transition:transform .28s cubic-bezier(.4,0,.2,1);overflow-y:auto;box-shadow:4px 0 30px rgba(0,0,0,.45);display:flex;flex-direction:column;}
+.sidebar.open{transform:translateX(0);}
+.sidebar-head{height:56px;display:flex;align-items:center;padding:0 14px 0 18px;gap:10px;border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:0;background:var(--g1);z-index:1;flex-shrink:0;}
+.sidebar-close{margin-left:auto;background:none;border:none;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;}
+.sidebar-close:hover{color:#fff;background:rgba(255,255,255,.1);}
+.sidebar-body{flex:1;overflow-y:auto;padding:8px 0 24px;}
+.sidebar-section{padding:2px 0;}
+.sidebar-label{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:rgba(255,255,255,.3);padding:10px 18px 4px;font-weight:700;}
+.nav-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 18px;background:none;border:none;border-left:3px solid transparent;color:rgba(255,255,255,.62);font-size:13px;font-weight:500;text-align:left;cursor:pointer;transition:all .16s;white-space:nowrap;}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff;}
+.nav-btn.active{background:rgba(255,255,255,.1);color:var(--gold3);border-left-color:var(--gold2);font-weight:700;}
+.nav-icon{width:20px;text-align:center;font-size:14px;flex-shrink:0;}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 16px;}
+.admin-only{display:none!important;}
+.admin-only.show{display:flex!important;}
+.sidebar-section.admin-only.show{display:block!important;}
 
-/* ── MAIN ── */
+/* MAIN */
 .main{max-width:1160px;margin:0 auto;padding:22px 16px 80px;width:100%}
 .page{display:none}.page.active{display:block}
 
-/* ── CARDS / GRIDS ── */
+/* CARDS / GRIDS */
 .card{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);padding:20px}
 .card:hover{box-shadow:var(--sh2)}
 .card-title{font-family:'Playfair Display',serif;font-size:15px;color:var(--g1);margin-bottom:14px;display:flex;align-items:center;gap:8px}
@@ -165,7 +149,7 @@ input,select,textarea{font-family:'Sora',sans-serif}
 .stat-val{font-family:'Playfair Display',serif;font-size:22px;color:var(--g1);line-height:1}
 .stat-sub{font-size:11px;color:var(--light);margin-top:4px}
 
-/* ── PAGE HEADERS ── */
+/* PAGE HEADERS */
 .page-header{background:linear-gradient(120deg,var(--g1),var(--g2));border-radius:var(--r);padding:20px 24px;color:#fff;margin-bottom:18px;position:relative;overflow:hidden;}
 .page-header::after{content:attr(data-emoji);position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:52px;opacity:.1}
 .page-header h2{font-family:'Playfair Display',serif;font-size:20px;margin-bottom:3px}
@@ -174,7 +158,7 @@ input,select,textarea{font-family:'Sora',sans-serif}
 .ph-stat span{font-size:18px;font-weight:700;color:var(--gold3)}
 .ph-stat small{font-size:10px;color:rgba(255,255,255,.5);display:block;text-transform:uppercase;letter-spacing:.06em}
 
-/* ── TABLES ── */
+/* TABLES */
 .table-wrap{overflow-x:auto;border-radius:10px}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{background:var(--g1);color:#fff;padding:9px 12px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;font-weight:600}
@@ -184,14 +168,14 @@ tr:last-child td{border-bottom:none}
 tr:hover td{background:var(--cream)}
 .member-name{font-weight:600;color:var(--g1);font-size:13px}
 
-/* ── BADGES ── */
+/* BADGES */
 .badge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px}
 .b-green{background:#dcfce7;color:#166534}.b-red{background:#fee2e2;color:#991b1b}
 .b-amber{background:#fef3c7;color:#92400e}.b-blue{background:#dbeafe;color:#1e40af}
 .b-gold{background:#fef9c3;color:#854d0e}.b-gray{background:#f1f5f9;color:#475569}
 .b-purple{background:#ede9fe;color:#5b21b6}.b-teal{background:#ccfbf1;color:#0f766e}
 
-/* ── MONTH GRID ── */
+/* MONTH GRID */
 .month-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px}
 .month-cell{border-radius:10px;padding:11px 6px;text-align:center;cursor:pointer;transition:all .2s;border:2px solid transparent}
 .month-cell:hover{transform:translateY(-2px);box-shadow:var(--sh)}
@@ -201,7 +185,19 @@ tr:hover td{background:var(--cream)}
 .mc-paid{background:#dcfce7;border-color:#86efac}.mc-partial{background:#fef3c7;border-color:#fcd34d}
 .mc-pending{background:#fee2e2;border-color:#fca5a5}.mc-future{background:var(--cream2);border-color:var(--cream3);opacity:.65}
 
-/* ── VOTING ── */
+/* PROGRESS BARS */
+.prog-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--light);margin-bottom:3px}
+.prog-bar{background:var(--cream2);border-radius:4px;height:8px;overflow:hidden;position:relative;}
+.prog-fill{height:100%;border-radius:4px;transition:width .7s ease}
+.prog-fill.green{background:linear-gradient(90deg,var(--g3),var(--g4))}
+.prog-fill.red{background:linear-gradient(90deg,#dc2626,#ef4444)}
+.prog-fill.amber{background:linear-gradient(90deg,#d97706,#f59e0b)}
+/* Split bar: red remainder on top of green paid */
+.prog-split{background:var(--cream2);border-radius:4px;height:8px;overflow:hidden;position:relative;}
+.prog-split-paid{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--g3),var(--g4));transition:width .7s ease;}
+.prog-split-remain{position:absolute;right:0;top:0;height:100%;background:rgba(185,28,28,.18);}
+
+/* Voting */
 .vote-card{background:var(--white);border-radius:var(--r);padding:22px;box-shadow:var(--sh);margin-bottom:14px;border-left:4px solid var(--g3)}
 .vote-card.closed{border-left-color:var(--light);opacity:.8}
 .vote-card.active{border-left-color:var(--gold2)}
@@ -212,14 +208,12 @@ tr:hover td{background:var(--cream)}
 .vote-option:hover{border-color:var(--g3);background:#f0fff4}
 .vote-option.selected{border-color:var(--g3);background:#dcfce7;color:var(--g2)}
 .vote-option.voted{pointer-events:none}
-.vote-bar{height:6px;background:var(--g4);border-radius:3px;margin-top:4px;transition:width .5s}
 .vote-result-row{margin-bottom:10px}
 .result-label{font-size:12px;color:var(--mid);margin-bottom:3px;display:flex;justify-content:space-between}
 .vote-progress{background:var(--cream2);border-radius:4px;height:10px;overflow:hidden}
 .vote-progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--g3),var(--g4));transition:width .6s ease}
-.create-vote-form{background:var(--cream);border-radius:10px;padding:16px;margin-top:14px}
 
-/* ── COMMITTEE EXEC ── */
+/* Committee */
 .exec-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px}
 .exec-card{background:var(--white);border-radius:var(--r);padding:18px;box-shadow:var(--sh);text-align:center;cursor:pointer;transition:all .2s;border:2px solid transparent;}
 .exec-card:hover{border-color:var(--g4);transform:translateY(-2px)}
@@ -227,7 +221,7 @@ tr:hover td{background:var(--cream)}
 .exec-role{font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px}
 .exec-name{font-weight:700;font-size:13px;color:var(--g1)}
 
-/* ── TIMELINE ── */
+/* Timeline */
 .timeline{padding-left:24px;position:relative}
 .timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--cream2)}
 .tl-item{position:relative;margin-bottom:14px;background:var(--white);border-radius:12px;padding:12px 14px;box-shadow:var(--sh)}
@@ -239,12 +233,7 @@ tr:hover td{background:var(--cream)}
 .tl-profit{font-size:12px;font-weight:700;color:var(--g3);margin-top:4px}
 .tl-loss{font-size:12px;font-weight:700;color:var(--red);margin-top:4px}
 
-/* ── PROGRESS ── */
-.prog-lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--light);margin-bottom:3px}
-.prog-bar{background:var(--cream2);border-radius:4px;height:7px;overflow:hidden}
-.prog-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--g3),var(--g4));transition:width .7s ease}
-
-/* ── FORMS ── */
+/* Forms */
 .form-row{margin-bottom:12px}
 .form-label{font-size:11px;font-weight:600;color:var(--mid);margin-bottom:4px;display:block;text-transform:uppercase;letter-spacing:.05em}
 .form-input{width:100%;padding:9px 12px;border:1.5px solid var(--cream3);border-radius:9px;font-size:13px;color:var(--dark);outline:none;transition:border .2s;background:#fff}
@@ -258,28 +247,28 @@ tr:hover td{background:var(--cream)}
 .btn-sm{padding:5px 12px;font-size:11px}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 
-/* ── ALERTS ── */
+/* Alerts */
 .alert{border-radius:10px;padding:11px 14px;margin-bottom:10px;display:flex;gap:9px;font-size:12px}
 .alert.info{background:var(--blue2);border-left:3px solid var(--blue)}.alert.warn{background:#fef3c7;border-left:3px solid var(--gold2)}
 .alert.success{background:#dcfce7;border-left:3px solid var(--g4)}.alert.danger{background:var(--red2);border-left:3px solid var(--red)}
 .alert-icon{font-size:15px;flex-shrink:0}
 .alert-ttl{font-weight:700;font-size:12px}.alert-msg{font-size:11px;color:var(--mid);margin-top:1px}
 
-/* ── TABS / SEARCH ── */
+/* Tabs */
 .tab-group{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
 .tab{background:#fff;border:1.5px solid var(--cream3);border-radius:8px;padding:6px 13px;font-size:12px;font-weight:600;color:var(--mid);transition:all .2s}
 .tab:hover,.tab.active{background:var(--g1);color:#fff;border-color:var(--g1)}
 .search-bar{width:100%;padding:9px 13px;border:1.5px solid var(--cream3);border-radius:10px;font-size:13px;outline:none;background:#fff;margin-bottom:12px;transition:border .2s}
 .search-bar:focus{border-color:var(--g3)}
 
-/* ── ADMIN PANEL ── */
+/* Admin Panel */
 .admin-section{background:#fff;border-radius:var(--r);padding:20px;margin-bottom:14px;box-shadow:var(--sh)}
 .admin-section-title{font-weight:700;font-size:14px;color:var(--g1);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--cream2)}
 .code-block{background:#0d1f17;color:#4ecf91;padding:13px;border-radius:10px;font-family:monospace;font-size:11px;overflow-x:auto;white-space:pre;margin:8px 0;line-height:1.6}
 .sync-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--g4);margin-right:5px;animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 
-/* ── MODAL ── */
+/* Modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;padding:16px}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:20px;width:100%;max-width:660px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.35)}
@@ -289,31 +278,28 @@ tr:hover td{background:var(--cream)}
 .modal-close:hover{background:var(--red2);color:var(--red)}
 .modal-body{padding:18px 22px 22px}
 
+/* Member portal specific: hide admin-tab nav */
+.member-only-tab{display:none}.member-only-tab.show{display:inline-flex}
+
+@supports(padding:max(0px)){
+  .topbar{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
+  .sidebar{padding-left:env(safe-area-inset-left);}
+  body{padding-bottom:env(safe-area-inset-bottom);}
+}
 @media(max-width:640px){
   .login-wrap{grid-template-columns:1fr}.login-left{display:none}
   .grid-4{grid-template-columns:repeat(2,1fr)}.month-grid{grid-template-columns:repeat(3,1fr)}
   .exec-grid{grid-template-columns:repeat(2,1fr)}
 }
 @media(max-width:500px){#sync-indicator{display:none!important}#user-name{display:none}.logout-btn{padding:5px 8px!important;font-size:11px!important}.topbar-name{font-size:14px}}
-@media print{.topbar,.navbar{display:none!important}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
+@media print{.topbar,.sidebar,.sidebar-overlay{display:none!important}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
 </style>
 </head>
 <body>
+<div id="loading-screen"><div class="loading-logo">🌱</div><div class="spinner"></div><div class="loading-text">Connecting to Let's Grow…</div></div>
+<div id="timeout-banner"><span>⏱️ You'll be logged out in <strong id="timeout-countdown">60</strong> seconds due to inactivity</span><button class="timeout-btn" onclick="extendSession()">Stay Logged In</button></div>
 
-<!-- ── LOADING (shown while Firebase initialises) ── -->
-<div id="loading-screen">
-  <div class="loading-logo">🌱</div>
-  <div class="spinner"></div>
-  <div class="loading-text">Connecting to Let's Grow…</div>
-</div>
-
-<!-- ── SESSION TIMEOUT WARNING ── -->
-<div id="timeout-banner">
-  <span>⏱️ You'll be logged out in <strong id="timeout-countdown">60</strong> seconds due to inactivity</span>
-  <button class="timeout-btn" onclick="extendSession()">Stay Logged In</button>
-</div>
-
-<!-- ── LOGIN ── -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-wrap">
     <div class="login-left">
@@ -328,7 +314,7 @@ tr:hover td{background:var(--cream)}
           <div class="ll-stat"><div class="ll-stat-val">6 Yrs</div><div class="ll-stat-lbl">Operating</div></div>
         </div>
       </div>
-      <div class="ll-foot">Member Portal v4 · Firebase Edition · 2026</div>
+      <div class="ll-foot">Member Portal v5 · PWA · Firebase Edition · 2026</div>
     </div>
     <div class="login-right">
       <div class="lr-title">Member Sign In</div>
@@ -341,75 +327,76 @@ tr:hover td{background:var(--cream)}
         <button class="demo-btn" onclick="demoLogin('admin')">🔑 Admin Demo</button>
         <button class="demo-btn" onclick="demoLogin('member')">👤 Member Demo</button>
       </div>
-      <div class="lr-note">
-        Your Gmail must be registered by the club admin.<br>
-        Contact Edson Nuwahereza to register.
-      </div>
-      <details style="margin-top:14px;font-size:12px;color:var(--mid)">
-        <summary style="cursor:pointer;font-weight:600;color:var(--g2);padding:8px;background:var(--cream);border-radius:8px">⚙️ Admin: Fix Google Sign-In (tap to expand)</summary>
-        <div style="padding:10px;background:#fffbeb;border-radius:0 0 8px 8px;border:1px solid #fde68a;line-height:1.7">
-          <strong>Step 1 — Allow your website in Google Cloud</strong><br>
-          1. Open a new tab → go to: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">console.cloud.google.com</code><br>
-          2. Sign in with the Google account that owns the Firebase project<br>
-          3. Tap the <strong>☰ menu</strong> (top-left 3 lines)<br>
-          4. Tap <strong>APIs &amp; Services</strong> → tap <strong>Credentials</strong><br>
-          5. Under "API keys", tap the key starting with <strong>AIzaSy…</strong><br>
-          6. Scroll to <strong>"Application restrictions"</strong> → select <strong>"HTTP referrers (websites)"</strong><br>
-          7. Tap <strong>"ADD AN ITEM"</strong> → type exactly: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">xoft-bot.github.io/*</code> → tap Done<br>
-          8. Tap <strong>"ADD AN ITEM"</strong> again → type: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">*.github.io/*</code> → tap Done<br>
-          9. Scroll to the bottom → tap the blue <strong>SAVE</strong> button<br><br>
-          <strong>Step 2 — Allow your domain in Firebase Auth</strong><br>
-          1. Open a new tab → go to: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">console.firebase.google.com</code><br>
-          2. Tap your project <strong>letsgrowinvestmentclub-26878</strong><br>
-          3. In the left menu, tap <strong>Build</strong> → tap <strong>Authentication</strong><br>
-          4. Tap the <strong>Settings</strong> tab at the top<br>
-          5. Scroll down to <strong>"Authorized domains"</strong><br>
-          6. Tap <strong>"Add domain"</strong><br>
-          7. Type: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">xoft-bot.github.io</code> → tap <strong>Add</strong><br>
-          8. ✅ Done — go back and try Sign in with Google
-        </div>
-      </details>
+      <div class="lr-note">Your Gmail must be registered by the club admin.<br>Contact Edson Nuwahereza to register.</div>
     </div>
   </div>
 </div>
 
-<!-- ── APP ── -->
+<!-- APP -->
 <div id="app">
+  <!-- TOPBAR -->
   <div class="topbar">
+    <button class="menu-btn" onclick="toggleSidebar()" aria-label="Menu">☰</button>
     <div class="topbar-icon">🌱</div>
-    <div><div class="topbar-name">Let's Grow</div><div class="topbar-badge">Investment Club · v4</div></div>
+    <div><div class="topbar-name">Let's Grow</div><div class="topbar-badge">Investment Club · v5 · PWA Edition</div></div>
     <div class="topbar-spacer"></div>
-    <!-- Live sync indicator -->
-    <span id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center">
-      <span class="sync-dot"></span>Live
-    </span>
+    <span id="sync-indicator" style="font-size:11px;color:rgba(255,255,255,.5);display:flex;align-items:center"><span class="sync-dot"></span>Live</span>
     <button class="notif-btn" onclick="showNotifications()">🔔<span class="notif-dot" id="notif-dot"></span></button>
     <div class="user-pill">
       <div class="user-avatar" id="user-avatar">E</div>
       <span id="user-name">Edson</span>
       <span class="admin-badge" id="admin-badge" style="display:none">ADMIN</span>
     </div>
-    <button class="logout-btn" onclick="doSignOut()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600">⏻ Sign out</button>
+    <button class="logout-btn" onclick="doSignOut()">⏻ Sign out</button>
   </div>
 
-  <nav class="navbar">
-    <button class="nav-btn active" onclick="showPage('dashboard',this)">📊 Dashboard</button>
-    <button class="nav-btn" onclick="showPage('members',this)">👥 Members</button>
-    <button class="nav-btn" onclick="showPage('myaccount',this)">🪙 My Account</button>
-    <button class="nav-btn" onclick="showPage('investments',this)">📈 Investments</button>
-    <button class="nav-btn" onclick="showPage('dividends',this)">💸 Dividends</button>
-    <button class="nav-btn" onclick="showPage('financials',this)">💼 Financials</button>
-    <button class="nav-btn" onclick="showPage('juniors',this)">🌿 Juniors</button>
-    <button class="nav-btn" onclick="showPage('vote',this)">🗳️ Vote</button>
-    <button class="nav-btn" onclick="showPage('committee',this)">🏛️ Committee</button>
-    <button class="nav-btn" onclick="showPage('rules',this)">📜 Rules</button>
-    <button class="nav-btn" onclick="showPage('reports',this)">📄 Reports</button>
-    <button class="nav-btn admin-only" id="admin-nav" onclick="showPage('admin',this)">⚙️ Admin</button>
-  </nav>
+  <!-- SIDEBAR OVERLAY -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="closeSidebar()"></div>
 
+  <!-- SIDEBAR -->
+  <div id="sidebar" class="sidebar">
+    <div class="sidebar-head">
+      <div class="topbar-icon" style="flex-shrink:0">🌱</div>
+      <div style="color:#fff;font-family:'Playfair Display',serif;font-size:14px;line-height:1.2">Let's Grow<br><span style="font-size:10px;color:rgba(255,255,255,.4);font-family:'Sora',sans-serif">Investment Club</span></div>
+      <button class="sidebar-close" onclick="closeSidebar()">✕</button>
+    </div>
+    <div class="sidebar-body">
+      <div class="sidebar-section">
+        <div class="sidebar-label">Overview</div>
+        <button class="nav-btn active" onclick="showPage('dashboard',this)"><span class="nav-icon">📊</span>Dashboard</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">My Account</div>
+        <button class="nav-btn" onclick="showPage('myaccount',this)"><span class="nav-icon">🪙</span>My Account</button>
+        <button class="nav-btn" onclick="showPage('juniors',this)"><span class="nav-icon">🌿</span>Juniors</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Club</div>
+        <button class="nav-btn admin-only" onclick="showPage('investments',this)"><span class="nav-icon">📈</span>Investments</button>
+        <button class="nav-btn" onclick="showPage('financials',this)"><span class="nav-icon">💼</span>Financials</button>
+        <button class="nav-btn" onclick="showPage('committee',this)"><span class="nav-icon">🏛️</span>Committee</button>
+        <button class="nav-btn" onclick="showPage('rules',this)"><span class="nav-icon">📜</span>Rules</button>
+        <button class="nav-btn" onclick="showPage('reports',this)"><span class="nav-icon">📄</span>Reports</button>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-label">Participate</div>
+        <button class="nav-btn" onclick="showPage('vote',this)"><span class="nav-icon">🗳️</span>Vote</button>
+      </div>
+      <!-- ADMIN ONLY SECTIONS -->
+      <div class="sidebar-section admin-only" id="admin-nav-section">
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-label" style="color:rgba(253,230,138,.5)">Admin</div>
+        <button class="nav-btn admin-only" onclick="showPage('members',this)"><span class="nav-icon">👥</span>All Members</button>
+        <button class="nav-btn admin-only" onclick="showPage('dividends',this)"><span class="nav-icon">💸</span>Dividends</button>
+        <button class="nav-btn admin-only" onclick="showPage('admin',this)"><span class="nav-icon">⚙️</span>Admin Panel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
   <div class="main">
 
-    <!-- ══ DASHBOARD ══ -->
+    <!-- DASHBOARD -->
     <div class="page active" id="page-dashboard">
       <div class="page-header" data-emoji="📊">
         <h2>Club Dashboard — FY 2026</h2>
@@ -459,26 +446,26 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ MEMBERS ══ -->
+    <!-- MEMBERS (admin only) -->
     <div class="page" id="page-members">
       <div class="page-header" data-emoji="👥"><h2>Members</h2><p>Live member records · All years · Real-time updates</p></div>
       <div class="tab-group" id="member-year-tabs"></div>
       <div class="card">
         <input class="search-bar" type="text" id="member-search" placeholder="🔍  Search by name…" oninput="renderMemberTable()">
         <div class="table-wrap"><table>
-          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Status</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Balance</th><th>Standing</th></tr></thead>
+          <thead><tr><th>#</th><th>Name</th><th>Type</th><th>Status</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Balance</th><th>Progress</th></tr></thead>
           <tbody id="members-tbody"></tbody>
         </table></div>
       </div>
     </div>
 
-    <!-- ══ MY ACCOUNT ══ -->
+    <!-- MY ACCOUNT -->
     <div class="page" id="page-myaccount">
       <div class="page-header" data-emoji="🪙" id="myaccount-header"><h2>My Account</h2><p>Your contribution history · Dividends · Loan eligibility</p></div>
       <div id="myaccount-content"></div>
     </div>
 
-    <!-- ══ INVESTMENTS ══ -->
+    <!-- INVESTMENTS -->
     <div class="page" id="page-investments">
       <div class="page-header" data-emoji="📈"><h2>Investments</h2><p>Full timeline · Returns · Active portfolio</p></div>
       <div class="grid-4 mb">
@@ -505,7 +492,7 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ DIVIDENDS ══ -->
+    <!-- DIVIDENDS (admin only) -->
     <div class="page" id="page-dividends">
       <div class="page-header" data-emoji="💸"><h2>Dividends</h2><p>Member dividend history from investments 2021–2023</p></div>
       <div class="grid-4 mb">
@@ -529,20 +516,20 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ FINANCIALS ══ -->
+    <!-- FINANCIALS -->
     <div class="page" id="page-financials">
-      <div class="page-header" data-emoji="💼"><h2>Financials</h2><p>Income statement · Expenses · Diaspora fees · Loans · Estates</p><p style="font-size:11px;color:rgba(255,255,255,.55);margin-top:4px">⚠️ Figures manually maintained — last reconciled Mar 2026. For discrepancies, compare with the master Excel sheet.</p></div>
-      <div class="tab-group">
+      <div class="page-header" data-emoji="💼"><h2>Financials</h2><p>Income statement · Expenses · Club overview</p></div>
+      <div class="tab-group" id="fin-tab-group">
         <button class="tab active" onclick="showFinTab('income',this)">Income Statement</button>
         <button class="tab" onclick="showFinTab('expenses',this)">Expenses</button>
-        <button class="tab" onclick="showFinTab('diaspora',this)">Diaspora Fees</button>
-        <button class="tab" onclick="showFinTab('loans',this)">Loans Book</button>
-        <button class="tab" onclick="showFinTab('estates',this)">Estates</button>
+        <button class="tab admin-only" onclick="showFinTab('diaspora',this)">Diaspora Fees</button>
+        <button class="tab admin-only" onclick="showFinTab('loans',this)">Loans Book</button>
+        <button class="tab admin-only" onclick="showFinTab('estates',this)">Estates</button>
       </div>
       <div id="fin-content"></div>
     </div>
 
-    <!-- ══ JUNIORS ══ -->
+    <!-- JUNIORS -->
     <div class="page" id="page-juniors">
       <div class="page-header" data-emoji="🌿"><h2>Juniors' Club</h2><p>Semi-autonomous annex · URSB-certified · Own bank account</p></div>
       <div class="tab-group">
@@ -552,24 +539,20 @@ tr:hover td{background:var(--cream)}
       <div id="juniors-content"></div>
     </div>
 
-    <!-- ══ VOTING ══ -->
+    <!-- VOTING -->
     <div class="page" id="page-vote">
-      <div class="page-header" data-emoji="🗳️">
-        <h2>Club Voting</h2>
-        <p>Secure · One member one vote · Results visible to admin only</p>
-      </div>
+      <div class="page-header" data-emoji="🗳️"><h2>Club Voting</h2><p>Secure · One member one vote · Results visible to admin only</p></div>
       <div id="vote-content">
-        <div class="alert info"><div class="alert-icon">ℹ️</div><div><div class="alert-ttl">How Voting Works</div><div class="alert-msg">Admin opens a vote. Each member taps once. Your choice is private. You cannot change it. Results are only revealed to the admin until the vote closes.</div></div></div>
+        <div class="alert info"><div class="alert-icon">ℹ️</div><div><div class="alert-ttl">How Voting Works</div><div class="alert-msg">Admin opens a vote. Each member taps once. Your choice is private. You cannot change it.</div></div></div>
         <div id="active-votes"></div>
         <div id="closed-votes"></div>
       </div>
-      <!-- Admin: create vote -->
-      <div id="create-vote-section" class="admin-only" style="margin-top:16px;display:none">
+      <div id="create-vote-section" class="admin-only" style="margin-top:16px">
         <div class="card"><div class="card-title">➕ Create New Vote</div>
           <div class="grid-2">
             <div>
-              <div class="form-row"><label class="form-label">Vote Title</label><input class="form-input" id="vote-title" placeholder="e.g. Election for Chairperson 2026"></div>
-              <div class="form-row"><label class="form-label">Description</label><input class="form-input" id="vote-desc" placeholder="Brief description of what is being voted on"></div>
+              <div class="form-row"><label class="form-label">Vote Title</label><input class="form-input" id="vote-title"></div>
+              <div class="form-row"><label class="form-label">Description</label><input class="form-input" id="vote-desc"></div>
               <div class="form-row"><label class="form-label">Duration</label>
                 <select class="form-input form-select" id="vote-duration">
                   <option value="1">1 hour</option><option value="24" selected>24 hours</option>
@@ -579,7 +562,7 @@ tr:hover td{background:var(--cream)}
             </div>
             <div>
               <div class="form-row"><label class="form-label">Options (one per line)</label>
-                <textarea class="form-input" id="vote-options" rows="5" placeholder="Luutu Daniel&#10;Ssali Simon&#10;Sekiranda Simon&#10;Abstain"></textarea>
+                <textarea class="form-input" id="vote-options" rows="5"></textarea>
               </div>
             </div>
           </div>
@@ -591,7 +574,7 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ COMMITTEE ══ -->
+    <!-- COMMITTEE -->
     <div class="page" id="page-committee">
       <div class="page-header" data-emoji="🏛️"><h2>Committee</h2><p>Executive · Three subcommittees</p></div>
       <div class="card mb"><div class="card-title">🗳️ Executive Committee</div><div class="exec-grid" id="exec-committee"></div></div>
@@ -602,7 +585,7 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ RULES ══ -->
+    <!-- RULES -->
     <div class="page" id="page-rules">
       <div class="page-header" data-emoji="📜"><h2>Constitution & Rules</h2><p>Amended 17 December 2023 · URSB Registered</p></div>
       <div class="grid-2">
@@ -610,7 +593,7 @@ tr:hover td{background:var(--cream)}
           <div class="card"><div class="card-title">💰 Loans (Section 17)</div>
             <div class="alert success mb"><div class="alert-icon">✅</div><div><div class="alert-ttl">Loans Available — Club is 6 Years Old</div></div></div>
             <div style="font-size:12px;display:flex;flex-direction:column;gap:7px">
-              <div style="padding:9px;background:var(--cream);border-radius:8px">📊 Max: 25% of member's share capital at end of previous FY</div>
+              <div style="padding:9px;background:var(--cream);border-radius:8px">📊 Max: 25% of total contributions up to last fully paid FY (2020–2025)</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">📋 Must submit feasibility study to secretary</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">💱 Interest at prevailing economic conditions</div>
             </div>
@@ -629,7 +612,7 @@ tr:hover td{background:var(--cream)}
               <div style="padding:9px;background:var(--cream);border-radius:8px">Min 3 years membership + served on 1 subcommittee</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">Chairperson: Platinum members ONLY</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">3 of 7 exec positions reserved for Platinum</div>
-              <div style="padding:9px;background:#dcfce7;border-radius:8px">📌 Elections due December 2026 — 3+ year members with subcommittee service are eligible</div>
+              <div style="padding:9px;background:#dcfce7;border-radius:8px">📌 Elections due December 2026</div>
             </div>
           </div>
           <div class="card"><div class="card-title">⚖️ Fines (Section 16)</div>
@@ -646,12 +629,12 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ REPORTS ══ -->
+    <!-- REPORTS -->
     <div class="page" id="page-reports">
-      <div class="page-header" data-emoji="📄"><h2>Reports</h2><p>Annual · Member statements · Investment · Fines</p></div>
-      <div class="tab-group">
+      <div class="page-header" data-emoji="📄"><h2>Reports</h2><p>Annual · Investment · Fines</p></div>
+      <div class="tab-group" id="report-tab-group">
         <button class="tab active" onclick="showReport('annual',this)">Annual</button>
-        <button class="tab" onclick="showReport('member',this)">Member Statement</button>
+        <button class="tab admin-only" onclick="showReport('member',this)">Member Statement</button>
         <button class="tab" onclick="showReport('investment',this)">Investment</button>
         <button class="tab" onclick="showReport('fines',this)">Fines</button>
       </div>
@@ -662,7 +645,7 @@ tr:hover td{background:var(--cream)}
       </div>
     </div>
 
-    <!-- ══ ADMIN ══ -->
+    <!-- ADMIN -->
     <div class="page" id="page-admin">
       <div class="page-header" data-emoji="⚙️"><h2>Admin Panel</h2><p>Record contributions · Manage members · Access control · Sheets sync</p></div>
       <div class="tab-group">
@@ -672,13 +655,12 @@ tr:hover td{background:var(--cream)}
         <button class="tab" onclick="showAdminTab('sheets',this)">📊 Sheets Sync</button>
         <button class="tab" onclick="showAdminTab('security',this)">🛡️ Security</button>
       </div>
-
       <div id="admin-tab-contributions" class="admin-tab">
         <div class="admin-section"><div class="admin-section-title">📝 Record Contribution</div>
           <div class="grid-2">
             <div>
               <div class="form-row"><label class="form-label">Member</label><select class="form-input form-select" id="contrib-member"></select></div>
-              <div class="form-row"><label class="form-label">Year</label><select class="form-input form-select" id="contrib-year"><option>2026</option><option>2025</option><option>2024</option><option>2023</option></select></div>
+              <div class="form-row"><label class="form-label">Year</label><select class="form-input form-select" id="contrib-year"><option>2026</option><option>2025</option><option>2024</option><option>2023</option><option>2022</option><option>2021</option><option>2020</option></select></div>
               <div class="form-row"><label class="form-label">Month</label><select class="form-input form-select" id="contrib-month">
                 <option value="0">January</option><option value="1">February</option><option value="2">March</option>
                 <option value="3">April</option><option value="4">May</option><option value="5">June</option>
@@ -700,7 +682,6 @@ tr:hover td{background:var(--cream)}
           <div id="save-status" style="margin-top:10px;font-size:12px;color:var(--g2)"></div>
         </div>
       </div>
-
       <div id="admin-tab-members-mgmt" class="admin-tab" style="display:none">
         <div class="admin-section"><div class="admin-section-title">➕ Add Member</div>
           <div class="grid-2">
@@ -721,10 +702,9 @@ tr:hover td{background:var(--cream)}
           <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody id="admin-members-tbody"></tbody></table></div>
         </div>
       </div>
-
       <div id="admin-tab-access" class="admin-tab" style="display:none">
-        <div class="admin-section"><div class="admin-section-title">🔐 Registered Emails (can log in)</div>
-          <div class="alert warn mb"><div class="alert-icon">⚠️</div><div><div class="alert-ttl">Important</div><div class="alert-msg">Only emails listed here can sign in. Add a member's Gmail to grant them access. Remove to revoke immediately.</div></div></div>
+        <div class="admin-section"><div class="admin-section-title">🔐 Registered Emails</div>
+          <div class="alert warn mb"><div class="alert-icon">⚠️</div><div><div class="alert-ttl">Important</div><div class="alert-msg">Only emails listed here can sign in.</div></div></div>
           <div id="email-list"></div>
           <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
             <input class="form-input" id="new-email" placeholder="member@gmail.com" style="flex:1;min-width:200px">
@@ -738,121 +718,48 @@ tr:hover td{background:var(--cream)}
           <div class="btn-row"><button class="btn btn-danger" onclick="killAllSessions()">💀 Force Logout All Members</button></div>
         </div>
       </div>
-
       <div id="admin-tab-sheets" class="admin-tab" style="display:none">
         <div class="admin-section"><div class="admin-section-title">📊 Google Sheets → Firestore Sync</div>
-          <div class="alert info mb"><div class="alert-icon">📋</div><div><div class="alert-ttl">How it works</div><div class="alert-msg">Paste this Apps Script into your Google Sheet. Every time you save a change, it sends it to Firestore automatically. All club members see the update instantly.</div></div></div>
-          <div class="form-row"><label class="form-label">Your Firebase Project ID</label><input class="form-input" id="fb-project-id" placeholder="e.g. letsgrowinvestmentclub"></div>
-          <div class="code-block" id="apps-script-code">// STEP 1: In your Google Sheet → Extensions → Apps Script
-// STEP 2: Replace YOUR_PROJECT_ID below
-// STEP 3: Deploy → New deployment → Web app → Anyone
-
+          <div class="form-row"><label class="form-label">Firebase Project ID</label><input class="form-input" id="fb-project-id" placeholder="e.g. letsgrowinvestmentclub-26878"></div>
+          <div class="code-block" id="apps-script-code">// Google Sheet → Extensions → Apps Script
 const FIREBASE_URL = 'https://firestore.googleapis.com/v1/projects/YOUR_PROJECT_ID/databases/(default)/documents/sheetsSync';
-
 function onEdit(e) {
-  const sheet = e.source.getActiveSheet().getName();
-  const row = e.range.getRow();
-  const col = e.range.getColumn();
-  const value = e.value;
-  const member = e.source.getActiveSheet().getRange(row, 1).getValue();
-
-  const payload = {
-    fields: {
-      sheet: { stringValue: sheet },
-      row: { integerValue: row },
-      col: { integerValue: col },
-      value: { stringValue: String(value) },
-      member: { stringValue: String(member) },
-      timestamp: { stringValue: new Date().toISOString() }
-    }
-  };
-
-  UrlFetchApp.fetch(FIREBASE_URL, {
-    method: 'post',
-    contentType: 'application/json',
-    payload: JSON.stringify(payload)
-  });
-}
-
-// STEP 4: Set a time-based trigger:
-// Triggers → Add trigger → onEdit → On edit</div>
+  const sheet=e.source.getActiveSheet().getName(),row=e.range.getRow(),col=e.range.getColumn();
+  const value=e.value,member=e.source.getActiveSheet().getRange(row,1).getValue();
+  const payload={fields:{sheet:{stringValue:sheet},row:{integerValue:row},col:{integerValue:col},value:{stringValue:String(value)},member:{stringValue:String(member)},timestamp:{stringValue:new Date().toISOString()}}};
+  UrlFetchApp.fetch(FIREBASE_URL,{method:'post',contentType:'application/json',payload:JSON.stringify(payload)});
+}</div>
           <div class="btn-row"><button class="btn btn-ghost" onclick="copyAppsScript()">📋 Copy Script</button></div>
         </div>
       </div>
-
       <div id="admin-tab-security" class="admin-tab" style="display:none">
         <div class="admin-section"><div class="admin-section-title">🛡️ Firestore Security Rules</div>
-          <div class="alert success mb"><div class="alert-icon">✅</div><div><div class="alert-ttl">Paste these rules in Firebase Console → Firestore → Rules</div><div class="alert-msg">This ensures: only registered emails can read. Only admins can write. Members can only cast their own vote. No one can see another member's vote.</div></div></div>
           <div class="code-block">rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper: is the user a registered member?
-    function isRegistered() {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-    }
-
-    // Helper: is the user an admin?
-    function isAdmin() {
-      return isRegistered() &&
-        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
-    }
-
-    // Members and contributions: read by all registered, write by admin only
-    match /members/{id} {
-      allow read: if isRegistered();
-      allow write: if isAdmin();
-    }
-    match /contributions/{id} {
-      allow read: if isRegistered();
-      allow write: if isAdmin();
-    }
-    match /committee/{id} {
-      allow read: if isRegistered();
-      allow write: if isAdmin();
-    }
-
-    // Approved emails: admin manages who can log in
-    match /approvedEmails/{email} {
-      allow read: if isRegistered();
-      allow write: if isAdmin();
-    }
-
-    // Sessions: members manage only their own session
-    match /sessions/{userId} {
-      allow read, write: if request.auth.uid == userId || isAdmin();
-    }
-
-    // Voting: open votes readable by all, ballots write-once per user
+    function isRegistered() { return request.auth != null && exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)); }
+    function isAdmin() { return isRegistered() && get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin'; }
+    match /members/{id} { allow read: if isRegistered(); allow write: if isAdmin(); }
+    match /contributions/{id} { allow read: if isRegistered(); allow write: if isAdmin(); }
+    match /committee/{id} { allow read: if isRegistered(); allow write: if isAdmin(); }
+    match /approvedEmails/{email} { allow read: if isRegistered(); allow write: if isAdmin(); }
+    match /sessions/{userId} { allow read, write: if request.auth.uid == userId || isAdmin(); }
     match /votes/{voteId} {
-      allow read: if isRegistered();
-      allow write: if isAdmin();
-
-      match /ballots/{userId} {
-        // Can only vote for yourself, only once (create not update)
-        allow create: if request.auth.uid == userId && isRegistered();
-        allow read: if isAdmin();      // only admin sees who voted what
-        allow update, delete: if false; // votes cannot be changed or deleted
-      }
+      allow read: if isRegistered(); allow write: if isAdmin();
+      match /ballots/{userId} { allow create: if request.auth.uid == userId && isRegistered(); allow read: if isAdmin(); allow update, delete: if false; }
     }
-
-    // Sheets sync log: admin only
-    match /sheetsSync/{id} {
-      allow read, write: if isAdmin();
-    }
+    match /sheetsSync/{id} { allow read, write: if isAdmin(); }
   }
 }</div>
           <div class="btn-row"><button class="btn btn-ghost" onclick="copySecurityRules()">📋 Copy Rules</button></div>
         </div>
       </div>
-
     </div><!-- end admin page -->
 
   </div><!-- .main -->
 </div><!-- #app -->
 
-<!-- ══ MODALS ══ -->
+<!-- MODALS -->
 <div class="modal-bg" id="member-modal" onclick="if(event.target===this)closeModal('member-modal')">
   <div class="modal"><div class="modal-head"><div class="modal-title" id="modal-member-title">Member Profile</div><button class="modal-close" onclick="closeModal('member-modal')">✕</button></div><div class="modal-body" id="modal-member-body"></div></div>
 </div>
@@ -866,719 +773,510 @@ service cloud.firestore {
   <div class="modal" style="max-width:520px"><div class="modal-head"><div class="modal-title" id="vote-result-title">Vote Results</div><button class="modal-close" onclick="closeModal('vote-result-modal')">✕</button></div><div class="modal-body" id="vote-result-body"></div></div>
 </div>
 
-<!-- ============================================================
-  MAIN APPLICATION SCRIPT
-  Everything below runs after Firebase is ready.
-  The script waits for window._FB to be set by the module above.
-============================================================ -->
 <script>
 'use strict';
+function waitForFirebase(cb){let a=0;function c(){if(window._FB){cb();return;}a++;if(a>200){document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').style.display='flex';showToast('⚠️ Could not reach Firebase. Use Demo mode.','error');return;}setTimeout(c,50);}c();}
 
-// ── Wait for Firebase module to load ──
-function waitForFirebase(cb) {
-  let attempts = 0;
-  function check() {
-    if (window._FB) { cb(); return; }
-    attempts++;
-    if (attempts > 200) { // 10 seconds (200 × 50ms)
-      // Firebase failed to load — show login screen with demo option
-      document.getElementById('loading-screen').style.display = 'none';
-      document.getElementById('login-screen').style.display = 'flex';
-      showToast('⚠️ Could not reach Firebase. Use Demo mode or check your internet connection.', 'error');
-      return;
-    }
-    setTimeout(check, 50);
-  }
-  check();
+waitForFirebase(()=>{
+const{auth,db,provider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged,
+  doc,getDoc,setDoc,collection,getDocs,onSnapshot,addDoc,deleteDoc,serverTimestamp,query,where}=window._FB;
+
+/* ── SIDEBAR ── */
+window.toggleSidebar=function(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('show');};
+window.closeSidebar=function(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('show');};
+
+/* ── CONFIG ── */
+const CONFIG={currentYear:2026,clubInceptionYear:2020,monthlyRates:{sub:40000,welfare:10000,gla:13000,ut:10000}};
+
+/* ── STATE ── */
+let STATE={user:null,isAdmin:false,members:[],contributions:{},committee:{},approvedEmails:[],votes:[],currentMemberYear:'2026',currentReportTab:'annual',unsubscribers:[]};
+
+/* ── SEED MEMBERS (alphabetical: active platinum P01-P20, departed P21-P28, active golden G01-G08, departed G09-G10) ── */
+const SEED_MEMBERS=[
+  // PLATINUM — Active (alphabetical)
+  {id:'bangi_aidah',name:'Bangi Aidah',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'kigonya_antonio',email:'',status:'active',notes:''},
+  {id:'kigonya_antonio',name:'Kigonya Antonio',platinumNum:2,type:'platinum',joinYear:2020,jointWith:'bangi_aidah',email:'',status:'active',notes:''},
+  {id:'kirabira_jane',name:'Kirabira Jane',platinumNum:3,type:'platinum',joinYear:2020,jointWith:'kirabira_jude',email:'',status:'active',notes:'Account split from joint entry with Jude.'},
+  {id:'kirabira_jude',name:'Kirabira Jude',platinumNum:4,type:'platinum',joinYear:2020,jointWith:'kirabira_jane',email:'',status:'active',notes:'Account split. Previously combined with Jane.'},
+  {id:'kintu_ernest',name:'Kintu Ernest Steven',platinumNum:5,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'2025: 8 months paid, UGX 260K outstanding'},
+  {id:'kyamulabi_diana',name:'Kyamulabi Dianah',platinumNum:6,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+  {id:'lule_stephen',name:'Lule Stephen Musisi',platinumNum:7,type:'platinum',joinYear:2020,jointWith:'nabukeera_juliet',email:'',status:'active',notes:''},
+  {id:'luutu_daniel',name:'Luutu Daniel',platinumNum:8,type:'platinum',joinYear:2020,jointWith:'nagawa_ruth',email:'',status:'active',notes:''},
+  {id:'nabukeera_juliet',name:'Nabukeera Juliet',platinumNum:9,type:'platinum',joinYear:2020,jointWith:'lule_stephen',email:'',status:'active',notes:''},
+  {id:'nabuuma_teopista',name:'Nabuuma Teopista',platinumNum:10,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+  {id:'naggayi_constance',name:'Naggayi Constance',platinumNum:11,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+  {id:'nagawa_ruth',name:'Nagawa Ruth',platinumNum:12,type:'platinum',joinYear:2020,jointWith:'luutu_daniel',email:'',status:'active',notes:''},
+  {id:'nabunya_shamera',name:'Nabunya Shamera',platinumNum:13,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+  {id:'namubiru_rose',name:'Namubiru Rose',platinumNum:14,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+  {id:'namutebi_claire',name:'Namutebi Claire',platinumNum:15,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'Dividends UGX 290K disbursed Oct 2025'},
+  {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:16,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint account (Mr & Mrs Sekiranda)'},
+  {id:'ndagire_rona',name:'Ndagire Rona Jjukko',platinumNum:17,type:'platinum',joinYear:2020,jointWith:'ssali_simon',email:'',status:'active',notes:''},
+  {id:'nuwahereza_edson',name:'Nuwahereza Edson',platinumNum:18,type:'platinum',joinYear:2020,jointWith:null,email:'pedsonle@gmail.com',status:'active',notes:'Signatory'},
+  {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:19,type:'platinum',joinYear:2020,jointWith:'natuhwera_neria',email:'',status:'active',notes:''},
+  {id:'ssali_simon',name:'Ssali Simon Peter',platinumNum:20,type:'platinum',joinYear:2020,jointWith:'ndagire_rona',email:'',status:'active',notes:''},
+  // PLATINUM — Departed/Deceased
+  {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:21,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
+  {id:'mwidu_geofrey',name:'Mwidu Geofrey',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
+  {id:'nakacwa_fortunate',name:'Nakacwa Fortunate',platinumNum:23,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased Sept 2023. Estate held.'},
+  {id:'namubiru_winnie',name:'Namubiru Winnie',platinumNum:24,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
+  {id:'namuyimba_kenneth',name:'Namuyimba Kenneth',platinumNum:25,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased. Estate → Nakiwala Ruth.'},
+  {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
+  {id:'nansubuga_jane',name:'Nansubuga Jane Frances',platinumNum:27,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
+  {id:'ssebudde_samuel',name:'Ssebudde Samuel',platinumNum:28,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Left 2025'},
+  // GOLDEN — Active (alphabetical)
+  {id:'babirye_joan',name:'Babirye Joan',goldNum:1,platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined Oct 2025'},
+  {id:'faith_matovu',name:'Faith Matovu',goldNum:2,platinumNum:null,type:'golden',joinYear:2022,jointWith:'matovu_julius',email:'',status:'active',notes:''},
+  {id:'mabaale_james',name:'Mabaale James',goldNum:3,platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined 2025'},
+  {id:'matovu_julius',name:'Matovu Julius',goldNum:4,platinumNum:null,type:'golden',joinYear:2022,jointWith:'faith_matovu',email:'',status:'active',notes:''},
+  {id:'nakakande_shebah',name:'Nakakande Shebah',goldNum:5,platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
+  {id:'nakiwala_ruth',name:'Nakiwala Ruth',goldNum:6,platinumNum:null,type:'golden',joinYear:2023,jointWith:null,email:'',status:'active',notes:'Next of kin for late Kenneth. Eligible Platinum 2026.'},
+  {id:'nalukenge_rashida',name:'Nalukenge Rashida',goldNum:7,platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
+  {id:'nsubuga_moses',name:'Nsubuga Moses',goldNum:8,platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Reg UGX 522,800 (2025)'},
+  // GOLDEN — Departed
+  {id:'achom_phionah',name:'Achom Phionah',goldNum:9,platinumNum:null,type:'golden',joinYear:2022,jointWith:'ssetumba_david',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
+  {id:'ssetumba_david',name:'Ssetumba David',goldNum:10,platinumNum:null,type:'golden',joinYear:2022,jointWith:'achom_phionah',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
+];
+
+const mk12=(s,w,g,u)=>({sub:Array(12).fill(s||0),welfare:Array(12).fill(w||0),gla:Array(12).fill(g||0),ut:Array(12).fill(u||0)});
+const mkP=(n,s,w,g,u)=>{const a=[],b=[],c=[],d=[];for(let i=0;i<12;i++){a.push(i<n?s:0);b.push(i<n?w:0);c.push(i<n?g:0);d.push(i<n?u:0);}return{sub:a,welfare:b,gla:c,ut:d};};
+const mk0=()=>mkP(0,0,0,0,0);
+
+function buildSeedContributions(){
+  // Rate helpers
+  const s40=40000,w10=10000,g13=13000,u10=10000,s80=80000,w20=20000,g26=26000,u20=20000;
+  // Founding year 2020: 6 months (July-Dec), subscriptions only (no welfare in 2020)
+  const c20={},c21={},c22={},c23={},c24={},c25={},c26={};
+  // Couples (each person individually tracked at 80K/mo couple rate)
+  const coupleIds=['sekiranda_simon','natuhwera_neria','lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona'];
+  // Singles at standard 40K rate
+  const singleIds=['nabunya_shamera','kyamulabi_diana','namutebi_claire','nuwahereza_edson','naggayi_constance','nabuuma_teopista','namubiru_rose','kintu_ernest','kirabira_jude','kirabira_jane','nakacwa_fortunate','namuyimba_kenneth','batenga_diana','namubiru_winnie','mwidu_geofrey','ssebudde_samuel','nansubuga_jane','nanfuka_jane'];
+
+  // 2020: 6 months sub only
+  coupleIds.forEach(id=>{c20[id]=mkP(6,s80,0,0,0);});
+  singleIds.forEach(id=>{c20[id]=mkP(6,s40,0,0,0);});
+
+  // 2021: 12 months, welfare added
+  coupleIds.forEach(id=>{c21[id]=mk12(s80,w20,0,0);});
+  singleIds.forEach(id=>{c21[id]=mk12(s40,w10,0,0);});
+  // Kintu Ernest dividends start 2021 — was paying
+  // (already in singleIds)
+
+  // 2022: 12 months same as 2021 + golden members joined mid-year (6 months)
+  coupleIds.forEach(id=>{c22[id]=mk12(s80,w20,0,0);});
+  singleIds.forEach(id=>{c22[id]=mk12(s40,w10,0,0);});
+  ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu'].forEach(id=>{c22[id]=mkP(6,s40,w10,0,0);});
+  // ssetumba & achom joined 2022 but departed later
+  c22['ssetumba_david']=mkP(6,s40,w10,0,0); c22['achom_phionah']=mkP(6,s40,w10,0,0);
+
+  // 2023: 12 months
+  coupleIds.forEach(id=>{c23[id]=mk12(s80,w20,0,0);});
+  singleIds.filter(id=>!['batenga_diana','nansubuga_jane','namubiru_winnie'].includes(id)).forEach(id=>{c23[id]=mk12(s40,w10,0,0);});
+  ['batenga_diana','nansubuga_jane','namubiru_winnie'].forEach(id=>{c23[id]=mkP(8,s40,w10,0,0);});
+  ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu'].forEach(id=>{c23[id]=mk12(s40,w10,0,0);});
+  c23['ssetumba_david']=mk12(s40,w10,0,0); c23['achom_phionah']=mk12(s40,w10,0,0);
+  c23['nakiwala_ruth']=mkP(6,s40,w10,0,0); // joined mid-2023
+  // Nakacwa Fortunate: deceased Sept 2023, 9 months
+  c23['nakacwa_fortunate']=mkP(9,s40,w10,0,0);
+
+  // 2024: 12 months, GLA + UT added (from April 2024 based on totals)
+  // Using April start for GLA/UT (months 3-11 = 9 months of gla/ut)
+  const mkGLA9=(s,w,g,u)=>{const sub=[],wf=[],gl=[],ut=[];for(let i=0;i<12;i++){sub.push(s);wf.push(w);gl.push(i>=3?g:0);ut.push(i>=3?u:0);}return{sub,welfare:wf,gla:gl,ut};};
+  coupleIds.forEach(id=>{c24[id]=mkGLA9(s80,w20,g26,u20);});
+  ['nabunya_shamera','kyamulabi_diana','namutebi_claire','nuwahereza_edson','naggayi_constance','nabuuma_teopista','namubiru_rose','kintu_ernest','kirabira_jude','kirabira_jane'].forEach(id=>{c24[id]=mkGLA9(s40,w10,g13,u10);});
+  ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu','nakiwala_ruth'].forEach(id=>{c24[id]=mkGLA9(s40,w10,g13,u10);});
+  c24['ssetumba_david']=mkP(4,s40,w10,0,0); // stopped paying mid 2024
+  c24['achom_phionah']=mkP(4,s40,w10,0,0);
+  ['batenga_diana','nansubuga_jane','namubiru_winnie','mwidu_geofrey','ssebudde_samuel','nanfuka_jane'].forEach(id=>{c24[id]=mkP(6,s40,w10,g13,u10);});
+
+  // 2025
+  const fullPairs=['sekiranda_simon','natuhwera_neria',...coupleIds.filter(x=>!['sekiranda_simon','natuhwera_neria'].includes(x)),'matovu_julius','faith_matovu'];
+  const fullPairs2=['sekiranda_simon','natuhwera_neria','lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona','matovu_julius','faith_matovu'];
+  fullPairs2.forEach(id=>{c25[id]=mk12(s80,w20,g26,u20);});
+  ['kyamulabi_diana','namutebi_claire','naggayi_constance','nabuuma_teopista','nuwahereza_edson','namubiru_rose','nalukenge_rashida','nakakande_shebah','nsubuga_moses','nakiwala_ruth','nabunya_shamera','nanfuka_jane','mwidu_geofrey','batenga_diana','natuhwera_neria','achom_phionah'].forEach(id=>{c25[id]=mk12(s40,w10,g13,u10);});
+  // Fix: natuhwera_neria already covered above — skip duplicate (the forEach just overwrites)
+  c25['kirabira_jude']=mk12(s40,w10,g13,u10); // split from couple
+  c25['kirabira_jane']=mk12(s40,w10,g13,u10);
+  c25['ssetumba_david']=mk0(); c25['achom_phionah']=mk0();
+  c25['kintu_ernest']=mkP(8,s40,w10,g13,u10);
+  c25['ssebudde_samuel']={sub:[40000,40000,4000,0,0,0,0,0,0,0,0,0],welfare:[10000,10000,0,0,0,0,0,0,0,0,0,0],gla:[13000,13000,0,0,0,0,0,0,0,0,0,0],ut:[10000,10000,0,0,0,0,0,0,0,0,0,0]};
+  c25['babirye_joan']=mkP(3,s40,w10,g13,u10);
+
+  // 2026 YTD
+  const c26={};
+  c26['kirabira_jude']=mk12(s40,w10,g13,u10); // split account
+  c26['kirabira_jane']=mk12(s40,w10,g13,u10);
+  ['nabunya_shamera'].forEach(id=>{c26[id]=mkP(3,s40,w10,g13,u10);});
+  c26['babirye_joan']=mkP(2,s40,w10,g13,u10);
+  c26['nuwahereza_edson']=mkP(1,s40,w10,g13,u10);
+  c26['kigonya_antonio']={sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
+  c26['bangi_aidah']={sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
+
+  return{2020:c20,2021:c21,2022:c22,2023:c23,2024:c24,2025:c25,2026:c26};
 }
 
-waitForFirebase(() => {
-  const { auth, db, provider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged,
-    doc, getDoc, setDoc, collection, getDocs, onSnapshot, addDoc, deleteDoc,
-    serverTimestamp, query, where } = window._FB;
+const DIVIDENDS_DATA=[
+  {id:'lule_stephen',name:'Lule Stephen Musisi',d2021:91793,d2022:291479,d2023:200221,total:583493},
+  {id:'kyamulabi_diana',name:'Kyamulabi Dianah',d2021:45896,d2022:145740,d2023:97015,total:288651},
+  {id:'namutebi_claire',name:'Namutebi Claire',d2021:45896,d2022:145740,d2023:101527,total:293163},
+  {id:'naggayi_constance',name:'Naggayi Constance',d2021:45896,d2022:145740,d2023:98914,total:290550},
+  {id:'sekiranda_simon',name:'Sekiranda Simon',d2021:91793,d2022:291479,d2023:205531,total:588803},
+  {id:'nabuuma_teopista',name:'Nabuuma Teopista',d2021:45896,d2022:145740,d2023:103615,total:295251},
+  {id:'kirabira_jude',name:'Kirabira Jude',d2021:45896,d2022:145740,d2023:103616,total:295252},
+  {id:'kirabira_jane',name:'Kirabira Jane',d2021:45896,d2022:145740,d2023:103615,total:295251},
+  {id:'luutu_daniel',name:'Luutu Daniel',d2021:91793,d2022:291479,d2023:198877,total:582149},
+  {id:'kigonya_antonio',name:'Kigonya Antonio',d2021:91793,d2022:291479,d2023:192688,total:575960},
+  {id:'nuwahereza_edson',name:'Nuwahereza Edson',d2021:45896,d2022:145740,d2023:102199,total:293835},
+  {id:'ssali_simon',name:'Ssali Simon Peter',d2021:91793,d2022:291479,d2023:207231,total:590503},
+  {id:'kintu_ernest',name:'Kintu Ernest Steven',d2021:45896,d2022:145740,d2023:99939,total:291575},
+  {id:'namubiru_rose',name:'Namubiru Rose',d2021:45896,d2022:145740,d2023:103615,total:295251},
+  {id:'nalukenge_rashida',name:'Nalukenge Rashida',d2021:0,d2022:65595,d2023:51557,total:117152},
+  {id:'ssetumba_david',name:'Ssetumba David',d2021:0,d2022:131191,d2023:98414,total:229605},
+  {id:'nakakande_shebah',name:'Nakakande Shebah',d2021:0,d2022:65595,d2023:50141,total:115736},
+  {id:'nsubuga_moses',name:'Nsubuga Moses',d2021:0,d2022:0,d2023:46616,total:46616},
+  {id:'matovu_julius',name:'Matovu Julius',d2021:0,d2022:0,d2023:84878,total:84878},
+];
 
-  /* ============================================================
-     SECTION A — CONFIGURATION
-     The monthly rates that determine how much each member owes.
-  ============================================================ */
-  const CONFIG = {
-    currentYear: 2026,
-    clubInceptionYear: 2020,
-    monthlyRates: { sub: 40000, welfare: 10000, gla: 13000, ut: 10000 },
-  };
+const JUNIORS_2024=[
+  {name:'Nathan Jade Lule Luutu',parent:'Lule Stephen',parentId:'lule_stephen',sub:240000,wel:60000,bal:0},
+  {name:'Jasper Ssali Ssewanonda',parent:'Ssali Simon',parentId:'ssali_simon',sub:240000,wel:60000,bal:0},
+  {name:'Ryan Cyprian Lule Lwanga',parent:'Lule Stephen',parentId:'lule_stephen',sub:80000,wel:20000,bal:200000},
+  {name:'Hezel Wenceslaus Matovu',parent:'Matovu Julius',parentId:'matovu_julius',sub:240000,wel:60000,bal:0},
+  {name:'Erik Danil Nuwahereza',parent:'Nuwahereza Edson',parentId:'nuwahereza_edson',sub:0,wel:0,bal:300000},
+  {name:'Elisha Joshua Nuwahereza',parent:'Nuwahereza Edson',parentId:'nuwahereza_edson',sub:0,wel:0,bal:300000},
+  {name:'Alpha Rashida Kulumba',parent:'Nalukenge Rashida',parentId:'nalukenge_rashida',sub:240000,wel:60000,bal:0},
+  {name:'Jayden Elvis Liam Izimba',parent:'Member',parentId:null,sub:100000,wel:25000,bal:175000},
+  {name:'Bianca Ssali',parent:'Ssali Simon',parentId:'ssali_simon',sub:40000,wel:10000,bal:250000},
+  {name:'Ssentongo Remigius Smith',parent:'Member',parentId:null,sub:60000,wel:15000,bal:225000},
+  {name:'Liam Joseph Luutu',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
+  {name:'Lael Orion Luutu',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
+  {name:'Senyange Ziwa Jerom',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
+  {name:'Kyambbadde Jayden',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
+  {name:'Nsimbi Jayson',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
+  {name:'Nakirijja Esther Elyse',parent:'Member',parentId:null,sub:60000,wel:15000,bal:225000},
+  {name:'Nambatya Elyna Jenkins',parent:'Member',parentId:null,sub:40000,wel:15000,bal:245000},
+  {name:'Sekiranda Fortunate Grace',parent:'Sekiranda Simon',parentId:'sekiranda_simon',sub:240000,wel:60000,bal:0},
+  {name:'Ndagire Catherine Skylar',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:20000,wel:5000,bal:275000},
+];
 
-  /* ============================================================
-     SECTION B — APP STATE
-     One central object holds everything the app needs at runtime.
-     When Firestore updates, we update this and re-render the UI.
-  ============================================================ */
-  let STATE = {
-    user: null, isAdmin: false,
-    members: [],       // loaded from Firestore collection 'members'
-    contributions: {}, // loaded from Firestore collection 'contributions'
-    committee: {},     // loaded from Firestore doc 'committee/current'
-    approvedEmails: [],// who can log in
-    votes: [],         // active and closed votes
-    currentMemberYear: '2026',
-    currentReportTab: 'annual',
-    unsubscribers: [], // Firestore real-time listeners to cancel on logout
-  };
+const INVESTMENTS=[
+  {date:'17 May 2021',title:'Nsanja Cycle 1',detail:'Pesticide stock',type:'out',amount:4920000},
+  {date:'13 Jul 2021',title:'Nsanja Cycle 1 Return',detail:'',type:'in',amount:5480000,profit:560000},
+  {date:'17 Aug 2021',title:'Nsanja Cycle 2 — Glymark',detail:'',type:'out',amount:6300000},
+  {date:'17 Jan 2022',title:'Nsanja Cycle 2 Return',detail:'',type:'in',amount:6900000,profit:600000},
+  {date:'14 Jun 2022',title:'Nsanja Cycle 3 — Lava boxes',detail:'',type:'out',amount:9040000},
+  {date:'31 Aug 2022',title:'Nsanja Cycle 3 Return',detail:'',type:'in',amount:10400000,profit:1360000},
+  {date:'31 Aug 2022',title:'Jagire Investment',detail:'',type:'out',amount:10000000},
+  {date:'10 Dec 2022',title:'Tufumbe Limited',detail:'',type:'out',amount:9000000},
+  {date:'18 Nov 2022',title:'Tufumbe Return',detail:'',type:'in',amount:10000000,profit:1000000},
+  {date:'30 Dec 2022',title:'Jagire Return',detail:'',type:'in',amount:11600000,profit:1600000},
+  {date:'02 Aug 2023',title:'Nsanja Cycle 4 — 50 boxes Lava',detail:'',type:'out',amount:13520000},
+  {date:'27 Feb 2023',title:'2Fumbe Kitchen Supplies',detail:'',type:'out',amount:7000000},
+  {date:'Feb 2023',title:'Nsanja Cycle 4 Return',detail:'',type:'in',amount:15000000,profit:1480000},
+  {date:'21 Mar 2023',title:'Eldaz Meat Parlour',detail:'',type:'out',amount:5000000},
+  {date:'28 Apr 2023',title:'2Fumbe + Eldaz Returns',detail:'',type:'in',amount:8150000,profit:1150000},
+  {date:'24 Mar 2023',title:'🏡 LAND PURCHASE — Kampala',detail:'40M + 5.67M settlement + 4.5M titles + 1.675M fees',type:'land',amount:51845000},
+  {date:'11 Jul 2024',title:'Nsanja Cycle 5',detail:'',type:'out',amount:5000000},
+  {date:'11 Aug 2024',title:'Nsanja Cycle 5 Return',detail:'',type:'in',amount:5600000,profit:600000},
+  {date:'10 Dec 2024',title:'Nsanja Cycle 6 — Active',detail:'UGX 13.5M deployed',type:'out',amount:13500000},
+  {date:'14 Mar 2026',title:'Nsanja Cycle 6 — Partial Return',detail:'UGX 5M. Balance outstanding.',type:'in',amount:5000000},
+];
 
-  /* ============================================================
-     SECTION C — DEFAULT DATA (seed / fallback)
-     Used when Firestore is empty (first run) OR when using Demo mode.
-     Also uploaded to Firestore on first admin login.
-  ============================================================ */
-  const SEED_MEMBERS = [
-    {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'natuhwera_neria',email:'',status:'active',notes:''},
-    {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:2,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint account with Sekiranda Simon (Mr & Mrs Sekiranda)'},
-    {id:'lule_stephen',name:'Lule Stephen Musisi',platinumNum:3,type:'platinum',joinYear:2020,jointWith:'nabukeera_juliet',email:'',status:'active',notes:''},
-    {id:'nabukeera_juliet',name:'Nabukeera Juliet',platinumNum:4,type:'platinum',joinYear:2020,jointWith:'lule_stephen',email:'',status:'active',notes:''},
-    {id:'luutu_daniel',name:'Luutu Daniel',platinumNum:5,type:'platinum',joinYear:2020,jointWith:'nagawa_ruth',email:'',status:'active',notes:''},
-    {id:'nagawa_ruth',name:'Nagawa Ruth',platinumNum:6,type:'platinum',joinYear:2020,jointWith:'luutu_daniel',email:'',status:'active',notes:''},
-    {id:'kigonya_antonio',name:'Kigonya Antonio',platinumNum:7,type:'platinum',joinYear:2020,jointWith:'bangi_aidah',email:'',status:'active',notes:''},
-    {id:'bangi_aidah',name:'Bangi Aidah',platinumNum:8,type:'platinum',joinYear:2020,jointWith:'kigonya_antonio',email:'',status:'active',notes:''},
-    {id:'ssebudde_samuel',name:'Ssebudde Samuel',platinumNum:9,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Left 2025'},
-    {id:'nabunya_shamera',name:'Nabunya Shamera',platinumNum:10,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'ssali_simon',name:'Ssali Simon Peter',platinumNum:11,type:'platinum',joinYear:2020,jointWith:'ndagire_rona',email:'',status:'active',notes:''},
-    {id:'ndagire_rona',name:'Ndagire Rona Jjukko',platinumNum:12,type:'platinum',joinYear:2020,jointWith:'ssali_simon',email:'',status:'active',notes:''},
-    {id:'nansubuga_jane',name:'Nansubuga Jane Frances',platinumNum:13,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
-    {id:'mwidu_geofrey',name:'Mwidu Geofrey',platinumNum:14,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
-    {id:'namubiru_winnie',name:'Namubiru Winnie',platinumNum:15,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
-    {id:'kyamulabi_diana',name:'Kyamulabi Dianah',platinumNum:16,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'namutebi_claire',name:'Namutebi Claire',platinumNum:17,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'Dividends UGX 290K disbursed Oct 2025'},
-    {id:'nuwahereza_edson',name:'Nuwahereza Edson',platinumNum:18,type:'platinum',joinYear:2020,jointWith:null,email:'pedsonle@gmail.com',status:'active',notes:'Signatory'},
-    {id:'nakacwa_fortunate',name:'Nakacwa Fortunate',platinumNum:19,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased Sept 2023. Estate held.'},
-    {id:'kintu_ernest',name:'Kintu Ernest Steven',platinumNum:20,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'2025: 8 months paid, UGX 260K outstanding'},
-    {id:'namuyimba_kenneth',name:'Namuyimba Kenneth',platinumNum:21,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased. Estate → Nakiwala Ruth.'},
-    {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
-    {id:'naggayi_constance',name:'Naggayi Constance',platinumNum:23,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'nabuuma_teopista',name:'Nabuuma Teopista',platinumNum:24,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'kirabira_jude',name:'Kirabira Jude',platinumNum:25,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'Joint account with wife — contributes as couple'},
-    {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
-    {id:'namubiru_rose',name:'Namubiru Rose',platinumNum:27,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'nalukenge_rashida',name:'Nalukenge Rashida',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
-    {id:'nakakande_shebah',name:'Nakakande Shebah',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
-    {id:'nsubuga_moses',name:'Nsubuga Moses',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Reg UGX 522,800 (2025)'},
-    {id:'ssetumba_david',name:'Ssetumba David',platinumNum:null,type:'golden',joinYear:2022,jointWith:'achom_phionah',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
-    {id:'achom_phionah',name:'Achom Phionah',platinumNum:null,type:'golden',joinYear:2022,jointWith:'ssetumba_david',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
-    {id:'matovu_julius',name:'Matovu Julius',platinumNum:null,type:'golden',joinYear:2022,jointWith:'faith_matovu',email:'',status:'active',notes:''},
-    {id:'faith_matovu',name:'Faith Matovu',platinumNum:null,type:'golden',joinYear:2022,jointWith:'matovu_julius',email:'',status:'active',notes:''},
-    {id:'nakiwala_ruth',name:'Nakiwala Ruth',platinumNum:null,type:'golden',joinYear:2023,jointWith:null,email:'',status:'active',notes:'Next of kin for late Kenneth. Eligible Platinum 2026.'},
-    {id:'babirye_joan',name:'Babirye Joan',platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined Oct 2025'},
-    {id:'mabaale_james',name:'Mabaale James',platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined 2025'},
-  ];
+/* ── AUTH ── */
+window.signInWithGoogle=async function(){try{await signInWithRedirect(auth,provider);}catch(e){alert('Sign-in failed: '+e.message);}};
+window.demoLogin=function(role){
+  STATE.user={email:role==='admin'?'pedsonle@gmail.com':'demo@member.com',name:role==='admin'?'Nuwahereza Edson':'Kintu Ernest',memberId:role==='admin'?'nuwahereza_edson':'kintu_ernest',role,uid:'demo-uid-'+Date.now()};
+  STATE.isAdmin=role==='admin';STATE.members=SEED_MEMBERS;STATE.contributions=buildSeedContributions();STATE.committee={};
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('login-screen').classList.remove('visible');
+  startApp();showToast('Demo mode — data is local only');
+};
+async function handleAuthUser(u){
+  document.getElementById('loading-screen').style.display='flex';
+  try{
+    const ed=await getDoc(doc(db,'approvedEmails',u.email));
+    if(!ed.exists()){await signOut(auth);document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');alert('Access denied. '+u.email+' is not registered.');return;}
+    const ud=ed.data();
+    STATE.user={email:u.email,name:ud.name||u.displayName,picture:u.photoURL,memberId:ud.memberId||'',role:ud.role,uid:u.uid};
+    STATE.isAdmin=ud.role==='admin';
+    await registerSession(u.uid);await loadAllDataFromFirestore();
+    document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.remove('visible');startApp();
+  }catch(e){console.error(e);document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');alert('Error: '+e.message);}
+}
+let authResolved=false;
+setTimeout(()=>{if(!authResolved){document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');}},6000);
+onAuthStateChanged(auth,u=>{authResolved=true;if(u){handleAuthUser(u);}else{document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');}});
+window.doSignOut=async function(){clearAllTimers();await cancelFirestoreListeners();if(STATE.user?.uid&&!STATE.user.uid.startsWith('demo'))await deleteDoc(doc(db,'sessions',STATE.user.uid)).catch(()=>{});await signOut(auth).catch(()=>{});STATE.user=null;STATE.isAdmin=false;document.getElementById('app').classList.remove('visible');document.getElementById('app').style.display='none';document.getElementById('login-screen').classList.add('visible');};
 
-  // Helpers for building contribution data
-  const mk12=(s,w,g,u)=>({sub:Array(12).fill(s||0),welfare:Array(12).fill(w||0),gla:Array(12).fill(g||0),ut:Array(12).fill(u||0)});
-  const mkP=(n,s,w,g,u)=>{const a=[],b=[],c=[],d=[];for(let i=0;i<12;i++){a.push(i<n?(s||0):0);b.push(i<n?(w||0):0);c.push(i<n?(g||0):0);d.push(i<n?(u||0):0);}return{sub:a,welfare:b,gla:c,ut:d};};
+/* ── SESSION ── */
+const SESSION_ID=Math.random().toString(36).slice(2);
+let inactivityTimer,warningTimer,warningCountdown,sessionCheckInterval;
+const INACTIVITY_LIMIT=30*60*1000,WARNING_TIME=60*1000;
+async function registerSession(uid){if(uid.startsWith('demo'))return;await setDoc(doc(db,'sessions',uid),{sessionId:SESSION_ID,email:STATE.user?.email||'',device:navigator.userAgent.slice(0,120),loginTime:serverTimestamp()});sessionCheckInterval=setInterval(async()=>{const s=await getDoc(doc(db,'sessions',uid));if(s.exists()&&s.data().sessionId!==SESSION_ID){clearAllTimers();alert('⚠️ Your account was signed in on another device.');doSignOut();}},60000);}
+function resetInactivityTimer(){clearTimeout(inactivityTimer);clearTimeout(warningTimer);clearInterval(warningCountdown);document.getElementById('timeout-banner').classList.remove('show');warningTimer=setTimeout(()=>{let r=60;document.getElementById('timeout-countdown').textContent=r;document.getElementById('timeout-banner').classList.add('show');warningCountdown=setInterval(()=>{r--;document.getElementById('timeout-countdown').textContent=r;if(r<=0){clearInterval(warningCountdown);doSignOut();}},1000);},INACTIVITY_LIMIT-WARNING_TIME);inactivityTimer=setTimeout(()=>{doSignOut();},INACTIVITY_LIMIT);}
+window.extendSession=function(){document.getElementById('timeout-banner').classList.remove('show');clearInterval(warningCountdown);resetInactivityTimer();};
+function startActivityTracking(){['click','keypress','scroll','touchstart','mousemove'].forEach(ev=>{document.addEventListener(ev,resetInactivityTimer,{passive:true});});resetInactivityTimer();}
+function clearAllTimers(){clearTimeout(inactivityTimer);clearTimeout(warningTimer);clearInterval(warningCountdown);clearInterval(sessionCheckInterval);}
 
-  // Build seed contribution data (2020-2026 from real Excel data)
-  function buildSeedContributions() {
-    const c26={kirabira_jude:mk12(80000,20000,26000,20000),nabunya_shamera:mkP(3,40000,10000,13000,10000),babirye_joan:mkP(2,40000,10000,13000,10000),nuwahereza_edson:mkP(1,40000,10000,13000,10000),kigonya_antonio:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)},bangi_aidah:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)}};
-    const fullIds=['lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona','kirabira_jude','matovu_julius','faith_matovu'];
-    const c25={};
-    ['sekiranda_simon','natuhwera_neria',...fullIds].forEach(id=>{c25[id]=mk12(80000,20000,26000,20000);});
-    ['kyamulabi_diana','namutebi_claire','naggayi_constance','nabuuma_teopista','nuwahereza_edson','namubiru_rose','nalukenge_rashida','nakakande_shebah','nsubuga_moses','nakiwala_ruth','nabunya_shamera','nanfuka_jane','mwidu_geofrey','batenga_diana','natuhwera_neria','achom_phionah'].forEach(id=>{c25[id]=mk12(40000,10000,13000,10000);});
-    c25['ssetumba_david']={sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
-    c25['kintu_ernest']=mkP(8,40000,10000,13000,10000);
-    c25['ssebudde_samuel']={sub:[40000,40000,4000,0,0,0,0,0,0,0,0,0],welfare:[10000,10000,0,0,0,0,0,0,0,0,0,0],gla:[13000,13000,0,0,0,0,0,0,0,0,0,0],ut:[10000,10000,0,0,0,0,0,0,0,0,0,0]};
-    c25['babirye_joan']=mkP(3,40000,10000,13000,10000);
-    return {2026:c26, 2025:c25};
+/* ── FIRESTORE LOAD ── */
+async function loadAllDataFromFirestore(){
+  const ms=await getDocs(collection(db,'members'));
+  if(ms.empty){STATE.members=SEED_MEMBERS;if(STATE.isAdmin)await seedFirestoreMembers();}
+  else{STATE.members=ms.docs.map(d=>({...d.data(),id:d.id}));}
+  const cs=await getDocs(collection(db,'contributions'));
+  STATE.contributions={};
+  if(cs.empty){STATE.contributions=buildSeedContributions();if(STATE.isAdmin)await seedFirestoreContributions();}
+  else{cs.docs.forEach(d=>{const[year,memberId]=d.id.split('__');if(!STATE.contributions[year])STATE.contributions[year]={};STATE.contributions[year][memberId]=d.data();});}
+  const cm=await getDoc(doc(db,'committee','current'));STATE.committee=cm.exists()?cm.data():{};
+  if(STATE.isAdmin){const es=await getDocs(collection(db,'approvedEmails'));STATE.approvedEmails=es.docs.map(d=>({email:d.id,...d.data()}));}
+  startRealtimeListeners();
+}
+function startRealtimeListeners(){
+  const u1=onSnapshot(collection(db,'contributions'),snap=>{snap.docChanges().forEach(ch=>{if(ch.type==='added'||ch.type==='modified'){const[year,mid]=ch.doc.id.split('__');if(!STATE.contributions[year])STATE.contributions[year]={};STATE.contributions[year][mid]=ch.doc.data();}});renderMonthGrid();renderMemberTable();renderMyAccount();});
+  const u2=onSnapshot(collection(db,'votes'),snap=>{STATE.votes=snap.docs.map(d=>({id:d.id,...d.data()}));renderVotePage();});
+  STATE.unsubscribers=[u1,u2];
+}
+async function cancelFirestoreListeners(){STATE.unsubscribers.forEach(u=>{try{u();}catch(e){}});STATE.unsubscribers=[];}
+async function seedFirestoreMembers(){for(const m of SEED_MEMBERS)await setDoc(doc(db,'members',m.id),m);showToast('Members seeded ✓');}
+async function seedFirestoreContributions(){const seed=buildSeedContributions();for(const[year,mems]of Object.entries(seed))for(const[mid,data]of Object.entries(mems))await setDoc(doc(db,'contributions',`${year}__${mid}`),data);showToast('Contributions seeded ✓');}
+
+/* ── APP START ── */
+function startApp(){
+  document.getElementById('app').style.display='flex';document.getElementById('app').classList.add('visible');
+  const u=STATE.user;
+  document.getElementById('user-name').textContent=u.name.split(' ')[0];
+  const av=document.getElementById('user-avatar');
+  if(u.picture)av.innerHTML=`<img src="${u.picture}" alt="">`;else av.textContent=u.name[0].toUpperCase();
+  if(STATE.isAdmin){
+    document.getElementById('admin-badge').style.display='inline-block';
+    document.querySelectorAll('.admin-only').forEach(el=>{el.classList.add('show');});
   }
+  initAllPages();startActivityTracking();
+  // Show default page
+  const defaultPage = STATE.isAdmin ? 'dashboard' : 'myaccount';
+  const firstBtn = document.querySelector(`.nav-btn[onclick*="showPage('${defaultPage}"]`);
+  showPage(defaultPage, firstBtn);
+  // Show first nav button as active
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  if(firstBtn) firstBtn.classList.add('active');
+  else { const fb=document.querySelector('.nav-btn'); if(fb)fb.classList.add('active'); }
+}
 
-  const DIVIDENDS_DATA=[
-    {id:'lule_stephen',name:'Lule Stephen Musisi',d2021:91793,d2022:291479,d2023:200221,total:583493},
-    {id:'kyamulabi_diana',name:'Kyamulabi Dianah',d2021:45896,d2022:145740,d2023:97015,total:288651},
-    {id:'namutebi_claire',name:'Namutebi Claire',d2021:45896,d2022:145740,d2023:101527,total:293163},
-    {id:'naggayi_constance',name:'Naggayi Constance',d2021:45896,d2022:145740,d2023:98914,total:290550},
-    {id:'sekiranda_simon',name:'Sekiranda Simon',d2021:91793,d2022:291479,d2023:205531,total:588803},
-    {id:'nabuuma_teopista',name:'Nabuuma Teopista',d2021:45896,d2022:145740,d2023:103615,total:295251},
-    {id:'kirabira_jude',name:'Kirabira Jude',d2021:91793,d2022:291479,d2023:207231,total:590503},
-    {id:'luutu_daniel',name:'Luutu Daniel',d2021:91793,d2022:291479,d2023:198877,total:582149},
-    {id:'kigonya_antonio',name:'Kigonya Antonio',d2021:91793,d2022:291479,d2023:192688,total:575960},
-    {id:'nuwahereza_edson',name:'Nuwahereza Edson',d2021:45896,d2022:145740,d2023:102199,total:293835},
-    {id:'ssali_simon',name:'Ssali Simon Peter',d2021:91793,d2022:291479,d2023:207231,total:590503},
-    {id:'kintu_ernest',name:'Kintu Ernest',d2021:45896,d2022:145740,d2023:99939,total:291575},
-    {id:'namubiru_rose',name:'Namubiru Rose',d2021:45896,d2022:145740,d2023:103615,total:295251},
-    {id:'nalukenge_rashida',name:'Nalukenge Rashida',d2021:0,d2022:65595,d2023:51557,total:117152},
-    {id:'ssetumba_david',name:'Ssetumba David',d2021:0,d2022:131191,d2023:98414,total:229605},
-    {id:'nakakande_shebah',name:'Nakakande Shebah',d2021:0,d2022:65595,d2023:50141,total:115736},
-    {id:'nsubuga_moses',name:'Nsubuga Moses',d2021:0,d2022:0,d2023:46616,total:46616},
-    {id:'matovu_julius',name:'Matovu Julius',d2021:0,d2022:0,d2023:84878,total:84878},
-  ];
+/* ── NAVIGATION ── */
+window.showPage=function(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(btn)btn.classList.add('active');
+  closeSidebar();
+};
 
-  const JUNIORS_2024=[
-    {name:'Nathan Jade Lule Luutu',parent:'Lule Stephen',sub:240000,wel:60000,bal:0},
-    {name:'Jasper Ssali Ssewanonda',parent:'Ssali Simon',sub:240000,wel:60000,bal:0},
-    {name:'Ryan Cyprian Lule Lwanga',parent:'Lule Stephen',sub:80000,wel:20000,bal:200000},
-    {name:'Hezel Wenceslaus Matovu',parent:'Matovu Julius',sub:240000,wel:60000,bal:0},
-    {name:'Erik Danil Nuwahereza',parent:'Nuwahereza Edson',sub:0,wel:0,bal:300000},
-    {name:'Elisha Joshua Nuwahereza',parent:'Nuwahereza Edson',sub:0,wel:0,bal:300000},
-    {name:'Alpha Rashida Kulumba',parent:'Nalukenge Rashida',sub:240000,wel:60000,bal:0},
-    {name:'Jayden Elvis Liam Izimba',parent:'Member',sub:100000,wel:25000,bal:175000},
-    {name:'Bianca Ssali',parent:'Ssali Simon',sub:40000,wel:10000,bal:250000},
-    {name:'Ssentongo Remigius Smith',parent:'Member',sub:60000,wel:15000,bal:225000},
-    {name:'Liam Joseph Luutu',parent:'Luutu Daniel',sub:200000,wel:50000,bal:50000},
-    {name:'Lael Orion Luutu',parent:'Luutu Daniel',sub:200000,wel:50000,bal:50000},
-    {name:'Senyange Ziwa Jerom',parent:'Member',sub:120000,wel:30000,bal:150000},
-    {name:'Kyambbadde Jayden',parent:'Member',sub:120000,wel:30000,bal:150000},
-    {name:'Nsimbi Jayson',parent:'Member',sub:120000,wel:30000,bal:150000},
-    {name:'Nakirijja Esther Elyse',parent:'Member',sub:60000,wel:15000,bal:225000},
-    {name:'Nambatya Elyna Jenkins',parent:'Member',sub:40000,wel:15000,bal:245000},
-    {name:'Sekiranda Fortunate Grace',parent:'Sekiranda Simon',sub:240000,wel:60000,bal:0},
-    {name:'Ndagire Catherine Skylar',parent:'Luutu Daniel',sub:20000,wel:5000,bal:275000},
-  ];
+/* ── HELPERS ── */
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_FULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const TODAY_MONTH=new Date().getMonth(),TODAY_YEAR=new Date().getFullYear();
+const fmt=n=>Number(n||0).toLocaleString();
+const fmtM=n=>{const m=n/1e6;return m>=1?m.toFixed(1)+'M':(n/1e3).toFixed(0)+'K';};
+const memberName=id=>{const m=STATE.members.find(x=>x.id===id);return m?m.name:id;};
+const activeMembers=()=>STATE.members.filter(m=>m.status==='active');
+const getContrib=(mid,yr,field)=>(STATE.contributions[yr]?.[mid]?.[field])||Array(12).fill(0);
+const monthTotal=(mid,yr,mo)=>{const y=STATE.contributions[yr];if(!y||!y[mid])return 0;const c=y[mid];return(c.sub[mo]||0)+(c.welfare[mo]||0)+(c.gla[mo]||0)+(c.ut[mo]||0);};
+const sumField=(mid,yr,field)=>(getContrib(mid,yr,field)).reduce((a,b)=>a+b,0);
+const yearTotal=(mid,yr)=>sumField(mid,yr,'sub')+sumField(mid,yr,'welfare')+sumField(mid,yr,'gla')+sumField(mid,yr,'ut');
+// Loan limit: 25% of all contributions through fully paid years 2020-2025
+const loanLimit=mid=>{const base=[2020,2021,2022,2023,2024,2025].reduce((acc,y)=>acc+yearTotal(mid,y),0);return Math.floor(base*0.25);};
+function progBar(paid,target,showLabel=true){
+  const pct=target>0?Math.min(100,Math.round((paid/target)*100)):0;
+  const cls=pct>=100?'green':pct>=50?'amber':'red';
+  const remain=Math.max(0,target-paid);
+  return`${showLabel?`<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--light);margin-bottom:2px"><span>${fmt(paid)} paid</span><span style="color:var(--red)">${remain>0?fmt(remain)+' due':''}</span></div>`:''}
+<div class="prog-split" style="height:8px"><div class="prog-split-paid" style="width:${pct}%"></div><div class="prog-split-remain" style="width:${100-pct}%;left:${pct}%"></div></div>
+<div style="font-size:10px;color:var(--${cls==='green'?'g3':cls==='amber'?'gold':'red'});font-weight:700;margin-top:2px">${pct}%</div>`;
+}
 
-  const INVESTMENTS=[
-    {date:'17 May 2021',title:'Nsanja Cycle 1',detail:'Pesticide stock',type:'out',amount:4920000},
-    {date:'13 Jul 2021',title:'Nsanja Cycle 1 Return',detail:'',type:'in',amount:5480000,profit:560000},
-    {date:'17 Aug 2021',title:'Nsanja Cycle 2 — Glymark',detail:'',type:'out',amount:6300000},
-    {date:'17 Jan 2022',title:'Nsanja Cycle 2 Return',detail:'',type:'in',amount:6900000,profit:600000},
-    {date:'14 Jun 2022',title:'Nsanja Cycle 3 — Lava boxes',detail:'',type:'out',amount:9040000},
-    {date:'31 Aug 2022',title:'Nsanja Cycle 3 Return',detail:'',type:'in',amount:10400000,profit:1360000},
-    {date:'31 Aug 2022',title:'Jagire Investment',detail:'',type:'out',amount:10000000},
-    {date:'10 Dec 2022',title:'Tufumbe Limited',detail:'',type:'out',amount:9000000},
-    {date:'18 Nov 2022',title:'Tufumbe Return',detail:'',type:'in',amount:10000000,profit:1000000},
-    {date:'30 Dec 2022',title:'Jagire Return',detail:'',type:'in',amount:11600000,profit:1600000},
-    {date:'02 Aug 2023',title:'Nsanja Cycle 4 — 50 boxes Lava',detail:'',type:'out',amount:13520000},
-    {date:'27 Feb 2023',title:'2Fumbe Kitchen Supplies',detail:'',type:'out',amount:7000000},
-    {date:'Feb 2023',title:'Nsanja Cycle 4 Return',detail:'',type:'in',amount:15000000,profit:1480000},
-    {date:'21 Mar 2023',title:'Eldaz Meat Parlour',detail:'',type:'out',amount:5000000},
-    {date:'28 Apr 2023',title:'2Fumbe + Eldaz Returns',detail:'',type:'in',amount:8150000,profit:1150000},
-    {date:'24 Mar 2023',title:'🏡 LAND PURCHASE — Kampala',detail:'40M + 5.67M settlement + 4.5M titles + 1.675M fees',type:'land',amount:51845000},
-    {date:'11 Jul 2024',title:'Nsanja Cycle 5',detail:'',type:'out',amount:5000000},
-    {date:'11 Aug 2024',title:'Nsanja Cycle 5 Return',detail:'',type:'in',amount:5600000,profit:600000},
-    {date:'10 Dec 2024',title:'Nsanja Cycle 6 — Active',detail:'UGX 13.5M deployed',type:'out',amount:13500000},
-    {date:'14 Mar 2026',title:'Nsanja Cycle 6 — Partial Return',detail:'UGX 5M. Balance outstanding.',type:'in',amount:5000000},
-  ];
+function showToast(msg,type='success'){const t=document.createElement('div');t.style.cssText=`position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:${type==='success'?'var(--g2)':'var(--red)'};color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,.3)`;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
-  /* ============================================================
-     SECTION D — AUTHENTICATION
-     Three flows:
-     1. Google Sign-In (production): popup → check Firestore → enter app
-     2. Demo mode: bypass Firebase, use seed data locally
-     3. Auto-restore: onAuthStateChanged fires on page load if user was
-        already signed in — skips login screen silently
-  ============================================================ */
-  window.signInWithGoogle = async function() {
-    try {
-      await signInWithRedirect(auth, provider);
-    } catch(e) {
-      let msg = 'Sign-in failed: ' + e.message;
-      if (e.code === 'auth/api-key-not-valid' || e.message.includes('api-key') || e.message.includes('API key')) {
-        msg = '🔑 Firebase API key blocked.\n\nFix (2 min):\n1. Go to console.cloud.google.com → APIs & Services → Credentials\n2. Edit your API key → HTTP referrers → Add: xoft-bot.github.io/*\n3. Firebase Console → Authentication → Settings → Authorized domains → Add: xoft-bot.github.io\n\nThen try again.';
-      }
-      alert(msg);
-    }
-  };
+/* ── DASHBOARD ── */
+function initDashboard(){renderMonthGrid();renderAnnualChart();renderDashboardAlerts();renderFundBreakdown();}
+function renderMonthGrid(){
+  const grid=document.getElementById('month-grid');if(!grid)return;
+  const year=CONFIG.currentYear,active=activeMembers(),tot=active.length;
+  grid.innerHTML=MONTHS.map((m,i)=>{
+    let paid=0,partial=0;
+    active.forEach(mem=>{const t=monthTotal(mem.id,year,i);const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;if(t>=full)paid++;else if(t>0)partial++;});
+    const pct=Math.round((paid/tot)*100);
+    const isFuture=(year===TODAY_YEAR&&i>TODAY_MONTH);
+    let cls='mc-future',st='Future';
+    if(!isFuture){if(paid===tot){cls='mc-paid';st='✓ All';}else if(paid+partial>0){cls='mc-partial';st=`${paid}/${tot}`;}else{cls='mc-pending';st='⚠ None';}}
+    return`<div class="month-cell ${cls}" onclick="openMonthDetail(${i})"><div class="m-name">${m}</div><div class="m-pct">${isFuture?'—':pct+'%'}</div><div class="m-amt">${st}</div></div>`;
+  }).join('');
+}
+window.openMonthDetail=function(idx){
+  if(!STATE.isAdmin){showToast('Month detail is for admins only','error');return;}
+  const year=CONFIG.currentYear,active=activeMembers();
+  document.getElementById('month-modal-title').textContent=`${MONTHS_FULL[idx]} ${year}`;
+  const rows=active.map(m=>{
+    const sub=getContrib(m.id,year,'sub')[idx]||0,wel=getContrib(m.id,year,'welfare')[idx]||0,gla=getContrib(m.id,year,'gla')[idx]||0,ut=getContrib(m.id,year,'ut')[idx]||0,total=sub+wel+gla+ut;
+    const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
+    const isFuture=(year===TODAY_YEAR&&idx>TODAY_MONTH);
+    const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
+    return`<tr><td class="member-name">${m.name}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
+  }).join('');
+  document.getElementById('month-modal-body').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Member</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  openModal('month-modal');
+};
+function renderAnnualChart(){
+  const canvas=document.getElementById('annual-chart');if(!canvas)return;
+  const ctx=canvas.getContext('2d');const W=canvas.offsetWidth||500,H=180;canvas.width=W;canvas.height=H;
+  const years=[2020,2021,2022,2023,2024,2025,2026];
+  const subs=[4876000,7376500,12355000,14720000,14240000,12556000,1240000];
+  const wels=[0,1475000,2890000,3680000,3560000,3130000,300000];
+  const glas=[0,0,0,0,4628000,4069000,390000];
+  const max=Math.max(...subs.map((s,i)=>s+wels[i]+glas[i]));
+  const pad=36,bw=Math.floor((W-pad*2)/years.length)-5;
+  ctx.clearRect(0,0,W,H);
+  years.forEach((yr,i)=>{const x=pad+i*(bw+5);let base=H-22;const drawBar=(val,color)=>{if(!val)return base;const bh=Math.max(1,(val/max)*(H-50));ctx.fillStyle=color;ctx.fillRect(x,base-bh,bw,bh);return base-bh;};base=drawBar(subs[i],'#1e7a47');base=drawBar(wels[i],'#f0b429');drawBar(glas[i],'#6d28d9');ctx.fillStyle='#6b8f7a';ctx.font='9px Sora,sans-serif';ctx.textAlign='center';ctx.fillText(yr,x+bw/2,H-6);});
+  [['#1e7a47','Sub'],['#f0b429','Welfare'],['#6d28d9','GLA']].forEach(([c,l],i)=>{ctx.fillStyle=c;ctx.fillRect(pad+i*60,4,10,10);ctx.fillStyle='#6b8f7a';ctx.textAlign='left';ctx.fillText(l,pad+i*60+13,13);});
+}
+function renderDashboardAlerts(){
+  document.getElementById('dashboard-alerts').innerHTML=[
+    {type:'success',icon:'✅',ttl:'Loans Available — Year 6',msg:'Members can apply for up to 25% of total contributions from 2020–2025.'},
+    {type:'success',icon:'🌾',ttl:'Nsanja UGX 5M returned (14 Mar 2026)',msg:'Balance outstanding from UGX 13.5M cycle 6 investment.'},
+    {type:'warn',icon:'🗳️',ttl:'Elections: December 2026',msg:'3+ year members who served on a subcommittee qualify to stand.'},
+    {type:'info',icon:'🔒',ttl:'Secured with Firebase',msg:'Only registered emails can sign in. Auto-logout after 30 min.'},
+  ].map(a=>`<div class="alert ${a.type}"><div class="alert-icon">${a.icon}</div><div><div class="alert-ttl">${a.ttl}</div><div class="alert-msg">${a.msg}</div></div></div>`).join('');
+}
+function renderFundBreakdown(){
+  const items=[['All Subscriptions',71363500,'var(--g3)'],['Welfare',15035000,'var(--gold2)'],['GLA 2024–2026',9087000,'var(--purple)'],['Unit Trust 2024–2026',6990000,'var(--teal)']];
+  const max=71363500;
+  document.getElementById('fund-breakdown').innerHTML=items.map(([l,a,c])=>`<div style="margin-bottom:9px"><div class="prog-lbl"><span>${l}</span><span>${fmtM(a)}</span></div><div class="prog-bar"><div class="prog-fill green" style="width:${(a/max*100).toFixed(0)}%;background:${c}"></div></div></div>`).join('');
+}
 
-  window.demoLogin = function(role) {
-    STATE.user = {
-      email: role==='admin'?'pedsonle@gmail.com':'demo@member.com',
-      name: role==='admin'?'Nuwahereza Edson':'Demo Member',
-      memberId: role==='admin'?'nuwahereza_edson':'kintu_ernest',
-      role, uid: 'demo-uid-'+Date.now(),
-    };
-    STATE.isAdmin = role==='admin';
-    STATE.members = SEED_MEMBERS;
-    STATE.contributions = buildSeedContributions();
-    STATE.committee = {};
-    document.getElementById('loading-screen').style.display='none';
-    document.getElementById('login-screen').classList.remove('visible');
-    startApp();
-    showToast('Demo mode — data is local only, not saved to Firestore');
-  };
+/* ── MEMBERS TABLE (admin) ── */
+function initMembers(){
+  const tabs=document.getElementById('member-year-tabs');
+  tabs.innerHTML=['2020','2021','2022','2023','2024','2025','2026'].map(y=>`<button class="tab ${y==='2026'?'active':''}" onclick="setMemberYear('${y}',this)">${y}</button>`).join('');
+  STATE.currentMemberYear='2026';renderMemberTable();
+}
+window.setMemberYear=function(y,btn){STATE.currentMemberYear=y;document.querySelectorAll('#member-year-tabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderMemberTable();};
+function renderMemberTable(){
+  if(!STATE.isAdmin)return;
+  const year=parseInt(STATE.currentMemberYear);
+  const search=(document.getElementById('member-search')?.value||'').toLowerCase();
+  let members=STATE.members.filter(m=>m.joinYear<=year&&!(m.status==='deceased'&&year>m.joinYear+2));
+  if(search)members=members.filter(m=>m.name.toLowerCase().includes(search));
+  const hasGla=year>=2024;
+  const target=12*(CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+(hasGla?CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut:0));
+  document.getElementById('members-tbody').innerHTML=members.map(m=>{
+    const c=(STATE.contributions[year]||{})[m.id]||{};
+    const sub=(c.sub||[]).reduce((a,b)=>a+b,0),wel=(c.welfare||[]).reduce((a,b)=>a+b,0);
+    const gla=(c.gla||[]).reduce((a,b)=>a+b,0),ut=(c.ut||[]).reduce((a,b)=>a+b,0);
+    const paid=sub+wel+gla+ut,bal=Math.max(0,target-paid);
+    const pct=target>0?Math.min(100,Math.round((paid/target)*100)):0;
+    const sB={active:'<span class="badge b-green">Active</span>',departed:'<span class="badge b-red">Departed</span>',deceased:'<span class="badge b-gray">Deceased</span>'}[m.status]||'';
+    const tB=m.type==='platinum'?`<span class="badge b-gold">P${m.platinumNum||'?'}</span>`:`<span class="badge b-blue">G${m.goldNum||'?'}</span>`;
+    const st=bal===0?'<span class="badge b-green">✓</span>':paid===0?'<span class="badge b-red">None</span>':'<span class="badge b-amber">Partial</span>';
+    const barColor=pct>=100?'#1e7a47':pct>=50?'#d97706':'#dc2626';
+    const barHtml=`<div style="min-width:80px"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div><div style="font-size:10px;color:${barColor};font-weight:600">${pct}%</div></div>`;
+    return`<tr onclick="${STATE.isAdmin?`openMemberProfile('${m.id}')`:'void(0)'}" style="cursor:pointer"><td>${m.type==='platinum'?m.platinumNum:'G'+m.goldNum}</td><td class="member-name">${m.name}</td><td>${tB}</td><td>${sB}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${paid?fmt(paid):'—'}</strong></td><td style="color:var(--red)">${bal?fmt(bal):'—'}</td><td>${barHtml}</td></tr>`;
+  }).join('');
+}
+window.openMemberProfile=function(mid){
+  if(!STATE.isAdmin)return;
+  const m=STATE.members.find(x=>x.id===mid);if(!m)return;
+  document.getElementById('modal-member-title').textContent=m.name;
+  const years=[2020,2021,2022,2023,2024,2025,2026];let grand=0;
+  const histRows=years.map(y=>{
+    const c=(STATE.contributions[y]||{})[mid]||{};
+    const sub=(c.sub||[]).reduce((a,b)=>a+b,0),wel=(c.welfare||[]).reduce((a,b)=>a+b,0),gla=(c.gla||[]).reduce((a,b)=>a+b,0),ut=(c.ut||[]).reduce((a,b)=>a+b,0),total=sub+wel+gla+ut;
+    grand+=total;if(!total&&y<m.joinYear)return'';
+    return`<tr><td><strong>${y}</strong></td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
+  }).join('');
+  const ll=loanLimit(mid);
+  const div=DIVIDENDS_DATA.find(d=>d.id===mid);
+  const tgt=12*(CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut);
+  const paid26=yearTotal(mid,2026);
+  document.getElementById('modal-member-body').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Membership</div><div style="font-weight:700">${m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum}</div></div>
+      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Total Contributed</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(grand)}</div></div>
+      <div style="padding:9px;background:#dcfce7;border-radius:8px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase">Loan Limit (25% of 2020–2025)</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(ll)}</div></div>
+      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Member Since</div><div style="font-weight:700">${m.joinYear}</div></div>
+    </div>
+    <div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--mid);margin-bottom:6px">2026 ANNUAL PROGRESS</div>${progBar(paid26,tgt)}</div>
+    ${m.notes?`<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>${m.notes}</div></div>`:''}
+    ${div?`<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:10px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Dividends 2021–2023</div><div style="font-weight:800;font-size:17px;color:var(--g2)">UGX ${fmt(div.total)}</div><div style="font-size:11px;color:var(--light)">2021: ${fmt(div.d2021)} · 2022: ${fmt(div.d2022)} · 2023: ${fmt(div.d2023)}</div></div>`:''}
+    <div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div>`;
+  openModal('member-modal');
+};
 
-  // Called both on Google Sign-In AND on page reload (auto-restore)
-  async function handleAuthUser(firebaseUser) {
-    document.getElementById('loading-screen').style.display='flex';
-    try {
-      // Check Firestore approved list
-      const emailDoc = await getDoc(doc(db, 'approvedEmails', firebaseUser.email));
-      if (!emailDoc.exists()) {
-        await signOut(auth);
-        document.getElementById('loading-screen').style.display='none';
-        document.getElementById('login-screen').classList.add('visible');
-        alert('Access denied.\n\n' + firebaseUser.email + ' is not registered.\nContact Edson Nuwahereza to be added.');
-        return;
-      }
-      const userData = emailDoc.data();
-      STATE.user = {
-        email: firebaseUser.email,
-        name: userData.name || firebaseUser.displayName,
-        picture: firebaseUser.photoURL,
-        memberId: userData.memberId || '',
-        role: userData.role,
-        uid: firebaseUser.uid,
-      };
-      STATE.isAdmin = userData.role === 'admin';
-
-      // Register this session (for single-device enforcement)
-      await registerSession(firebaseUser.uid);
-
-      // Load all data from Firestore
-      await loadAllDataFromFirestore();
-
-      document.getElementById('loading-screen').style.display='none';
-      document.getElementById('login-screen').classList.remove('visible');
-      startApp();
-    } catch(e) {
-      console.error('Auth error:', e);
-      document.getElementById('loading-screen').style.display='none';
-      document.getElementById('login-screen').classList.add('visible');
-      alert('Error: ' + e.message);
-    }
-  }
-
-  // Safety net — if Firebase Auth doesn't respond in 6 seconds, show login anyway
-  let authResolved = false;
-  setTimeout(() => {
-    if (!authResolved) {
-      document.getElementById('loading-screen').style.display='none';
-      document.getElementById('login-screen').classList.add('visible');
-      showToast('⚠️ Firebase slow to respond. Use Demo mode or check your connection.', 'error');
-    }
-  }, 6000);
-
-  // Firebase watches for auth state — fires on every page load
-  onAuthStateChanged(auth, (firebaseUser) => {
-    authResolved = true;
-    if (firebaseUser) {
-      handleAuthUser(firebaseUser);
-    } else {
-      document.getElementById('loading-screen').style.display='none';
-      document.getElementById('login-screen').classList.add('visible');
-    }
-  });
-
-  window.doSignOut = async function() {
-    clearAllTimers();
-    await cancelFirestoreListeners();
-    if (STATE.user?.uid && !STATE.user.uid.startsWith('demo')) {
-      await deleteDoc(doc(db, 'sessions', STATE.user.uid)).catch(()=>{});
-    }
-    await signOut(auth).catch(()=>{});
-    STATE.user = null;
-    STATE.isAdmin = false;
-    document.getElementById('app').classList.remove('visible');
-    document.getElementById('app').style.display='none';
-    document.getElementById('login-screen').classList.add('visible');
-  };
-
-  /* ============================================================
-     SECTION E — SESSION MANAGEMENT (single device + auto-logout)
-     When a member logs in, we write a session token to Firestore.
-     If they log in on a second device, the token changes and
-     the first device detects this and logs itself out.
-     Auto-logout after 30 min inactivity via JavaScript timer.
-  ============================================================ */
-  const SESSION_ID = Math.random().toString(36).slice(2);
-  let inactivityTimer, warningTimer, warningCountdown, sessionCheckInterval;
-  const INACTIVITY_LIMIT = 30 * 60 * 1000; // 30 minutes
-  const WARNING_TIME = 60 * 1000;           // warn 60 seconds before logout
-
-  async function registerSession(uid) {
-    if (uid.startsWith('demo')) return;
-    await setDoc(doc(db, 'sessions', uid), {
-      sessionId: SESSION_ID,
-      email: STATE.user?.email || '',
-      device: navigator.userAgent.slice(0, 120),
-      loginTime: serverTimestamp(),
-    });
-    // Check every 60s if another device has taken over
-    sessionCheckInterval = setInterval(async () => {
-      const snap = await getDoc(doc(db, 'sessions', uid));
-      if (snap.exists() && snap.data().sessionId !== SESSION_ID) {
-        clearAllTimers();
-        alert('⚠️ Your account was signed in on another device.\nYou have been logged out.');
-        doSignOut();
-      }
-    }, 60000);
-  }
-
-  function resetInactivityTimer() {
-    clearTimeout(inactivityTimer);
-    clearTimeout(warningTimer);
-    clearInterval(warningCountdown);
-    document.getElementById('timeout-banner').classList.remove('show');
-    // Show warning 60s before logout
-    warningTimer = setTimeout(() => {
-      let remaining = 60;
-      document.getElementById('timeout-countdown').textContent = remaining;
-      document.getElementById('timeout-banner').classList.add('show');
-      warningCountdown = setInterval(() => {
-        remaining--;
-        document.getElementById('timeout-countdown').textContent = remaining;
-        if (remaining <= 0) { clearInterval(warningCountdown); doSignOut(); }
-      }, 1000);
-    }, INACTIVITY_LIMIT - WARNING_TIME);
-    inactivityTimer = setTimeout(() => { doSignOut(); }, INACTIVITY_LIMIT);
-  }
-
-  window.extendSession = function() {
-    document.getElementById('timeout-banner').classList.remove('show');
-    clearInterval(warningCountdown);
-    resetInactivityTimer();
-  };
-
-  function startActivityTracking() {
-    ['click','keypress','scroll','touchstart','mousemove'].forEach(ev => {
-      document.addEventListener(ev, resetInactivityTimer, { passive: true });
-    });
-    resetInactivityTimer();
-  }
-
-  function clearAllTimers() {
-    clearTimeout(inactivityTimer);clearTimeout(warningTimer);
-    clearInterval(warningCountdown);clearInterval(sessionCheckInterval);
-  }
-
-  /* ============================================================
-     SECTION F — FIRESTORE DATA LOADING
-     We load members, contributions, committee from Firestore.
-     We also set up real-time listeners so when admin saves a
-     contribution, ALL open apps update instantly without refresh.
-  ============================================================ */
-  async function loadAllDataFromFirestore() {
-    // Load members
-    const membersSnap = await getDocs(collection(db, 'members'));
-    if (membersSnap.empty) {
-      // First run — seed Firestore with our default data
-      STATE.members = SEED_MEMBERS;
-      if (STATE.isAdmin) await seedFirestoreMembers();
-    } else {
-      STATE.members = membersSnap.docs.map(d => ({ ...d.data(), id: d.id }));
-    }
-
-    // Load contributions
-    const contribsSnap = await getDocs(collection(db, 'contributions'));
-    STATE.contributions = {};
-    if (contribsSnap.empty) {
-      STATE.contributions = buildSeedContributions();
-      if (STATE.isAdmin) await seedFirestoreContributions();
-    } else {
-      contribsSnap.docs.forEach(d => {
-        const [year, memberId] = d.id.split('__');
-        if (!STATE.contributions[year]) STATE.contributions[year] = {};
-        STATE.contributions[year][memberId] = d.data();
-      });
-    }
-
-    // Load committee
-    const commSnap = await getDoc(doc(db, 'committee', 'current'));
-    STATE.committee = commSnap.exists() ? commSnap.data() : {};
-
-    // Load approved emails (for admin panel)
-    if (STATE.isAdmin) {
-      const emailsSnap = await getDocs(collection(db, 'approvedEmails'));
-      STATE.approvedEmails = emailsSnap.docs.map(d => ({ email: d.id, ...d.data() }));
-    }
-
-    // Start real-time listeners
-    startRealtimeListeners();
-  }
-
-  function startRealtimeListeners() {
-    // Real-time: when any contribution changes, update the UI immediately
-    const unsubContrib = onSnapshot(collection(db, 'contributions'), (snap) => {
-      snap.docChanges().forEach(change => {
-        if (change.type === 'added' || change.type === 'modified') {
-          const [year, memberId] = change.doc.id.split('__');
-          if (!STATE.contributions[year]) STATE.contributions[year] = {};
-          STATE.contributions[year][memberId] = change.doc.data();
-        }
-      });
-      renderMonthGrid();
-      renderMemberTable();
-      renderMyAccount();
-    });
-
-    // Real-time: vote updates
-    const unsubVotes = onSnapshot(collection(db, 'votes'), (snap) => {
-      STATE.votes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      renderVotePage();
-    });
-
-    STATE.unsubscribers = [unsubContrib, unsubVotes];
-  }
-
-  async function cancelFirestoreListeners() {
-    STATE.unsubscribers.forEach(unsub => { try { unsub(); } catch(e){} });
-    STATE.unsubscribers = [];
-  }
-
-  // Seed Firestore on first run
-  async function seedFirestoreMembers() {
-    for (const m of SEED_MEMBERS) {
-      await setDoc(doc(db, 'members', m.id), m);
-    }
-    showToast('Members seeded to Firestore ✓');
-  }
-
-  async function seedFirestoreContributions() {
-    const seed = buildSeedContributions();
-    for (const [year, members] of Object.entries(seed)) {
-      for (const [memberId, data] of Object.entries(members)) {
-        await setDoc(doc(db, 'contributions', `${year}__${memberId}`), data);
-      }
-    }
-    showToast('Contributions seeded to Firestore ✓');
-  }
-
-  /* ============================================================
-     SECTION G — APP START
-     Called after login is confirmed. Sets up the UI.
-  ============================================================ */
-  function startApp() {
-    document.getElementById('app').style.display = 'flex';
-    document.getElementById('app').classList.add('visible');
-
-    const u = STATE.user;
-    document.getElementById('user-name').textContent = u.name.split(' ')[0];
-    const av = document.getElementById('user-avatar');
-    if (u.picture) av.innerHTML = `<img src="${u.picture}" alt="">`;
-    else av.textContent = u.name[0].toUpperCase();
-
-    if (STATE.isAdmin) {
-      document.getElementById('admin-badge').style.display = 'inline-block';
-      document.querySelectorAll('.admin-only').forEach(el => {
-        el.classList.add('show');
-        if (el.style.display === 'none') el.style.display = 'block';
-      });
-    }
-
-    initAllPages();
-    startActivityTracking();
-  }
-
-  /* ============================================================
-     SECTION H — NAVIGATION
-  ============================================================ */
-  window.showPage = function(id, btn) {
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('page-' + id).classList.add('active');
-    if (btn) btn.classList.add('active');
-  };
-
-  /* ============================================================
-     SECTION I — HELPERS
-  ============================================================ */
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const TODAY_MONTH = new Date().getMonth();
-  const TODAY_YEAR = new Date().getFullYear();
-  const fmt = n => Number(n||0).toLocaleString();
-  const fmtM = n => { const m=n/1e6; return m>=1?m.toFixed(1)+'M':(n/1e3).toFixed(0)+'K'; };
-  const memberName = id => { const m=STATE.members.find(x=>x.id===id); return m?m.name:id; };
-  const activeMembers = () => STATE.members.filter(m => m.status === 'active');
-  const getContrib = (mid,yr,field) => (STATE.contributions[yr]?.[mid]?.[field]) || Array(12).fill(0);
-  const monthTotal = (mid,yr,mo) => {
-    const y=STATE.contributions[yr]; if(!y||!y[mid]) return 0;
-    const c=y[mid]; return (c.sub[mo]||0)+(c.welfare[mo]||0)+(c.gla[mo]||0)+(c.ut[mo]||0);
-  };
-
-  function showToast(msg, type='success') {
-    const t = document.createElement('div');
-    t.style.cssText = `position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:${type==='success'?'var(--g2)':'var(--red)'};color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,.3)`;
-    t.textContent = msg;
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
-  }
-
-  /* ============================================================
-     SECTION J — DASHBOARD
-  ============================================================ */
-  function initDashboard() {
-    renderMonthGrid();
-    renderAnnualChart();
-    renderDashboardAlerts();
-    renderFundBreakdown();
-  }
-
-  function renderMonthGrid() {
-    const grid = document.getElementById('month-grid');
-    if (!grid) return;
-    const year = CONFIG.currentYear, active = activeMembers(), tot = active.length;
-    grid.innerHTML = MONTHS.map((m,i) => {
-      let paid=0, partial=0;
-      active.forEach(mem => {
-        const t=monthTotal(mem.id,year,i);
-        const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
-        if(t>=full) paid++; else if(t>0) partial++;
-      });
-      const pct = Math.round((paid/tot)*100);
-      const isFuture = (year===TODAY_YEAR && i>TODAY_MONTH);
-      let cls='mc-future', st='Future';
-      if(!isFuture){
-        if(paid===tot){cls='mc-paid';st='✓ All';}
-        else if(paid+partial>0){cls='mc-partial';st=`${paid}/${tot}`;}
-        else{cls='mc-pending';st='⚠ None';}
-      }
-      return `<div class="month-cell ${cls}" onclick="openMonthDetail(${i})">
-        <div class="m-name">${m}</div>
-        <div class="m-pct">${isFuture?'—':pct+'%'}</div>
-        <div class="m-amt">${st}</div>
-      </div>`;
-    }).join('');
-  }
-
-  window.openMonthDetail = function(idx) {
-    const year=CONFIG.currentYear, active=activeMembers();
-    document.getElementById('month-modal-title').textContent = `${MONTHS_FULL[idx]} ${year}`;
-    const rows = active.map(m => {
-      const sub=getContrib(m.id,year,'sub')[idx]||0, wel=getContrib(m.id,year,'welfare')[idx]||0;
-      const gla=getContrib(m.id,year,'gla')[idx]||0, ut=getContrib(m.id,year,'ut')[idx]||0, total=sub+wel+gla+ut;
-      const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
-      const isFuture=(year===TODAY_YEAR&&idx>TODAY_MONTH);
-      const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
-      return `<tr><td class="member-name">${m.name}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
-    }).join('');
-    document.getElementById('month-modal-body').innerHTML = `<div class="table-wrap"><table><thead><tr><th>Member</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
-    openModal('month-modal');
-  };
-
-  function renderAnnualChart() {
-    const canvas = document.getElementById('annual-chart');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const W = canvas.offsetWidth||500, H = 180;
-    canvas.width=W; canvas.height=H;
-    const years=[2020,2021,2022,2023,2024,2025,2026];
-    const subs=[4876000,7376500,12355000,14720000,14240000,12556000,1240000];
-    const wels=[0,1475000,2890000,3680000,3560000,3130000,300000];
-    const glas=[0,0,0,0,4628000,4069000,390000];
-    const max=Math.max(...subs.map((s,i)=>s+wels[i]+glas[i]));
-    const pad=36, bw=Math.floor((W-pad*2)/years.length)-5;
-    ctx.clearRect(0,0,W,H);
-    years.forEach((yr,i) => {
-      const x=pad+i*(bw+5); let base=H-22;
-      const drawBar=(val,color)=>{if(!val)return base;const bh=Math.max(1,(val/max)*(H-50));ctx.fillStyle=color;ctx.fillRect(x,base-bh,bw,bh);return base-bh;};
-      base=drawBar(subs[i],'#1e7a47'); base=drawBar(wels[i],'#f0b429'); drawBar(glas[i],'#6d28d9');
-      ctx.fillStyle='#6b8f7a';ctx.font='9px Sora,sans-serif';ctx.textAlign='center';ctx.fillText(yr,x+bw/2,H-6);
-    });
-    [['#1e7a47','Sub'],['#f0b429','Welfare'],['#6d28d9','GLA']].forEach(([c,l],i)=>{
-      ctx.fillStyle=c;ctx.fillRect(pad+i*60,4,10,10);ctx.fillStyle='#6b8f7a';ctx.textAlign='left';ctx.fillText(l,pad+i*60+13,13);
-    });
-  }
-
-  function renderDashboardAlerts() {
-    document.getElementById('dashboard-alerts').innerHTML = [
-      {type:'success',icon:'✅',ttl:'Loans Available — Year 6',msg:'Members can apply for up to 25% of previous FY subscriptions with a feasibility study.'},
-      {type:'success',icon:'🌾',ttl:'Nsanja UGX 5M returned (14 Mar 2026)',msg:'Balance outstanding from UGX 13.5M cycle 6 investment.'},
-      {type:'warn',icon:'🗳️',ttl:'Elections: December 2026',msg:'3+ year members who served on a subcommittee qualify to stand. Check with the committee for the full eligible list.'},
-      {type:'info',icon:'🔒',ttl:'Secured with Firebase',msg:'All data in Firestore. Only registered emails can sign in. Auto-logout after 30 min.'},
-    ].map(a=>`<div class="alert ${a.type}"><div class="alert-icon">${a.icon}</div><div><div class="alert-ttl">${a.ttl}</div><div class="alert-msg">${a.msg}</div></div></div>`).join('');
-  }
-
-  function renderFundBreakdown() {
-    const items=[['All Subscriptions',71363500,'var(--g3)'],['Welfare',15035000,'var(--gold2)'],['GLA 2024–2026',9087000,'var(--purple)'],['Unit Trust 2024–2026',6990000,'var(--teal)']];
-    const max=71363500;
-    document.getElementById('fund-breakdown').innerHTML=items.map(([l,a,c])=>`<div style="margin-bottom:9px"><div class="prog-lbl"><span>${l}</span><span>${fmtM(a)}</span></div><div class="prog-bar"><div class="prog-fill" style="width:${(a/max*100).toFixed(0)}%;background:${c}"></div></div></div>`).join('');
-  }
-
-  /* ============================================================
-     SECTION K — MEMBERS TABLE
-  ============================================================ */
-  function initMembers() {
-    const tabs = document.getElementById('member-year-tabs');
-    tabs.innerHTML = ['2020','2021','2022','2023','2024','2025','2026'].map(y =>
-      `<button class="tab ${y==='2026'?'active':''}" onclick="setMemberYear('${y}',this)">${y}</button>`
-    ).join('');
-    STATE.currentMemberYear = '2026';
-    renderMemberTable();
-  }
-  window.setMemberYear = function(y,btn){STATE.currentMemberYear=y;document.querySelectorAll('#member-year-tabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderMemberTable();};
-
-  function renderMemberTable() {
-    const year=parseInt(STATE.currentMemberYear);
-    const search=(document.getElementById('member-search')?.value||'').toLowerCase();
-    let members=STATE.members.filter(m=>m.joinYear<=year&&!(m.status==='deceased'&&year>m.joinYear+2));
-    if(search)members=members.filter(m=>m.name.toLowerCase().includes(search));
-    const hasGla=year>=2024;
-    const target=12*(CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+(hasGla?CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut:0));
-    document.getElementById('members-tbody').innerHTML=members.map(m=>{
-      const c=(STATE.contributions[year]||{})[m.id]||{};
-      const sub=(c.sub||[]).reduce((a,b)=>a+b,0),wel=(c.welfare||[]).reduce((a,b)=>a+b,0);
-      const gla=(c.gla||[]).reduce((a,b)=>a+b,0),ut=(c.ut||[]).reduce((a,b)=>a+b,0);
-      const paid=sub+wel+gla+ut,bal=Math.max(0,target-paid);
-      const sB={active:'<span class="badge b-green">Active</span>',departed:'<span class="badge b-red">Departed</span>',deceased:'<span class="badge b-gray">Deceased</span>'}[m.status]||'';
-      const tB=m.type==='platinum'?`<span class="badge b-gold">#${m.platinumNum||'?'}</span>`:`<span class="badge b-blue">Golden</span>`;
-      const st=bal===0?'<span class="badge b-green">✓</span>':paid===0?'<span class="badge b-red">None</span>':'<span class="badge b-amber">Partial</span>';
-      return`<tr onclick="openMemberProfile('${m.id}')" style="cursor:pointer"><td>${m.platinumNum||'—'}</td><td class="member-name">${m.name}</td><td>${tB}</td><td>${sB}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${paid?fmt(paid):'—'}</strong></td><td style="color:var(--red)">${bal?fmt(bal):'—'}</td><td>${st}</td></tr>`;
-    }).join('');
-  }
-
-  window.openMemberProfile = function(mid) {
-    const m=STATE.members.find(x=>x.id===mid); if(!m) return;
-    document.getElementById('modal-member-title').textContent=m.name;
-    const years=[2020,2021,2022,2023,2024,2025,2026]; let grand=0;
-    const histRows=years.map(y=>{
-      const c=(STATE.contributions[y]||{})[mid]||{};
-      const sub=(c.sub||[]).reduce((a,b)=>a+b,0),wel=(c.welfare||[]).reduce((a,b)=>a+b,0),gla=(c.gla||[]).reduce((a,b)=>a+b,0),ut=(c.ut||[]).reduce((a,b)=>a+b,0),total=sub+wel+gla+ut;
-      grand+=total; if(!total&&y<m.joinYear)return'';
-      return`<tr><td><strong>${y}</strong></td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
-    }).join('');
-    const prevSub=years.slice(0,-1).reduce((acc,y)=>{const c=(STATE.contributions[y]||{})[mid]||{};return acc+(c.sub||[]).reduce((a,b)=>a+b,0);},0);
-    const div=DIVIDENDS_DATA.find(d=>d.id===mid);
-    document.getElementById('modal-member-body').innerHTML=`
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-        <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Membership</div><div style="font-weight:700">${m.type==='platinum'?'Platinum #'+m.platinumNum:'Golden'}</div></div>
-        <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Total Contributed</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(grand)}</div></div>
-        <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Loan Limit</div><div style="font-weight:700">UGX ${fmt(Math.floor(prevSub*0.25))}</div></div>
-        <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Member Since</div><div style="font-weight:700">${m.joinYear}</div></div>
+/* ── MY ACCOUNT ── */
+function renderMyAccount(){
+  const u=STATE.user;if(!u)return;
+  const m=STATE.members.find(x=>x.id===u.memberId);
+  if(!m){document.getElementById('myaccount-content').innerHTML='<div class="alert warn"><div class="alert-icon">⚠️</div><div>No linked member record. Ask admin.</div></div>';return;}
+  document.getElementById('myaccount-header').querySelector('h2').textContent=m.name;
+  document.getElementById('myaccount-header').querySelector('p').textContent=`${m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum} · Since ${m.joinYear}`;
+  const years=[2020,2021,2022,2023,2024,2025,2026];let grand=0;
+  const histRows=years.map(y=>{
+    const c=(STATE.contributions[y]||{})[m.id]||{};
+    const s=(c.sub||[]).reduce((a,b)=>a+b,0),w=(c.welfare||[]).reduce((a,b)=>a+b,0),g=(c.gla||[]).reduce((a,b)=>a+b,0),u2=(c.ut||[]).reduce((a,b)=>a+b,0),total=s+w+g+u2;
+    grand+=total;if(!total&&y<m.joinYear)return'';
+    return`<tr><td><strong>${y}</strong></td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
+  }).join('');
+  const ll=loanLimit(m.id);
+  const div=DIVIDENDS_DATA.find(d=>d.id===m.id);
+  const cyear=CONFIG.currentYear,cc=(STATE.contributions[cyear]||{})[m.id]||{};
+  const target=12*(CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut);
+  const paid26=yearTotal(m.id,cyear);
+  const monthRows=MONTHS.map((mn,i)=>{
+    const s=(cc.sub||[])[i]||0,w=(cc.welfare||[])[i]||0,g=(cc.gla||[])[i]||0,u2=(cc.ut||[])[i]||0,total=s+w+g+u2;
+    const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
+    const isFuture=(cyear===TODAY_YEAR&&i>TODAY_MONTH);
+    const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
+    return`<tr><td>${MONTHS_FULL[i]}</td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
+  }).join('');
+  // My juniors
+  const myJuniors=JUNIORS_2024.filter(j=>j.parentId===m.id);
+  const juniorsHtml=myJuniors.length?`<div class="card mb"><div class="card-title">🌿 My Juniors (2024)</div><div class="table-wrap"><table><thead><tr><th>Junior</th><th>Sub</th><th>Welfare</th><th>Total</th><th>Balance</th></tr></thead><tbody>${myJuniors.map(j=>`<tr><td class="member-name">${j.name}</td><td>${j.sub?fmt(j.sub):'—'}</td><td>${j.wel?fmt(j.wel):'—'}</td><td><strong>${fmt(j.sub+j.wel)}</strong></td><td style="color:var(--red)">${j.bal?fmt(j.bal):'—'}</td></tr>`).join('')}</tbody></table></div></div>`:'';
+  document.getElementById('myaccount-content').innerHTML=`
+    <div class="grid-4 mb">
+      <div class="stat gold"><div class="stat-lbl">Total Contributed</div><div class="stat-val">${fmtM(grand)}</div></div>
+      <div class="stat green"><div class="stat-lbl">Loan Limit</div><div class="stat-val">${fmtM(ll)}</div><div class="stat-sub">25% of 2020–2025</div></div>
+      <div class="stat blue"><div class="stat-lbl">Membership</div><div class="stat-val">${2026-m.joinYear} yrs</div></div>
+      <div class="stat purple"><div class="stat-lbl">My Dividends</div><div class="stat-val">${div?fmtM(div.total):'—'}</div></div>
+    </div>
+    <div class="card mb">
+      <div class="card-title">📊 ${cyear} Annual Progress</div>
+      ${progBar(paid26,target)}
+    </div>
+    <div class="grid-2 mb">
+      <div class="card"><div class="card-title">📅 ${cyear} Monthly Breakdown</div><div class="table-wrap"><table><thead><tr><th>Month</th><th>Sub</th><th>Wel</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${monthRows}</tbody></table></div></div>
+      <div class="card"><div class="car…      <div class="card"><div class="card-title">📜 History (All Years)</div>
+      <div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div></div>
+    </div>
+    ${m.notes?`<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>${m.notes}</div></div>`:''}
+    ${div?`<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:14px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600;margin-bottom:4px">My Dividends 2021–2023</div><div style="font-weight:800;font-size:18px;color:var(--g2)">UGX ${fmt(div.total)}</div><div style="font-size:11px;color:var(--light)">2021: ${div.d2021?fmt(div.d2021):'—'} · 2022: ${div.d2022?fmt(div.d2022):'—'} · 2023: ${div.d2023?fmt(div.d2023):'—'}</div></div>`:''}
+    ${juniorsHtml}
+    <div class="card"><div class="card-title">💰 Loan Eligibility</div>
+      <div class="grid-2">
+        <div style="padding:12px;background:#dcfce7;border-radius:10px">
+          <div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Max Loan (25% of contributions 2020–2025)</div>
+          <div style="font-weight:800;font-size:22px;color:var(--g2);margin:4px 0">UGX ${fmt(ll)}</div>
+          <div style="font-size:11px;color:var(--light)">Based on all your contributions through Dec 2025</div>
+        </div>
+        <div style="padding:12px;background:var(--cream);border-radius:10px;font-size:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="padding:7px;background:#fff;border-radius:7px">📋 Submit feasibility study to secretary</div>
+          <div style="padding:7px;background:#fff;border-radius:7px">💱 Interest at prevailing economic conditions</div>
+          <div style="padding:7px;background:#fff;border-radius:7px">✅ Club is 6 years old — loans now available</div>
+        </div>
       </div>
-      ${m.notes?`<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>${m.notes}</div></div>`:''}
-      ${div?`<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:10px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Dividends 2021–2023</div><div style="font-weight:800;font-size:17px;color:var(--g2)">UGX ${fmt(div.total)}</div><div style="font-size:11px;color:var(--light)">2021: ${fmt(div.d2021)} · 2022: ${fmt(div.d2022)} · 2023: ${fmt(div.d2023)}</div></div>`:''}
-      <div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div>`;
-    openModal('member-modal');
-  };
+    </div>`;
+}
+function initMyAccount(){renderMyAccount();}
 
-  /* ============================================================
-     SECTION L — MY ACCOUNT
-  ============================================================ */
-  function renderMyAccount() {
-    const u=STATE.user; if(!u) return;
-    const m=STATE.members.find(x=>x.id===u.memberId);
-    if(!m){document.getElementById('myaccount-content').innerHTML='<div class="alert warn"><div class="alert-icon">⚠️</div><div>No linked member record. Ask admin.</div></div>';return;}
-    document.getElementById('myaccount-header').querySelector('h2').textContent=m.name;
-    document.getElementById('myaccount-header').querySelector('p').textContent=`${m.type==='platinum'?'Platinum #'+m.platinumNum:'Golden Member'} · Since ${m.joinYear}`;
-    const years=[2020,2021,2022,2023,2024,2025,2026]; let grand=0;
-    const histRows=years.map(y=>{
-      const c=(STATE.contributions[y]||{})[m.id]||{};
-      const s=(c.sub||[]).reduce((a,b)=>a+b,0),w=(c.welfare||[]).reduce((a,b)=>a+b,0),g=(c.gla||[]).reduce((a,b)=>a+b,0),u2=(c.ut||[]).reduce((a,b)=>a+b,0),total=s+w+g+u2;
-      grand+=total; if(!total&&y<m.joinYear)return'';
-      return`<tr><td><strong>${y}</strong></td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
-    }).join('');
-    const prevSub=years.slice(0,-1).reduce((acc,y)=>{const c=(STATE.contributions[y]||{})[m.id]||{};return acc+(c.sub||[]).reduce((a,b)=>a+b,0);},0);
-    const div=DIVIDENDS_DATA.find(d=>d.id===m.id);
-    const cyear=CONFIG.currentYear,cc=(STATE.contributions[cyear]||{})[m.id]||{};
-    const monthRows=MONTHS.map((mn,i)=>{
-      const s=(cc.sub||[])[i]||0,w=(cc.welfare||[])[i]||0,g=(cc.gla||[])[i]||0,u2=(cc.ut||[])[i]||0,total=s+w+g+u2;
-      const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
-      const isFuture=(cyear===TODAY_YEAR&&i>TODAY_MONTH);
-      const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
-      return`<tr><td>${MONTHS_FULL[i]}</td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
-    }).join('');
-    document.getElementById('myaccount-content').innerHTML=`
-      <div class="grid-4 mb">
-        <div class="stat gold"><div class="stat-lbl">Total Contributed</div><div class="stat-val">${fmtM(grand)}</div></div>
-        <div class="stat green"><div class="stat-lbl">Loan Limit</div><div class="stat-val">${fmtM(Math.floor(prevSub*0.25))}</div></div>
-        <div class="stat blue"><div class="stat-lbl">Membership</div><div class="stat-val">${2026-m.joinYear} yrs</div></div>
-        <div class="stat purple"><div class="stat-lbl">Dividends</div><div class="stat-val">${div?fmtM(div.total):'—'}</div></div>
-      </div>
-      <div class="grid-2 mb">
-        <div class="card"><div class="card-title">📅 ${cyear} Monthly</div><div class="table-wrap"><table><thead><tr><th>Month</th><th>Sub</th><th>Wel</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${monthRows}</tbody></table></div></div>
-        <div class="card"><div class="card-title">📊 All Years</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Wel</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div></div>
-      </div>`;
-  }
-  function initMyAccount() { renderMyAccount(); }
 
-  /* ============================================================
-     SECTION M — INVESTMENTS
-  ============================================================ */
-  function initInvestments() {
+
+function initInvestments() {
     document.getElementById('investment-timeline').innerHTML=INVESTMENTS.map(inv=>{
       const dotCls={in:'gold',out:'red',land:'land'}[inv.type]||'';
       const amtEl=inv.type==='in'?`<div class="tl-profit">▲ UGX ${fmt(inv.amount)}${inv.profit?' (+'+fmt(inv.profit)+'  profit)':''}</div>`:inv.type==='land'?`<div style="font-size:12px;font-weight:700;color:var(--blue);margin-top:4px">🏡 UGX ${fmt(inv.amount)}</div>`:`<div class="tl-loss">▼ UGX ${fmt(inv.amount)}</div>`;
@@ -1997,4 +1695,4 @@ waitForFirebase(() => {
 }); // end waitForFirebase
 </script>
 </body>
-                       </html>
+  </html>
