@@ -321,7 +321,7 @@ tr:hover td{background:var(--cream)}
         <div class="ll-title">Let's Grow<br>Investment Club</div>
         <div class="ll-sub">Kyaliwajjala, P.O Box 7245, Kampala<br>Est. 2020 · URSB Registered</div>
         <div class="ll-stats">
-          <div class="ll-stat"><div class="ll-stat-val">40.3M</div><div class="ll-stat-lbl">Bank Balance</div></div>
+          <div class="ll-stat"><div class="ll-stat-val">37.7M</div><div class="ll-stat-lbl">Bank Balance</div></div>
           <div class="ll-stat"><div class="ll-stat-val">134.4M</div><div class="ll-stat-lbl">Total Inflow</div></div>
           <div class="ll-stat"><div class="ll-stat-val">22.85M</div><div class="ll-stat-lbl">ROI Earned</div></div>
           <div class="ll-stat"><div class="ll-stat-val">6 Yrs</div><div class="ll-stat-lbl">Operating</div></div>
@@ -364,7 +364,7 @@ tr:hover td{background:var(--cream)}
       <span id="user-name">Edson</span>
       <span class="admin-badge" id="admin-badge" style="display:none">ADMIN</span>
     </div>
-    <button class="logout-btn" onclick="doSignOut()">Sign out</button>
+    <button class="logout-btn" onclick="doSignOut()" style="background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.4);padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600">⏻ Sign out</button>
   </div>
 
   <nav class="navbar">
@@ -390,13 +390,13 @@ tr:hover td{background:var(--cream)}
         <h2>Club Dashboard — FY 2026</h2>
         <p>Live data · Updates in real-time as admin records contributions</p>
         <div class="ph-stats">
-          <div class="ph-stat"><span>40.3M</span><small>Bank Balance (UGX)</small></div>
+          <div class="ph-stat"><span>37.7M</span><small>Bank Balance (UGX)</small></div>
           <div class="ph-stat"><span>134.4M</span><small>Total Inflow</small></div>
           <div class="ph-stat"><span>22.85M</span><small>Investment Returns</small></div>
         </div>
       </div>
       <div class="grid-4 mb">
-        <div class="stat gold"><div class="stat-lbl">Bank Balance</div><div class="stat-val">40.3M</div><div class="stat-sub">UGX 40,300,878</div></div>
+        <div class="stat gold"><div class="stat-lbl">Bank Balance</div><div class="stat-val">37.7M</div><div class="stat-sub">UGX 37,714,589</div></div>
         <div class="stat green"><div class="stat-lbl">Total Inflow</div><div class="stat-val">134.4M</div><div class="stat-sub">2020–2026</div></div>
         <div class="stat blue"><div class="stat-lbl">Total Invested</div><div class="stat-val">75.5M</div></div>
         <div class="stat purple"><div class="stat-lbl">Confirmed ROI</div><div class="stat-val">22.85M</div></div>
@@ -906,20 +906,20 @@ waitForFirebase(() => {
   ============================================================ */
   const SEED_MEMBERS = [
     {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'sekiranda_wife',email:'',status:'active',notes:''},
-    {id:'sekiranda_wife',name:'Mrs Sekiranda (joint)',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint – name to confirm'},
-    {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:2,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+    {id:'sekiranda_wife',name:'Mrs Sekiranda',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint account with Sekiranda Simon'},
+    {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:2,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out April 2025'},
     {id:'lule_stephen',name:'Lule Stephen Musisi',platinumNum:3,type:'platinum',joinYear:2020,jointWith:'nabukeera_juliet',email:'',status:'active',notes:''},
     {id:'nabukeera_juliet',name:'Nabukeera Juliet',platinumNum:4,type:'platinum',joinYear:2020,jointWith:'lule_stephen',email:'',status:'active',notes:''},
     {id:'luutu_daniel',name:'Luutu Daniel',platinumNum:5,type:'platinum',joinYear:2020,jointWith:'nagawa_ruth',email:'',status:'active',notes:''},
     {id:'nagawa_ruth',name:'Nagawa Ruth',platinumNum:6,type:'platinum',joinYear:2020,jointWith:'luutu_daniel',email:'',status:'active',notes:''},
     {id:'kigonya_antonio',name:'Kigonya Antonio',platinumNum:7,type:'platinum',joinYear:2020,jointWith:'bangi_aidah',email:'',status:'active',notes:''},
     {id:'bangi_aidah',name:'Bangi Aidah',platinumNum:8,type:'platinum',joinYear:2020,jointWith:'kigonya_antonio',email:'',status:'active',notes:''},
-    {id:'ssebudde_samuel',name:'Ssebudde Samuel',platinumNum:9,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'2025: partial only'},
+    {id:'ssebudde_samuel',name:'Ssebudde Samuel',platinumNum:9,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Left 2025'},
     {id:'nabunya_shamera',name:'Nabunya Shamera',platinumNum:10,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'ssali_simon',name:'Ssali Simon Peter',platinumNum:11,type:'platinum',joinYear:2020,jointWith:'ndagire_rona',email:'',status:'active',notes:''},
     {id:'ndagire_rona',name:'Ndagire Rona Jjukko',platinumNum:12,type:'platinum',joinYear:2020,jointWith:'ssali_simon',email:'',status:'active',notes:''},
     {id:'nansubuga_jane',name:'Nansubuga Jane Frances',platinumNum:13,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
-    {id:'mwidu_geofrey',name:'Mwidu Geofrey',platinumNum:14,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+    {id:'mwidu_geofrey',name:'Mwidu Geofrey',platinumNum:14,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
     {id:'namubiru_winnie',name:'Namubiru Winnie',platinumNum:15,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
     {id:'kyamulabi_diana',name:'Kyamulabi Dianah',platinumNum:16,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'namutebi_claire',name:'Namutebi Claire',platinumNum:17,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'Dividends UGX 290K disbursed Oct 2025'},
@@ -927,18 +927,18 @@ waitForFirebase(() => {
     {id:'nakacwa_fortunate',name:'Nakacwa Fortunate',platinumNum:19,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased Sept 2023. Estate held.'},
     {id:'kintu_ernest',name:'Kintu Ernest Steven',platinumNum:20,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'2025: 8 months paid, UGX 260K outstanding'},
     {id:'namuyimba_kenneth',name:'Namuyimba Kenneth',platinumNum:21,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased. Estate → Nakiwala Ruth.'},
-    {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+    {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
     {id:'naggayi_constance',name:'Naggayi Constance',platinumNum:23,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'nabuuma_teopista',name:'Nabuuma Teopista',platinumNum:24,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'kirabira_jude',name:'Kirabira Jude',platinumNum:25,type:'platinum',joinYear:2020,jointWith:'kirabira_wife',email:'',status:'active',notes:''},
-    {id:'kirabira_wife',name:'Mrs Kirabira (joint)',platinumNum:25,type:'platinum',joinYear:2020,jointWith:'kirabira_jude',email:'',status:'active',notes:'Joint – name to confirm'},
-    {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
+    {id:'kirabira_wife',name:'Jane Kirabira',platinumNum:25,type:'platinum',joinYear:2020,jointWith:'kirabira_jude',email:'',status:'active',notes:'Joint account with Kirabira Jude'},
+    {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
     {id:'namubiru_rose',name:'Namubiru Rose',platinumNum:27,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'nalukenge_rashida',name:'Nalukenge Rashida',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
     {id:'nakakande_shebah',name:'Nakakande Shebah',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
     {id:'nsubuga_moses',name:'Nsubuga Moses',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Reg UGX 522,800 (2025)'},
-    {id:'ssetumba_david',name:'Ssetumba David',platinumNum:null,type:'golden',joinYear:2022,jointWith:'achom_phionah',email:'',status:'active',notes:'2025: no payments'},
-    {id:'achom_phionah',name:'Achom Phionah',platinumNum:null,type:'golden',joinYear:2022,jointWith:'ssetumba_david',email:'',status:'active',notes:''},
+    {id:'ssetumba_david',name:'Ssetumba David',platinumNum:null,type:'golden',joinYear:2022,jointWith:'achom_phionah',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
+    {id:'achom_phionah',name:'Achom Phionah',platinumNum:null,type:'golden',joinYear:2022,jointWith:'ssetumba_david',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
     {id:'matovu_julius',name:'Matovu Julius',platinumNum:null,type:'golden',joinYear:2022,jointWith:'faith_matovu',email:'',status:'active',notes:''},
     {id:'faith_matovu',name:'Faith Matovu',platinumNum:null,type:'golden',joinYear:2022,jointWith:'matovu_julius',email:'',status:'active',notes:''},
     {id:'nakiwala_ruth',name:'Nakiwala Ruth',platinumNum:null,type:'golden',joinYear:2023,jointWith:null,email:'',status:'active',notes:'Next of kin for late Kenneth. Eligible Platinum 2026.'},
@@ -1572,7 +1572,7 @@ waitForFirebase(() => {
   window.showFinTab = function(tab,btn){
     if(btn){btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
     document.getElementById('fin-content').innerHTML={
-      income:`<div class="card"><div class="card-title">💼 Income Statement — All Years</div><div class="grid-4 mb"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Total Inflow</div><div style="font-weight:700;font-size:15px">UGX 134,393,100</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700;font-size:15px">UGX 18,632,222</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700;font-size:15px">UGX 75,460,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Bank Balance</div><div style="font-weight:800;font-size:15px;color:var(--g2)">UGX 40,300,878</div></div></div><div class="table-wrap"><table><thead><tr><th>Source</th><th style="text-align:right">Amount</th></tr></thead><tbody>${[['2020 Subscriptions',4876000],['2021 Subscriptions',7376500],['2022 Subscriptions',12355000],['2023 Subscriptions',14720000],['2024 Subscriptions',14240000],['2025 Subscriptions',12556000],['2026 (YTD)',1240000],['Welfare 2021–2026',15035000],['GLA 2024–2026',9087000],['Unit Trust 2024–2026',6990000],['Juniors 2024–2026',3980000],['Investment Returns',22850000],['Diaspora Fees',2200000],['Fines',1690000],['Membership Fees',1832600],['Estates Account',2639000],['Bank Interest',26000]].map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right">${fmt(v)}</td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td style="text-align:right"><strong>134,393,100</strong></td></tr></tbody></table></div></div>`,
+      income:`<div class="card"><div class="card-title">💼 Income Statement — All Years</div><div class="grid-4 mb"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Total Inflow</div><div style="font-weight:700;font-size:15px">UGX 134,393,100</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700;font-size:15px">UGX 18,632,222</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700;font-size:15px">UGX 75,460,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Bank Balance</div><div style="font-weight:800;font-size:15px;color:var(--g2)">UGX 37,714,589</div></div></div><div class="table-wrap"><table><thead><tr><th>Source</th><th style="text-align:right">Amount</th></tr></thead><tbody>${[['2020 Subscriptions',4876000],['2021 Subscriptions',7376500],['2022 Subscriptions',12355000],['2023 Subscriptions',14720000],['2024 Subscriptions',14240000],['2025 Subscriptions',12556000],['2026 (YTD)',1240000],['Welfare 2021–2026',15035000],['GLA 2024–2026',9087000],['Unit Trust 2024–2026',6990000],['Juniors 2024–2026',3980000],['Investment Returns',22850000],['Diaspora Fees',2200000],['Fines',1690000],['Membership Fees',1832600],['Estates Account',2639000],['Bank Interest',26000]].map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right">${fmt(v)}</td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td style="text-align:right"><strong>134,393,100</strong></td></tr></tbody></table></div></div>`,
       expenses:`<div class="card"><div class="card-title">💸 Expenses Ledger</div><div style="margin-bottom:10px"><span class="badge b-red">Total: UGX 18,632,222</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>${[['Mar 2021','Club registration + certification',192000],['Aug 2021','Bank account opening',150000],['Oct 2021','Bank closure & transfer',71000],['2022','Logo, stamp, files',285000],['Oct 2022','Club Reunion',1440000],['Jan 2023','AGM 2022',1300000],['Aug 2023','Nakimuli Annet payout (30%)',294000],['Jun 2023','Kenneth burial condolences',1000000],['Sep 2023','Nakacwa Fortunate condolences',1000000],['Dec 2023','AGM 2023',450000],['Aug 2024','Eldaz property recovery',1270000],['Nov 2024','Condolences – Hellen',500000],['Nov 2024','Club Reunion 2024',850000],['Dec 2024','AGM 2024',1500000],['Oct 2025','Namubiru + Nansubuga payout',2540000],['Nov 2025','Dividends – Claire, Kigonya, Kenneth',1162000],['Various','Birthday cakes',400000],['May 2025','Prayers for deceased',200000]].map(([d,p,a])=>`<tr><td style="font-size:11px;color:var(--light)">${d}</td><td>${p}</td><td>${fmt(a)}</td></tr>`).join('')}</tbody></table></div></div>`,
       diaspora:`<div class="card"><div class="card-title">✈️ Diaspora Fees (UGX 20K/month extra)</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>Total</th></tr></thead><tbody>${[['Nalukenge Rashida',160000,240000,220000,240000],['Namubiru Rose',180000,100000,0,0],['Nakiwala Ruth',0,160000,240000,240000],['Ssali Simon',0,0,60000,240000],['Matovu Julius',0,0,0,60000],['Nampewo Winniefred',0,0,0,60000]].map(([n,...vals])=>`<tr><td class="member-name">${n}</td>${vals.map(v=>`<td>${v?fmt(v):'—'}</td>`).join('')}<td><strong>${fmt(vals.reduce((a,b)=>a+b,0))}</strong></td></tr>`).join('')}</tbody></table></div></div>`,
       loans:`<div class="card"><div class="card-title">🏦 Loans Book</div><div class="alert success mb"><div class="alert-icon">✅</div><div>All external loans cleared. Member loans available from 2025.</div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Borrower</th><th>Principal</th><th>Rate</th><th>Status</th></tr></thead><tbody><tr><td>Mar 2023</td><td>2Fumbe Kitchen Supplies</td><td>UGX 7,000,000</td><td>10%/mo</td><td><span class="badge b-green">Cleared</span></td></tr><tr><td>Mar 2023</td><td>Eldaz Meat Parlour</td><td>UGX 3,000,000</td><td>15%/mo</td><td><span class="badge b-amber">Partial</span></td></tr></tbody></table></div></div>`,
@@ -1736,7 +1736,7 @@ waitForFirebase(() => {
     const el=document.getElementById('report-content');
     if(type==='annual'){
       const data=[[2020,4876000,0,0,0],[2021,7376500,1475000,0,0],[2022,12355000,2890000,0,0],[2023,14720000,3680000,0,0],[2024,14240000,3560000,4628000,3560000],[2025,12556000,3130000,4069000,3130000],[2026,1240000,300000,390000,300000]];
-      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Annual Financial Summary</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Subscription</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${data.map(([y,s,w,g,u])=>`<tr><td><strong>${y}</strong></td><td>${fmt(s)}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u?fmt(u):'—'}</td><td><strong>${fmt(s+w+g+u)}</strong></td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td><strong>67,363,500</strong></td><td><strong>15,035,000</strong></td><td><strong>9,087,000</strong></td><td><strong>6,990,000</strong></td><td><strong>98,475,500</strong></td></tr></tbody></table></div><div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Bank Balance</div><div style="font-weight:700">UGX 40,300,878</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700">UGX 75,460,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Returns</div><div style="font-weight:700">UGX 22,850,000</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700">UGX 18,632,222</div></div></div></div>`;
+      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Annual Financial Summary</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Subscription</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${data.map(([y,s,w,g,u])=>`<tr><td><strong>${y}</strong></td><td>${fmt(s)}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u?fmt(u):'—'}</td><td><strong>${fmt(s+w+g+u)}</strong></td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td><strong>67,363,500</strong></td><td><strong>15,035,000</strong></td><td><strong>9,087,000</strong></td><td><strong>6,990,000</strong></td><td><strong>98,475,500</strong></td></tr></tbody></table></div><div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Bank Balance</div><div style="font-weight:700">UGX 37,714,589</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700">UGX 75,460,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Returns</div><div style="font-weight:700">UGX 22,850,000</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700">UGX 18,632,222</div></div></div></div>`;
     } else if(type==='member'){
       const rows=activeMembers().map(m=>{const c=(STATE.contributions[2026]||{})[m.id]||{};const total=['sub','welfare','gla','ut'].reduce((a,k)=>a+((c[k]||[]).reduce((x,y)=>x+y,0)),0);const pct=Math.min(100,Math.round((total/876000)*100));return`<tr><td class="member-name">${m.name}</td><td><span class="badge b-${m.type==='platinum'?'gold':'blue'}">${m.type}</span></td><td>${fmt(total)}</td><td style="color:var(--red)">${fmt(Math.max(0,876000-total))}</td><td><div class="prog-bar" style="width:70px;display:inline-block"><div class="prog-fill" style="width:${pct}%"></div></div> ${pct}%</td></tr>`;}).join('');
       el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Member Statement 2026</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>Type</th><th>Total Paid</th><th>Balance</th><th>Progress</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
@@ -1924,12 +1924,55 @@ waitForFirebase(() => {
   ============================================================ */
   window.showNotifications = function() {
     document.getElementById('notif-modal-body').innerHTML=[
-      {cls:'danger',icon:'⚠️',msg:'Pearl Bank Xtra Cash due 07 Apr — UGX 37,060'},
-      {cls:'warn',icon:'💰',msg:'Timothy: UGX 200K/week (in arrears)'},
       {cls:'success',icon:'🌾',msg:'Nsanja UGX 5M partial return received 14 Mar 2026'},
-      {cls:'info',icon:'🌱',msg:"Let's Grow: UGX 100K/month to Document Bank"},
-      {cls:'info',icon:'🏊',msg:'Swimming Gala: 2 May 2026 — Formidable Masters'},
-    ].map(n=>`<div class="alert ${n.cls}">${n.icon} ${n.msg}</div>`).join('');
+      {cls:'warn',icon:'💰',msg:'2026 contributions: most members yet to pay — action needed'},
+      {cls:'success',icon:'🏦',msg:'Bank balance: UGX 37,714,589 as of 28 Mar 2026'},
+      {cls:'info',icon:'🗳️',msg:'New elections due Dec 2026 — nominate subcommittee members'},
+    ].map(n=>`<div class="alert ${n.cls}">${n.icon} ${n.msg}
+          <div class="admin-section" style="margin-top:16px">
+            <div class="admin-section-title">🔒 Firebase Security Rules</div>
+            <div class="alert warn"><div class="alert-icon">⚠️</div><div class="alert-txt"><div class="alert-ttl">Paste these into Firebase Console → Firestore → Rules</div><div class="alert-msg">Go to console.firebase.google.com → your project → Firestore Database → Rules tab → replace all content with the rules below → Publish</div></div></div>
+            <div class="code-block" style="font-size:11px">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Only approved emails can read/write
+    match /approvedEmails/{email} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+    }
+    match /members/{memberId} {
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
+    }
+    match /contributions/{docId} {
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
+    }
+    match /committee/{docId} {
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+      allow write: if request.auth != null &&
+        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
+    }
+    match /sessions/{sessionId} {
+      allow read, write: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+    }
+    match /votes/{voteId} {
+      allow read: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+      allow write: if request.auth != null &&
+        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
+    }
+  }
+}</div>
+            <button class="btn btn-gold btn-sm" onclick="navigator.clipboard.writeText(document.querySelector('.code-block').innerText).then(()=>alert('Rules copied! Paste into Firebase Console → Firestore → Rules'))">📋 Copy Rules</button>
+          </div></div>`).join('');
     document.getElementById('notif-dot').style.display='none';
     openModal('notif-modal');
   };
@@ -1962,4 +2005,4 @@ waitForFirebase(() => {
 }); // end waitForFirebase
 </script>
 </body>
-</html>
+                          </html>
