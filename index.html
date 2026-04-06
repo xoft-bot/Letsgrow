@@ -294,6 +294,7 @@ tr:hover td{background:var(--cream)}
   .grid-4{grid-template-columns:repeat(2,1fr)}.month-grid{grid-template-columns:repeat(3,1fr)}
   .exec-grid{grid-template-columns:repeat(2,1fr)}
 }
+@media(max-width:500px){#sync-indicator{display:none!important}#user-name{display:none}.logout-btn{padding:5px 8px!important;font-size:11px!important}.topbar-name{font-size:14px}}
 @media print{.topbar,.navbar{display:none!important}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
 </style>
 </head>
@@ -344,6 +345,30 @@ tr:hover td{background:var(--cream)}
         Your Gmail must be registered by the club admin.<br>
         Contact Edson Nuwahereza to register.
       </div>
+      <details style="margin-top:14px;font-size:12px;color:var(--mid)">
+        <summary style="cursor:pointer;font-weight:600;color:var(--g2);padding:8px;background:var(--cream);border-radius:8px">⚙️ Admin: Fix Google Sign-In (tap to expand)</summary>
+        <div style="padding:10px;background:#fffbeb;border-radius:0 0 8px 8px;border:1px solid #fde68a;line-height:1.7">
+          <strong>Step 1 — Allow your website in Google Cloud</strong><br>
+          1. Open a new tab → go to: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">console.cloud.google.com</code><br>
+          2. Sign in with the Google account that owns the Firebase project<br>
+          3. Tap the <strong>☰ menu</strong> (top-left 3 lines)<br>
+          4. Tap <strong>APIs &amp; Services</strong> → tap <strong>Credentials</strong><br>
+          5. Under "API keys", tap the key starting with <strong>AIzaSy…</strong><br>
+          6. Scroll to <strong>"Application restrictions"</strong> → select <strong>"HTTP referrers (websites)"</strong><br>
+          7. Tap <strong>"ADD AN ITEM"</strong> → type exactly: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">xoft-bot.github.io/*</code> → tap Done<br>
+          8. Tap <strong>"ADD AN ITEM"</strong> again → type: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">*.github.io/*</code> → tap Done<br>
+          9. Scroll to the bottom → tap the blue <strong>SAVE</strong> button<br><br>
+          <strong>Step 2 — Allow your domain in Firebase Auth</strong><br>
+          1. Open a new tab → go to: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">console.firebase.google.com</code><br>
+          2. Tap your project <strong>letsgrowinvestmentclub-26878</strong><br>
+          3. In the left menu, tap <strong>Build</strong> → tap <strong>Authentication</strong><br>
+          4. Tap the <strong>Settings</strong> tab at the top<br>
+          5. Scroll down to <strong>"Authorized domains"</strong><br>
+          6. Tap <strong>"Add domain"</strong><br>
+          7. Type: <code style="background:#f3f4f6;padding:1px 4px;border-radius:3px">xoft-bot.github.io</code> → tap <strong>Add</strong><br>
+          8. ✅ Done — go back and try Sign in with Google
+        </div>
+      </details>
     </div>
   </div>
 </div>
@@ -487,7 +512,7 @@ tr:hover td{background:var(--cream)}
         <div class="stat green"><div class="stat-lbl">Total Calculated</div><div class="stat-val">7.95M</div></div>
         <div class="stat gold"><div class="stat-lbl">Largest (couple)</div><div class="stat-val">~590K</div></div>
         <div class="stat blue"><div class="stat-lbl">Disbursed Nov–Dec 2025</div><div class="stat-val">1,162K</div></div>
-        <div class="stat purple"><div class="stat-lbl">Edson's Total</div><div class="stat-val">293,835</div></div>
+        <div class="stat purple" id="my-dividend-stat"><div class="stat-lbl">My Total</div><div class="stat-val" id="my-dividend-val">—</div></div>
       </div>
       <div class="card mb">
         <div class="card-title">💰 Recent Disbursements (2025)</div>
@@ -506,7 +531,7 @@ tr:hover td{background:var(--cream)}
 
     <!-- ══ FINANCIALS ══ -->
     <div class="page" id="page-financials">
-      <div class="page-header" data-emoji="💼"><h2>Financials</h2><p>Income statement · Expenses · Diaspora fees · Loans · Estates</p></div>
+      <div class="page-header" data-emoji="💼"><h2>Financials</h2><p>Income statement · Expenses · Diaspora fees · Loans · Estates</p><p style="font-size:11px;color:rgba(255,255,255,.55);margin-top:4px">⚠️ Figures manually maintained — last reconciled Mar 2026. For discrepancies, compare with the master Excel sheet.</p></div>
       <div class="tab-group">
         <button class="tab active" onclick="showFinTab('income',this)">Income Statement</button>
         <button class="tab" onclick="showFinTab('expenses',this)">Expenses</button>
@@ -604,7 +629,7 @@ tr:hover td{background:var(--cream)}
               <div style="padding:9px;background:var(--cream);border-radius:8px">Min 3 years membership + served on 1 subcommittee</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">Chairperson: Platinum members ONLY</div>
               <div style="padding:9px;background:var(--cream);border-radius:8px">3 of 7 exec positions reserved for Platinum</div>
-              <div style="padding:9px;background:#dcfce7;border-radius:8px">📌 Edson eligible: December 2026</div>
+              <div style="padding:9px;background:#dcfce7;border-radius:8px">📌 Elections due December 2026 — 3+ year members with subcommittee service are eligible</div>
             </div>
           </div>
           <div class="card"><div class="card-title">⚖️ Fines (Section 16)</div>
@@ -905,9 +930,8 @@ waitForFirebase(() => {
      Also uploaded to Firestore on first admin login.
   ============================================================ */
   const SEED_MEMBERS = [
-    {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'sekiranda_wife',email:'',status:'active',notes:''},
-    {id:'sekiranda_wife',name:'Mrs Sekiranda',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint account with Sekiranda Simon'},
-    {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:2,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out April 2025'},
+    {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'natuhwera_neria',email:'',status:'active',notes:''},
+    {id:'natuhwera_neria',name:'Natuhwera Neria',platinumNum:2,type:'platinum',joinYear:2020,jointWith:'sekiranda_simon',email:'',status:'active',notes:'Joint account with Sekiranda Simon (Mr & Mrs Sekiranda)'},
     {id:'lule_stephen',name:'Lule Stephen Musisi',platinumNum:3,type:'platinum',joinYear:2020,jointWith:'nabukeera_juliet',email:'',status:'active',notes:''},
     {id:'nabukeera_juliet',name:'Nabukeera Juliet',platinumNum:4,type:'platinum',joinYear:2020,jointWith:'lule_stephen',email:'',status:'active',notes:''},
     {id:'luutu_daniel',name:'Luutu Daniel',platinumNum:5,type:'platinum',joinYear:2020,jointWith:'nagawa_ruth',email:'',status:'active',notes:''},
@@ -930,8 +954,7 @@ waitForFirebase(() => {
     {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
     {id:'naggayi_constance',name:'Naggayi Constance',platinumNum:23,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'nabuuma_teopista',name:'Nabuuma Teopista',platinumNum:24,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
-    {id:'kirabira_jude',name:'Kirabira Jude',platinumNum:25,type:'platinum',joinYear:2020,jointWith:'kirabira_wife',email:'',status:'active',notes:''},
-    {id:'kirabira_wife',name:'Jane Kirabira',platinumNum:25,type:'platinum',joinYear:2020,jointWith:'kirabira_jude',email:'',status:'active',notes:'Joint account with Kirabira Jude'},
+    {id:'kirabira_jude',name:'Kirabira Jude',platinumNum:25,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:'Joint account with wife — contributes as couple'},
     {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
     {id:'namubiru_rose',name:'Namubiru Rose',platinumNum:27,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'active',notes:''},
     {id:'nalukenge_rashida',name:'Nalukenge Rashida',platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
@@ -952,10 +975,10 @@ waitForFirebase(() => {
 
   // Build seed contribution data (2020-2026 from real Excel data)
   function buildSeedContributions() {
-    const c26={kirabira_jude:mk12(40000,10000,13000,10000),kirabira_wife:mk12(40000,10000,13000,10000),nabunya_shamera:mkP(3,40000,10000,13000,10000),babirye_joan:mkP(2,40000,10000,13000,10000),nuwahereza_edson:mkP(1,40000,10000,13000,10000),kigonya_antonio:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)},bangi_aidah:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)}};
-    const fullIds=['lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona','kirabira_jude','kirabira_wife','matovu_julius','faith_matovu'];
+    const c26={kirabira_jude:mk12(80000,20000,26000,20000),nabunya_shamera:mkP(3,40000,10000,13000,10000),babirye_joan:mkP(2,40000,10000,13000,10000),nuwahereza_edson:mkP(1,40000,10000,13000,10000),kigonya_antonio:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)},bangi_aidah:{sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)}};
+    const fullIds=['lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona','kirabira_jude','matovu_julius','faith_matovu'];
     const c25={};
-    ['sekiranda_simon','sekiranda_wife',...fullIds].forEach(id=>{c25[id]=mk12(80000,20000,26000,20000);});
+    ['sekiranda_simon','natuhwera_neria',...fullIds].forEach(id=>{c25[id]=mk12(80000,20000,26000,20000);});
     ['kyamulabi_diana','namutebi_claire','naggayi_constance','nabuuma_teopista','nuwahereza_edson','namubiru_rose','nalukenge_rashida','nakakande_shebah','nsubuga_moses','nakiwala_ruth','nabunya_shamera','nanfuka_jane','mwidu_geofrey','batenga_diana','natuhwera_neria','achom_phionah'].forEach(id=>{c25[id]=mk12(40000,10000,13000,10000);});
     c25['ssetumba_david']={sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
     c25['kintu_ernest']=mkP(8,40000,10000,13000,10000);
@@ -1040,11 +1063,13 @@ waitForFirebase(() => {
   ============================================================ */
   window.signInWithGoogle = async function() {
     try {
-      // Use redirect instead of popup — works on all mobile browsers
       await signInWithRedirect(auth, provider);
-      // Page will reload after redirect — onAuthStateChanged handles the result
     } catch(e) {
-      alert('Sign-in failed: ' + e.message);
+      let msg = 'Sign-in failed: ' + e.message;
+      if (e.code === 'auth/api-key-not-valid' || e.message.includes('api-key') || e.message.includes('API key')) {
+        msg = '🔑 Firebase API key blocked.\n\nFix (2 min):\n1. Go to console.cloud.google.com → APIs & Services → Credentials\n2. Edit your API key → HTTP referrers → Add: xoft-bot.github.io/*\n3. Firebase Console → Authentication → Settings → Authorized domains → Add: xoft-bot.github.io\n\nThen try again.';
+      }
+      alert(msg);
     }
   };
 
@@ -1442,7 +1467,7 @@ waitForFirebase(() => {
     document.getElementById('dashboard-alerts').innerHTML = [
       {type:'success',icon:'✅',ttl:'Loans Available — Year 6',msg:'Members can apply for up to 25% of previous FY subscriptions with a feasibility study.'},
       {type:'success',icon:'🌾',ttl:'Nsanja UGX 5M returned (14 Mar 2026)',msg:'Balance outstanding from UGX 13.5M cycle 6 investment.'},
-      {type:'warn',icon:'🗳️',ttl:'Elections: December 2026',msg:'3+ year members who served on a subcommittee qualify. Edson eligible Dec 2026.'},
+      {type:'warn',icon:'🗳️',ttl:'Elections: December 2026',msg:'3+ year members who served on a subcommittee qualify to stand. Check with the committee for the full eligible list.'},
       {type:'info',icon:'🔒',ttl:'Secured with Firebase',msg:'All data in Firestore. Only registered emails can sign in. Auto-logout after 30 min.'},
     ].map(a=>`<div class="alert ${a.type}"><div class="alert-icon">${a.icon}</div><div><div class="alert-ttl">${a.ttl}</div><div class="alert-msg">${a.msg}</div></div></div>`).join('');
   }
@@ -1566,7 +1591,18 @@ waitForFirebase(() => {
   /* ============================================================
      SECTION N — DIVIDENDS, FINANCIALS, JUNIORS
   ============================================================ */
-  function initDividends(){document.getElementById('dividends-tbody').innerHTML=DIVIDENDS_DATA.map(d=>`<tr><td class="member-name">${d.name}</td><td>${d.d2021?fmt(d.d2021):'—'}</td><td>${d.d2022?fmt(d.d2022):'—'}</td><td>${d.d2023?fmt(d.d2023):'—'}</td><td><strong>UGX ${fmt(d.total)}</strong></td></tr>`).join('');}
+  function initDividends(){
+    document.getElementById('dividends-tbody').innerHTML=DIVIDENDS_DATA.map(d=>`<tr><td class="member-name">${d.name}</td><td>${d.d2021?fmt(d.d2021):'—'}</td><td>${d.d2022?fmt(d.d2022):'—'}</td><td>${d.d2023?fmt(d.d2023):'—'}</td><td><strong>UGX ${fmt(d.total)}</strong></td></tr>`).join('');
+    // Show current user's dividend total dynamically
+    const myId = STATE.user && STATE.user.memberId;
+    const myDiv = myId && DIVIDENDS_DATA.find(d => d.id === myId || (d.name && d.name.toLowerCase().replace(/[^a-z]/g,'').includes((STATE.user.name||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,6))));
+    if (myDiv) {
+      document.getElementById('my-dividend-val').textContent = fmt(myDiv.total);
+      document.getElementById('my-dividend-stat').querySelector('.stat-lbl').textContent = 'My Dividends';
+    } else {
+      document.getElementById('my-dividend-val').textContent = 'See table';
+    }
+  }
 
   function initFinancials(){showFinTab('income',document.querySelector('#page-financials .tab'));}
   window.showFinTab = function(tab,btn){
@@ -1928,51 +1964,7 @@ waitForFirebase(() => {
       {cls:'warn',icon:'💰',msg:'2026 contributions: most members yet to pay — action needed'},
       {cls:'success',icon:'🏦',msg:'Bank balance: UGX 37,714,589 as of 28 Mar 2026'},
       {cls:'info',icon:'🗳️',msg:'New elections due Dec 2026 — nominate subcommittee members'},
-    ].map(n=>`<div class="alert ${n.cls}">${n.icon} ${n.msg}
-          <div class="admin-section" style="margin-top:16px">
-            <div class="admin-section-title">🔒 Firebase Security Rules</div>
-            <div class="alert warn"><div class="alert-icon">⚠️</div><div class="alert-txt"><div class="alert-ttl">Paste these into Firebase Console → Firestore → Rules</div><div class="alert-msg">Go to console.firebase.google.com → your project → Firestore Database → Rules tab → replace all content with the rules below → Publish</div></div></div>
-            <div class="code-block" style="font-size:11px">rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    // Only approved emails can read/write
-    match /approvedEmails/{email} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-    }
-    match /members/{memberId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
-    }
-    match /contributions/{docId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
-    }
-    match /committee/{docId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-      allow write: if request.auth != null &&
-        get(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email)).data.role == 'admin';
-    }
-    match /sessions/{sessionId} {
-      allow read, write: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-    }
-    match /votes/{voteId} {
-      allow read: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-      allow write: if request.auth != null &&
-        exists(/databases/$(database)/documents/approvedEmails/$(request.auth.token.email));
-    }
-  }
-}</div>
-            <button class="btn btn-gold btn-sm" onclick="navigator.clipboard.writeText(document.querySelector('.code-block').innerText).then(()=>alert('Rules copied! Paste into Firebase Console → Firestore → Rules'))">📋 Copy Rules</button>
-          </div></div>`).join('');
+    ].map(n=>`<div class="alert ${n.cls}"><div class="alert-icon">${n.icon}</div><div class="alert-msg">${n.msg}</div></div>`).join('');
     document.getElementById('notif-dot').style.display='none';
     openModal('notif-modal');
   };
@@ -2005,4 +1997,4 @@ service cloud.firestore {
 }); // end waitForFirebase
 </script>
 </body>
-                          </html>
+                       </html>
