@@ -1,0 +1,44 @@
+{
+  "name": "Let's Grow Investment Club",
+  "short_name": "Let's Grow",
+  "description": "Secure member portal for Let's Grow Investment Club — Kyaliwajjala, Kampala. Est. 2020.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0a2e1a",
+  "theme_color": "#0a2e1a",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "categories": ["finance", "business"],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "My Account",
+      "short_name": "Account",
+      "description": "View your contribution history and loan eligibility",
+      "url": "/index.html?page=myaccount",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Club overview and monthly tracker",
+      "url": "/index.html?page=dashboard",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
