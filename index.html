@@ -192,7 +192,6 @@ tr:hover td{background:var(--cream)}
 .prog-fill.green{background:linear-gradient(90deg,var(--g3),var(--g4))}
 .prog-fill.red{background:linear-gradient(90deg,#dc2626,#ef4444)}
 .prog-fill.amber{background:linear-gradient(90deg,#d97706,#f59e0b)}
-/* Split bar: red remainder on top of green paid */
 .prog-split{background:var(--cream2);border-radius:4px;height:8px;overflow:hidden;position:relative;}
 .prog-split-paid{position:absolute;left:0;top:0;height:100%;background:linear-gradient(90deg,var(--g3),var(--g4));transition:width .7s ease;}
 .prog-split-remain{position:absolute;right:0;top:0;height:100%;background:rgba(185,28,28,.18);}
@@ -277,9 +276,6 @@ tr:hover td{background:var(--cream)}
 .modal-close{background:var(--cream2);border:none;width:28px;height:28px;border-radius:50%;font-size:15px;color:var(--mid);transition:all .2s}
 .modal-close:hover{background:var(--red2);color:var(--red)}
 .modal-body{padding:18px 22px 22px}
-
-/* Member portal specific: hide admin-tab nav */
-.member-only-tab{display:none}.member-only-tab.show{display:inline-flex}
 
 @supports(padding:max(0px)){
   .topbar{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
@@ -382,7 +378,6 @@ tr:hover td{background:var(--cream)}
         <div class="sidebar-label">Participate</div>
         <button class="nav-btn" onclick="showPage('vote',this)"><span class="nav-icon">🗳️</span>Vote</button>
       </div>
-      <!-- ADMIN ONLY SECTIONS -->
       <div class="sidebar-section admin-only" id="admin-nav-section">
         <div class="sidebar-divider"></div>
         <div class="sidebar-label" style="color:rgba(253,230,138,.5)">Admin</div>
@@ -754,7 +749,7 @@ service cloud.firestore {
           <div class="btn-row"><button class="btn btn-ghost" onclick="copySecurityRules()">📋 Copy Rules</button></div>
         </div>
       </div>
-    </div><!-- end admin page -->
+    </div>
 
   </div><!-- .main -->
 </div><!-- #app -->
@@ -775,7 +770,32 @@ service cloud.firestore {
 
 <script>
 'use strict';
-function waitForFirebase(cb){let a=0;function c(){if(window._FB){cb();return;}a++;if(a>200){document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').style.display='flex';showToast('⚠️ Could not reach Firebase. Use Demo mode.','error');return;}setTimeout(c,50);}c();}
+
+/* ── WAIT FOR FIREBASE ── */
+function waitForFirebase(cb){
+  let a=0;
+  function c(){
+    if(window._FB){cb();return;}
+    a++;
+    if(a>200){
+      document.getElementById('loading-screen').style.display='none';
+      document.getElementById('login-screen').classList.add('visible');
+      showToast('⚠️ Could not reach Firebase. Use Demo mode.','error');
+      return;
+    }
+    setTimeout(c,50);
+  }
+  c();
+}
+
+/* Toast is needed before FB loads */
+function showToast(msg,type){
+  const t=document.createElement('div');
+  t.style.cssText='position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:'+(type==='error'?'var(--red)':'var(--g2)')+';color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),3000);
+}
 
 waitForFirebase(()=>{
 const{auth,db,provider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged,
@@ -791,9 +811,8 @@ const CONFIG={currentYear:2026,clubInceptionYear:2020,monthlyRates:{sub:40000,we
 /* ── STATE ── */
 let STATE={user:null,isAdmin:false,members:[],contributions:{},committee:{},approvedEmails:[],votes:[],currentMemberYear:'2026',currentReportTab:'annual',unsubscribers:[]};
 
-/* ── SEED MEMBERS (alphabetical: active platinum P01-P20, departed P21-P28, active golden G01-G08, departed G09-G10) ── */
+/* ── SEED MEMBERS ── */
 const SEED_MEMBERS=[
-  // PLATINUM — Active (alphabetical)
   {id:'bangi_aidah',name:'Bangi Aidah',platinumNum:1,type:'platinum',joinYear:2020,jointWith:'kigonya_antonio',email:'',status:'active',notes:''},
   {id:'kigonya_antonio',name:'Kigonya Antonio',platinumNum:2,type:'platinum',joinYear:2020,jointWith:'bangi_aidah',email:'',status:'active',notes:''},
   {id:'kirabira_jane',name:'Kirabira Jane',platinumNum:3,type:'platinum',joinYear:2020,jointWith:'kirabira_jude',email:'',status:'active',notes:'Account split from joint entry with Jude.'},
@@ -814,7 +833,6 @@ const SEED_MEMBERS=[
   {id:'nuwahereza_edson',name:'Nuwahereza Edson',platinumNum:18,type:'platinum',joinYear:2020,jointWith:null,email:'pedsonle@gmail.com',status:'active',notes:'Signatory'},
   {id:'sekiranda_simon',name:'Sekiranda Simon',platinumNum:19,type:'platinum',joinYear:2020,jointWith:'natuhwera_neria',email:'',status:'active',notes:''},
   {id:'ssali_simon',name:'Ssali Simon Peter',platinumNum:20,type:'platinum',joinYear:2020,jointWith:'ndagire_rona',email:'',status:'active',notes:''},
-  // PLATINUM — Departed/Deceased
   {id:'batenga_diana',name:'Batenga Diana Nalubega',platinumNum:21,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
   {id:'mwidu_geofrey',name:'Mwidu Geofrey',platinumNum:22,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
   {id:'nakacwa_fortunate',name:'Nakacwa Fortunate',platinumNum:23,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'deceased',notes:'Deceased Sept 2023. Estate held.'},
@@ -823,7 +841,6 @@ const SEED_MEMBERS=[
   {id:'nanfuka_jane',name:'Nanfuka Jane',platinumNum:26,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Not in 2025/2026 contribution records'},
   {id:'nansubuga_jane',name:'Nansubuga Jane Frances',platinumNum:27,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Cashed out 22 Oct 2025'},
   {id:'ssebudde_samuel',name:'Ssebudde Samuel',platinumNum:28,type:'platinum',joinYear:2020,jointWith:null,email:'',status:'departed',notes:'Left 2025'},
-  // GOLDEN — Active (alphabetical)
   {id:'babirye_joan',name:'Babirye Joan',goldNum:1,platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined Oct 2025'},
   {id:'faith_matovu',name:'Faith Matovu',goldNum:2,platinumNum:null,type:'golden',joinYear:2022,jointWith:'matovu_julius',email:'',status:'active',notes:''},
   {id:'mabaale_james',name:'Mabaale James',goldNum:3,platinumNum:null,type:'golden',joinYear:2025,jointWith:null,email:'',status:'active',notes:'Joined 2025'},
@@ -832,7 +849,6 @@ const SEED_MEMBERS=[
   {id:'nakiwala_ruth',name:'Nakiwala Ruth',goldNum:6,platinumNum:null,type:'golden',joinYear:2023,jointWith:null,email:'',status:'active',notes:'Next of kin for late Kenneth. Eligible Platinum 2026.'},
   {id:'nalukenge_rashida',name:'Nalukenge Rashida',goldNum:7,platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Eligible Platinum upgrade 2025'},
   {id:'nsubuga_moses',name:'Nsubuga Moses',goldNum:8,platinumNum:null,type:'golden',joinYear:2022,jointWith:null,email:'',status:'active',notes:'Reg UGX 522,800 (2025)'},
-  // GOLDEN — Departed
   {id:'achom_phionah',name:'Achom Phionah',goldNum:9,platinumNum:null,type:'golden',joinYear:2022,jointWith:'ssetumba_david',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
   {id:'ssetumba_david',name:'Ssetumba David',goldNum:10,platinumNum:null,type:'golden',joinYear:2022,jointWith:'achom_phionah',email:'',status:'departed',notes:'No payments 2025, not in 2026 records'},
 ];
@@ -842,75 +858,47 @@ const mkP=(n,s,w,g,u)=>{const a=[],b=[],c=[],d=[];for(let i=0;i<12;i++){a.push(i
 const mk0=()=>mkP(0,0,0,0,0);
 
 function buildSeedContributions(){
-  // Rate helpers
   const s40=40000,w10=10000,g13=13000,u10=10000,s80=80000,w20=20000,g26=26000,u20=20000;
-  // Founding year 2020: 6 months (July-Dec), subscriptions only (no welfare in 2020)
   const c20={},c21={},c22={},c23={},c24={},c25={},c26={};
-  // Couples (each person individually tracked at 80K/mo couple rate)
   const coupleIds=['sekiranda_simon','natuhwera_neria','lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona'];
-  // Singles at standard 40K rate
   const singleIds=['nabunya_shamera','kyamulabi_diana','namutebi_claire','nuwahereza_edson','naggayi_constance','nabuuma_teopista','namubiru_rose','kintu_ernest','kirabira_jude','kirabira_jane','nakacwa_fortunate','namuyimba_kenneth','batenga_diana','namubiru_winnie','mwidu_geofrey','ssebudde_samuel','nansubuga_jane','nanfuka_jane'];
-
-  // 2020: 6 months sub only
   coupleIds.forEach(id=>{c20[id]=mkP(6,s80,0,0,0);});
   singleIds.forEach(id=>{c20[id]=mkP(6,s40,0,0,0);});
-
-  // 2021: 12 months, welfare added
   coupleIds.forEach(id=>{c21[id]=mk12(s80,w20,0,0);});
   singleIds.forEach(id=>{c21[id]=mk12(s40,w10,0,0);});
-  // Kintu Ernest dividends start 2021 — was paying
-  // (already in singleIds)
-
-  // 2022: 12 months same as 2021 + golden members joined mid-year (6 months)
   coupleIds.forEach(id=>{c22[id]=mk12(s80,w20,0,0);});
   singleIds.forEach(id=>{c22[id]=mk12(s40,w10,0,0);});
   ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu'].forEach(id=>{c22[id]=mkP(6,s40,w10,0,0);});
-  // ssetumba & achom joined 2022 but departed later
-  c22['ssetumba_david']=mkP(6,s40,w10,0,0); c22['achom_phionah']=mkP(6,s40,w10,0,0);
-
-  // 2023: 12 months
+  c22['ssetumba_david']=mkP(6,s40,w10,0,0);c22['achom_phionah']=mkP(6,s40,w10,0,0);
   coupleIds.forEach(id=>{c23[id]=mk12(s80,w20,0,0);});
   singleIds.filter(id=>!['batenga_diana','nansubuga_jane','namubiru_winnie'].includes(id)).forEach(id=>{c23[id]=mk12(s40,w10,0,0);});
   ['batenga_diana','nansubuga_jane','namubiru_winnie'].forEach(id=>{c23[id]=mkP(8,s40,w10,0,0);});
   ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu'].forEach(id=>{c23[id]=mk12(s40,w10,0,0);});
-  c23['ssetumba_david']=mk12(s40,w10,0,0); c23['achom_phionah']=mk12(s40,w10,0,0);
-  c23['nakiwala_ruth']=mkP(6,s40,w10,0,0); // joined mid-2023
-  // Nakacwa Fortunate: deceased Sept 2023, 9 months
+  c23['ssetumba_david']=mk12(s40,w10,0,0);c23['achom_phionah']=mk12(s40,w10,0,0);
+  c23['nakiwala_ruth']=mkP(6,s40,w10,0,0);
   c23['nakacwa_fortunate']=mkP(9,s40,w10,0,0);
-
-  // 2024: 12 months, GLA + UT added (from April 2024 based on totals)
-  // Using April start for GLA/UT (months 3-11 = 9 months of gla/ut)
   const mkGLA9=(s,w,g,u)=>{const sub=[],wf=[],gl=[],ut=[];for(let i=0;i<12;i++){sub.push(s);wf.push(w);gl.push(i>=3?g:0);ut.push(i>=3?u:0);}return{sub,welfare:wf,gla:gl,ut};};
   coupleIds.forEach(id=>{c24[id]=mkGLA9(s80,w20,g26,u20);});
   ['nabunya_shamera','kyamulabi_diana','namutebi_claire','nuwahereza_edson','naggayi_constance','nabuuma_teopista','namubiru_rose','kintu_ernest','kirabira_jude','kirabira_jane'].forEach(id=>{c24[id]=mkGLA9(s40,w10,g13,u10);});
   ['nalukenge_rashida','nakakande_shebah','nsubuga_moses','matovu_julius','faith_matovu','nakiwala_ruth'].forEach(id=>{c24[id]=mkGLA9(s40,w10,g13,u10);});
-  c24['ssetumba_david']=mkP(4,s40,w10,0,0); // stopped paying mid 2024
-  c24['achom_phionah']=mkP(4,s40,w10,0,0);
+  c24['ssetumba_david']=mkP(4,s40,w10,0,0);c24['achom_phionah']=mkP(4,s40,w10,0,0);
   ['batenga_diana','nansubuga_jane','namubiru_winnie','mwidu_geofrey','ssebudde_samuel','nanfuka_jane'].forEach(id=>{c24[id]=mkP(6,s40,w10,g13,u10);});
-
-  // 2025
-  const fullPairs=['sekiranda_simon','natuhwera_neria',...coupleIds.filter(x=>!['sekiranda_simon','natuhwera_neria'].includes(x)),'matovu_julius','faith_matovu'];
   const fullPairs2=['sekiranda_simon','natuhwera_neria','lule_stephen','nabukeera_juliet','luutu_daniel','nagawa_ruth','kigonya_antonio','bangi_aidah','ssali_simon','ndagire_rona','matovu_julius','faith_matovu'];
   fullPairs2.forEach(id=>{c25[id]=mk12(s80,w20,g26,u20);});
-  ['kyamulabi_diana','namutebi_claire','naggayi_constance','nabuuma_teopista','nuwahereza_edson','namubiru_rose','nalukenge_rashida','nakakande_shebah','nsubuga_moses','nakiwala_ruth','nabunya_shamera','nanfuka_jane','mwidu_geofrey','batenga_diana','natuhwera_neria','achom_phionah'].forEach(id=>{c25[id]=mk12(s40,w10,g13,u10);});
-  // Fix: natuhwera_neria already covered above — skip duplicate (the forEach just overwrites)
-  c25['kirabira_jude']=mk12(s40,w10,g13,u10); // split from couple
+  ['kyamulabi_diana','namutebi_claire','naggayi_constance','nabuuma_teopista','nuwahereza_edson','namubiru_rose','nalukenge_rashida','nakakande_shebah','nsubuga_moses','nakiwala_ruth','nabunya_shamera','nanfuka_jane','mwidu_geofrey','batenga_diana'].forEach(id=>{c25[id]=mk12(s40,w10,g13,u10);});
+  c25['kirabira_jude']=mk12(s40,w10,g13,u10);
   c25['kirabira_jane']=mk12(s40,w10,g13,u10);
-  c25['ssetumba_david']=mk0(); c25['achom_phionah']=mk0();
+  c25['ssetumba_david']=mk0();c25['achom_phionah']=mk0();
   c25['kintu_ernest']=mkP(8,s40,w10,g13,u10);
   c25['ssebudde_samuel']={sub:[40000,40000,4000,0,0,0,0,0,0,0,0,0],welfare:[10000,10000,0,0,0,0,0,0,0,0,0,0],gla:[13000,13000,0,0,0,0,0,0,0,0,0,0],ut:[10000,10000,0,0,0,0,0,0,0,0,0,0]};
   c25['babirye_joan']=mkP(3,s40,w10,g13,u10);
-
-  // 2026 YTD
-  const c26={};
-  c26['kirabira_jude']=mk12(s40,w10,g13,u10); // split account
+  c26['kirabira_jude']=mk12(s40,w10,g13,u10);
   c26['kirabira_jane']=mk12(s40,w10,g13,u10);
-  ['nabunya_shamera'].forEach(id=>{c26[id]=mkP(3,s40,w10,g13,u10);});
+  c26['nabunya_shamera']=mkP(3,s40,w10,g13,u10);
   c26['babirye_joan']=mkP(2,s40,w10,g13,u10);
   c26['nuwahereza_edson']=mkP(1,s40,w10,g13,u10);
   c26['kigonya_antonio']={sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
   c26['bangi_aidah']={sub:[20000,0,0,0,0,0,0,0,0,0,0,0],welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
-
   return{2020:c20,2021:c21,2022:c22,2023:c23,2024:c24,2025:c25,2026:c26};
 }
 
@@ -982,40 +970,150 @@ const INVESTMENTS=[
 ];
 
 /* ── AUTH ── */
-window.signInWithGoogle=async function(){try{await signInWithRedirect(auth,provider);}catch(e){alert('Sign-in failed: '+e.message);}};
+window.signInWithGoogle=async function(){
+  try{
+    await signInWithRedirect(auth,provider);
+  }catch(e){
+    showToast('Sign-in failed: '+e.message,'error');
+  }
+};
+
 window.demoLogin=function(role){
   STATE.user={email:role==='admin'?'pedsonle@gmail.com':'demo@member.com',name:role==='admin'?'Nuwahereza Edson':'Kintu Ernest',memberId:role==='admin'?'nuwahereza_edson':'kintu_ernest',role,uid:'demo-uid-'+Date.now()};
-  STATE.isAdmin=role==='admin';STATE.members=SEED_MEMBERS;STATE.contributions=buildSeedContributions();STATE.committee={};
+  STATE.isAdmin=role==='admin';
+  STATE.members=SEED_MEMBERS;
+  STATE.contributions=buildSeedContributions();
+  STATE.committee={};
   document.getElementById('loading-screen').style.display='none';
   document.getElementById('login-screen').classList.remove('visible');
-  startApp();showToast('Demo mode — data is local only');
+  startApp();
+  showToast('Demo mode — data is local only');
 };
+
 async function handleAuthUser(u){
   document.getElementById('loading-screen').style.display='flex';
   try{
     const ed=await getDoc(doc(db,'approvedEmails',u.email));
-    if(!ed.exists()){await signOut(auth);document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');alert('Access denied. '+u.email+' is not registered.');return;}
+    if(!ed.exists()){
+      await signOut(auth);
+      document.getElementById('loading-screen').style.display='none';
+      document.getElementById('login-screen').classList.add('visible');
+      alert('Access denied. '+u.email+' is not registered.');
+      return;
+    }
     const ud=ed.data();
     STATE.user={email:u.email,name:ud.name||u.displayName,picture:u.photoURL,memberId:ud.memberId||'',role:ud.role,uid:u.uid};
     STATE.isAdmin=ud.role==='admin';
-    await registerSession(u.uid);await loadAllDataFromFirestore();
-    document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.remove('visible');startApp();
-  }catch(e){console.error(e);document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');alert('Error: '+e.message);}
+    await registerSession(u.uid);
+    await loadAllDataFromFirestore();
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').classList.remove('visible');
+    startApp();
+  }catch(e){
+    console.error(e);
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').classList.add('visible');
+    alert('Error: '+e.message);
+  }
 }
+
+/* Handle redirect result on page load (for mobile Google sign-in) */
+getRedirectResult(auth).then(result=>{
+  if(result&&result.user){
+    handleAuthUser(result.user);
+  }
+}).catch(e=>{
+  if(e.code!=='auth/no-current-user'){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').classList.add('visible');
+    showToast('Sign-in error: '+e.message,'error');
+  }
+});
+
 let authResolved=false;
-setTimeout(()=>{if(!authResolved){document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');}},6000);
-onAuthStateChanged(auth,u=>{authResolved=true;if(u){handleAuthUser(u);}else{document.getElementById('loading-screen').style.display='none';document.getElementById('login-screen').classList.add('visible');}});
-window.doSignOut=async function(){clearAllTimers();await cancelFirestoreListeners();if(STATE.user?.uid&&!STATE.user.uid.startsWith('demo'))await deleteDoc(doc(db,'sessions',STATE.user.uid)).catch(()=>{});await signOut(auth).catch(()=>{});STATE.user=null;STATE.isAdmin=false;document.getElementById('app').classList.remove('visible');document.getElementById('app').style.display='none';document.getElementById('login-screen').classList.add('visible');};
+/* Show login if Firebase takes too long */
+setTimeout(()=>{
+  if(!authResolved){
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').classList.add('visible');
+  }
+},8000);
+
+onAuthStateChanged(auth,u=>{
+  authResolved=true;
+  if(u){
+    handleAuthUser(u);
+  }else{
+    document.getElementById('loading-screen').style.display='none';
+    document.getElementById('login-screen').classList.add('visible');
+  }
+});
+
+window.doSignOut=async function(){
+  clearAllTimers();
+  await cancelFirestoreListeners();
+  if(STATE.user?.uid&&!STATE.user.uid.startsWith('demo')){
+    await deleteDoc(doc(db,'sessions',STATE.user.uid)).catch(()=>{});
+  }
+  await signOut(auth).catch(()=>{});
+  STATE.user=null;
+  STATE.isAdmin=false;
+  document.getElementById('app').classList.remove('visible');
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-screen').classList.add('visible');
+};
 
 /* ── SESSION ── */
 const SESSION_ID=Math.random().toString(36).slice(2);
 let inactivityTimer,warningTimer,warningCountdown,sessionCheckInterval;
 const INACTIVITY_LIMIT=30*60*1000,WARNING_TIME=60*1000;
-async function registerSession(uid){if(uid.startsWith('demo'))return;await setDoc(doc(db,'sessions',uid),{sessionId:SESSION_ID,email:STATE.user?.email||'',device:navigator.userAgent.slice(0,120),loginTime:serverTimestamp()});sessionCheckInterval=setInterval(async()=>{const s=await getDoc(doc(db,'sessions',uid));if(s.exists()&&s.data().sessionId!==SESSION_ID){clearAllTimers();alert('⚠️ Your account was signed in on another device.');doSignOut();}},60000);}
-function resetInactivityTimer(){clearTimeout(inactivityTimer);clearTimeout(warningTimer);clearInterval(warningCountdown);document.getElementById('timeout-banner').classList.remove('show');warningTimer=setTimeout(()=>{let r=60;document.getElementById('timeout-countdown').textContent=r;document.getElementById('timeout-banner').classList.add('show');warningCountdown=setInterval(()=>{r--;document.getElementById('timeout-countdown').textContent=r;if(r<=0){clearInterval(warningCountdown);doSignOut();}},1000);},INACTIVITY_LIMIT-WARNING_TIME);inactivityTimer=setTimeout(()=>{doSignOut();},INACTIVITY_LIMIT);}
-window.extendSession=function(){document.getElementById('timeout-banner').classList.remove('show');clearInterval(warningCountdown);resetInactivityTimer();};
-function startActivityTracking(){['click','keypress','scroll','touchstart','mousemove'].forEach(ev=>{document.addEventListener(ev,resetInactivityTimer,{passive:true});});resetInactivityTimer();}
-function clearAllTimers(){clearTimeout(inactivityTimer);clearTimeout(warningTimer);clearInterval(warningCountdown);clearInterval(sessionCheckInterval);}
+
+async function registerSession(uid){
+  if(uid.startsWith('demo'))return;
+  await setDoc(doc(db,'sessions',uid),{sessionId:SESSION_ID,email:STATE.user?.email||'',device:navigator.userAgent.slice(0,120),loginTime:serverTimestamp()});
+  sessionCheckInterval=setInterval(async()=>{
+    const s=await getDoc(doc(db,'sessions',uid));
+    if(s.exists()&&s.data().sessionId!==SESSION_ID){
+      clearAllTimers();
+      alert('⚠️ Your account was signed in on another device.');
+      doSignOut();
+    }
+  },60000);
+}
+
+function resetInactivityTimer(){
+  clearTimeout(inactivityTimer);clearTimeout(warningTimer);clearInterval(warningCountdown);
+  document.getElementById('timeout-banner').classList.remove('show');
+  warningTimer=setTimeout(()=>{
+    let r=60;
+    document.getElementById('timeout-countdown').textContent=r;
+    document.getElementById('timeout-banner').classList.add('show');
+    warningCountdown=setInterval(()=>{
+      r--;
+      document.getElementById('timeout-countdown').textContent=r;
+      if(r<=0){clearInterval(warningCountdown);doSignOut();}
+    },1000);
+  },INACTIVITY_LIMIT-WARNING_TIME);
+  inactivityTimer=setTimeout(()=>{doSignOut();},INACTIVITY_LIMIT);
+}
+
+window.extendSession=function(){
+  document.getElementById('timeout-banner').classList.remove('show');
+  clearInterval(warningCountdown);
+  resetInactivityTimer();
+};
+
+function startActivityTracking(){
+  ['click','keypress','scroll','touchstart','mousemove'].forEach(ev=>{
+    document.addEventListener(ev,resetInactivityTimer,{passive:true});
+  });
+  resetInactivityTimer();
+}
+
+function clearAllTimers(){
+  clearTimeout(inactivityTimer);clearTimeout(warningTimer);
+  clearInterval(warningCountdown);clearInterval(sessionCheckInterval);
+}
 
 /* ── FIRESTORE LOAD ── */
 async function loadAllDataFromFirestore(){
@@ -1030,35 +1128,64 @@ async function loadAllDataFromFirestore(){
   if(STATE.isAdmin){const es=await getDocs(collection(db,'approvedEmails'));STATE.approvedEmails=es.docs.map(d=>({email:d.id,...d.data()}));}
   startRealtimeListeners();
 }
+
 function startRealtimeListeners(){
-  const u1=onSnapshot(collection(db,'contributions'),snap=>{snap.docChanges().forEach(ch=>{if(ch.type==='added'||ch.type==='modified'){const[year,mid]=ch.doc.id.split('__');if(!STATE.contributions[year])STATE.contributions[year]={};STATE.contributions[year][mid]=ch.doc.data();}});renderMonthGrid();renderMemberTable();renderMyAccount();});
-  const u2=onSnapshot(collection(db,'votes'),snap=>{STATE.votes=snap.docs.map(d=>({id:d.id,...d.data()}));renderVotePage();});
+  const u1=onSnapshot(collection(db,'contributions'),snap=>{
+    snap.docChanges().forEach(ch=>{
+      if(ch.type==='added'||ch.type==='modified'){
+        const[year,mid]=ch.doc.id.split('__');
+        if(!STATE.contributions[year])STATE.contributions[year]={};
+        STATE.contributions[year][mid]=ch.doc.data();
+      }
+    });
+    renderMonthGrid();renderMemberTable();renderMyAccount();
+  });
+  const u2=onSnapshot(collection(db,'votes'),snap=>{
+    STATE.votes=snap.docs.map(d=>({id:d.id,...d.data()}));
+    renderVotePage();
+  });
   STATE.unsubscribers=[u1,u2];
 }
-async function cancelFirestoreListeners(){STATE.unsubscribers.forEach(u=>{try{u();}catch(e){}});STATE.unsubscribers=[];}
-async function seedFirestoreMembers(){for(const m of SEED_MEMBERS)await setDoc(doc(db,'members',m.id),m);showToast('Members seeded ✓');}
-async function seedFirestoreContributions(){const seed=buildSeedContributions();for(const[year,mems]of Object.entries(seed))for(const[mid,data]of Object.entries(mems))await setDoc(doc(db,'contributions',`${year}__${mid}`),data);showToast('Contributions seeded ✓');}
+
+async function cancelFirestoreListeners(){
+  STATE.unsubscribers.forEach(u=>{try{u();}catch(e){}});
+  STATE.unsubscribers=[];
+}
+
+async function seedFirestoreMembers(){
+  for(const m of SEED_MEMBERS)await setDoc(doc(db,'members',m.id),m);
+  showToast('Members seeded ✓');
+}
+
+async function seedFirestoreContributions(){
+  const seed=buildSeedContributions();
+  for(const[year,mems]of Object.entries(seed))
+    for(const[mid,data]of Object.entries(mems))
+      await setDoc(doc(db,'contributions',`${year}__${mid}`),data);
+  showToast('Contributions seeded ✓');
+}
 
 /* ── APP START ── */
 function startApp(){
-  document.getElementById('app').style.display='flex';document.getElementById('app').classList.add('visible');
+  document.getElementById('app').style.display='flex';
+  document.getElementById('app').classList.add('visible');
   const u=STATE.user;
   document.getElementById('user-name').textContent=u.name.split(' ')[0];
   const av=document.getElementById('user-avatar');
-  if(u.picture)av.innerHTML=`<img src="${u.picture}" alt="">`;else av.textContent=u.name[0].toUpperCase();
+  if(u.picture)av.innerHTML='<img src="'+u.picture+'" alt="">';
+  else av.textContent=u.name[0].toUpperCase();
   if(STATE.isAdmin){
     document.getElementById('admin-badge').style.display='inline-block';
     document.querySelectorAll('.admin-only').forEach(el=>{el.classList.add('show');});
   }
-  initAllPages();startActivityTracking();
-  // Show default page
-  const defaultPage = STATE.isAdmin ? 'dashboard' : 'myaccount';
-  const firstBtn = document.querySelector(`.nav-btn[onclick*="showPage('${defaultPage}"]`);
-  showPage(defaultPage, firstBtn);
-  // Show first nav button as active
+  initAllPages();
+  startActivityTracking();
+  const defaultPage=STATE.isAdmin?'dashboard':'myaccount';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
-  if(firstBtn) firstBtn.classList.add('active');
-  else { const fb=document.querySelector('.nav-btn'); if(fb)fb.classList.add('active'); }
+  document.getElementById('page-'+defaultPage).classList.add('active');
+  const firstBtn=document.querySelector('.nav-btn[onclick*="showPage(\''+defaultPage+'\'"]');
+  if(firstBtn)firstBtn.classList.add('active');
 }
 
 /* ── NAVIGATION ── */
@@ -1082,48 +1209,51 @@ const getContrib=(mid,yr,field)=>(STATE.contributions[yr]?.[mid]?.[field])||Arra
 const monthTotal=(mid,yr,mo)=>{const y=STATE.contributions[yr];if(!y||!y[mid])return 0;const c=y[mid];return(c.sub[mo]||0)+(c.welfare[mo]||0)+(c.gla[mo]||0)+(c.ut[mo]||0);};
 const sumField=(mid,yr,field)=>(getContrib(mid,yr,field)).reduce((a,b)=>a+b,0);
 const yearTotal=(mid,yr)=>sumField(mid,yr,'sub')+sumField(mid,yr,'welfare')+sumField(mid,yr,'gla')+sumField(mid,yr,'ut');
-// Loan limit: 25% of all contributions through fully paid years 2020-2025
 const loanLimit=mid=>{const base=[2020,2021,2022,2023,2024,2025].reduce((acc,y)=>acc+yearTotal(mid,y),0);return Math.floor(base*0.25);};
-function progBar(paid,target,showLabel=true){
+
+function progBar(paid,target,showLabel){
+  if(showLabel===undefined)showLabel=true;
   const pct=target>0?Math.min(100,Math.round((paid/target)*100)):0;
   const cls=pct>=100?'green':pct>=50?'amber':'red';
   const remain=Math.max(0,target-paid);
-  return`${showLabel?`<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--light);margin-bottom:2px"><span>${fmt(paid)} paid</span><span style="color:var(--red)">${remain>0?fmt(remain)+' due':''}</span></div>`:''}
-<div class="prog-split" style="height:8px"><div class="prog-split-paid" style="width:${pct}%"></div><div class="prog-split-remain" style="width:${100-pct}%;left:${pct}%"></div></div>
-<div style="font-size:10px;color:var(--${cls==='green'?'g3':cls==='amber'?'gold':'red'});font-weight:700;margin-top:2px">${pct}%</div>`;
+  return (showLabel?'<div style="display:flex;justify-content:space-between;font-size:10px;color:var(--light);margin-bottom:2px"><span>'+fmt(paid)+' paid</span><span style="color:var(--red)">'+(remain>0?fmt(remain)+' due':'')+'</span></div>':'')
+    +'<div class="prog-split" style="height:8px"><div class="prog-split-paid" style="width:'+pct+'%"></div><div class="prog-split-remain" style="width:'+(100-pct)+'%;left:'+pct+'%"></div></div>'
+    +'<div style="font-size:10px;color:var(--'+(cls==='green'?'g3':cls==='amber'?'gold':'red')+');font-weight:700;margin-top:2px">'+pct+'%</div>';
 }
-
-function showToast(msg,type='success'){const t=document.createElement('div');t.style.cssText=`position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:${type==='success'?'var(--g2)':'var(--red)'};color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;z-index:9000;box-shadow:0 4px 20px rgba(0,0,0,.3)`;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
 /* ── DASHBOARD ── */
 function initDashboard(){renderMonthGrid();renderAnnualChart();renderDashboardAlerts();renderFundBreakdown();}
+
 function renderMonthGrid(){
   const grid=document.getElementById('month-grid');if(!grid)return;
   const year=CONFIG.currentYear,active=activeMembers(),tot=active.length;
   grid.innerHTML=MONTHS.map((m,i)=>{
     let paid=0,partial=0;
     active.forEach(mem=>{const t=monthTotal(mem.id,year,i);const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;if(t>=full)paid++;else if(t>0)partial++;});
-    const pct=Math.round((paid/tot)*100);
+    const pct=tot>0?Math.round((paid/tot)*100):0;
     const isFuture=(year===TODAY_YEAR&&i>TODAY_MONTH);
     let cls='mc-future',st='Future';
-    if(!isFuture){if(paid===tot){cls='mc-paid';st='✓ All';}else if(paid+partial>0){cls='mc-partial';st=`${paid}/${tot}`;}else{cls='mc-pending';st='⚠ None';}}
-    return`<div class="month-cell ${cls}" onclick="openMonthDetail(${i})"><div class="m-name">${m}</div><div class="m-pct">${isFuture?'—':pct+'%'}</div><div class="m-amt">${st}</div></div>`;
+    if(!isFuture){if(paid===tot){cls='mc-paid';st='✓ All';}else if(paid+partial>0){cls='mc-partial';st=paid+'/'+tot;}else{cls='mc-pending';st='⚠ None';}}
+    return '<div class="month-cell '+cls+'" onclick="openMonthDetail('+i+')"><div class="m-name">'+m+'</div><div class="m-pct">'+(isFuture?'—':pct+'%')+'</div><div class="m-amt">'+st+'</div></div>';
   }).join('');
 }
+
 window.openMonthDetail=function(idx){
   if(!STATE.isAdmin){showToast('Month detail is for admins only','error');return;}
   const year=CONFIG.currentYear,active=activeMembers();
-  document.getElementById('month-modal-title').textContent=`${MONTHS_FULL[idx]} ${year}`;
+  document.getElementById('month-modal-title').textContent=MONTHS_FULL[idx]+' '+year;
   const rows=active.map(m=>{
     const sub=getContrib(m.id,year,'sub')[idx]||0,wel=getContrib(m.id,year,'welfare')[idx]||0,gla=getContrib(m.id,year,'gla')[idx]||0,ut=getContrib(m.id,year,'ut')[idx]||0,total=sub+wel+gla+ut;
     const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
     const isFuture=(year===TODAY_YEAR&&idx>TODAY_MONTH);
-    const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
-    return`<tr><td class="member-name">${m.name}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
+    const badge=isFuture?'Future':total>=full?'✓ Paid':total>0?'Partial':'Due';
+    const cls=isFuture?'b-gray':total>=full?'b-green':total>0?'b-amber':'b-red';
+    return '<tr><td class="member-name">'+m.name+'</td><td>'+(sub?fmt(sub):'—')+'</td><td>'+(wel?fmt(wel):'—')+'</td><td>'+(gla?fmt(gla):'—')+'</td><td>'+(ut?fmt(ut):'—')+'</td><td><strong>'+(total?fmt(total):'—')+'</strong></td><td><span class="badge '+cls+'">'+badge+'</span></td></tr>';
   }).join('');
-  document.getElementById('month-modal-body').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Member</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+  document.getElementById('month-modal-body').innerHTML='<div class="table-wrap"><table><thead><tr><th>Member</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
   openModal('month-modal');
 };
+
 function renderAnnualChart(){
   const canvas=document.getElementById('annual-chart');if(!canvas)return;
   const ctx=canvas.getContext('2d');const W=canvas.offsetWidth||500,H=180;canvas.width=W;canvas.height=H;
@@ -1134,30 +1264,43 @@ function renderAnnualChart(){
   const max=Math.max(...subs.map((s,i)=>s+wels[i]+glas[i]));
   const pad=36,bw=Math.floor((W-pad*2)/years.length)-5;
   ctx.clearRect(0,0,W,H);
-  years.forEach((yr,i)=>{const x=pad+i*(bw+5);let base=H-22;const drawBar=(val,color)=>{if(!val)return base;const bh=Math.max(1,(val/max)*(H-50));ctx.fillStyle=color;ctx.fillRect(x,base-bh,bw,bh);return base-bh;};base=drawBar(subs[i],'#1e7a47');base=drawBar(wels[i],'#f0b429');drawBar(glas[i],'#6d28d9');ctx.fillStyle='#6b8f7a';ctx.font='9px Sora,sans-serif';ctx.textAlign='center';ctx.fillText(yr,x+bw/2,H-6);});
+  years.forEach((yr,i)=>{
+    const x=pad+i*(bw+5);let base=H-22;
+    const drawBar=(val,color)=>{if(!val)return base;const bh=Math.max(1,(val/max)*(H-50));ctx.fillStyle=color;ctx.fillRect(x,base-bh,bw,bh);return base-bh;};
+    base=drawBar(subs[i],'#1e7a47');base=drawBar(wels[i],'#f0b429');drawBar(glas[i],'#6d28d9');
+    ctx.fillStyle='#6b8f7a';ctx.font='9px Sora,sans-serif';ctx.textAlign='center';ctx.fillText(yr,x+bw/2,H-6);
+  });
   [['#1e7a47','Sub'],['#f0b429','Welfare'],['#6d28d9','GLA']].forEach(([c,l],i)=>{ctx.fillStyle=c;ctx.fillRect(pad+i*60,4,10,10);ctx.fillStyle='#6b8f7a';ctx.textAlign='left';ctx.fillText(l,pad+i*60+13,13);});
 }
+
 function renderDashboardAlerts(){
   document.getElementById('dashboard-alerts').innerHTML=[
     {type:'success',icon:'✅',ttl:'Loans Available — Year 6',msg:'Members can apply for up to 25% of total contributions from 2020–2025.'},
     {type:'success',icon:'🌾',ttl:'Nsanja UGX 5M returned (14 Mar 2026)',msg:'Balance outstanding from UGX 13.5M cycle 6 investment.'},
     {type:'warn',icon:'🗳️',ttl:'Elections: December 2026',msg:'3+ year members who served on a subcommittee qualify to stand.'},
     {type:'info',icon:'🔒',ttl:'Secured with Firebase',msg:'Only registered emails can sign in. Auto-logout after 30 min.'},
-  ].map(a=>`<div class="alert ${a.type}"><div class="alert-icon">${a.icon}</div><div><div class="alert-ttl">${a.ttl}</div><div class="alert-msg">${a.msg}</div></div></div>`).join('');
+  ].map(a=>'<div class="alert '+a.type+'"><div class="alert-icon">'+a.icon+'</div><div><div class="alert-ttl">'+a.ttl+'</div><div class="alert-msg">'+a.msg+'</div></div></div>').join('');
 }
+
 function renderFundBreakdown(){
   const items=[['All Subscriptions',71363500,'var(--g3)'],['Welfare',15035000,'var(--gold2)'],['GLA 2024–2026',9087000,'var(--purple)'],['Unit Trust 2024–2026',6990000,'var(--teal)']];
   const max=71363500;
-  document.getElementById('fund-breakdown').innerHTML=items.map(([l,a,c])=>`<div style="margin-bottom:9px"><div class="prog-lbl"><span>${l}</span><span>${fmtM(a)}</span></div><div class="prog-bar"><div class="prog-fill green" style="width:${(a/max*100).toFixed(0)}%;background:${c}"></div></div></div>`).join('');
+  document.getElementById('fund-breakdown').innerHTML=items.map(([l,a,c])=>'<div style="margin-bottom:9px"><div class="prog-lbl"><span>'+l+'</span><span>'+fmtM(a)+'</span></div><div class="prog-bar"><div class="prog-fill green" style="width:'+(a/max*100).toFixed(0)+'%;background:'+c+'"></div></div></div>').join('');
 }
 
 /* ── MEMBERS TABLE (admin) ── */
 function initMembers(){
   const tabs=document.getElementById('member-year-tabs');
-  tabs.innerHTML=['2020','2021','2022','2023','2024','2025','2026'].map(y=>`<button class="tab ${y==='2026'?'active':''}" onclick="setMemberYear('${y}',this)">${y}</button>`).join('');
+  tabs.innerHTML=['2020','2021','2022','2023','2024','2025','2026'].map(y=>'<button class="tab '+(y==='2026'?'active':'')+'" onclick="setMemberYear(\''+y+'\',this)">'+y+'</button>').join('');
   STATE.currentMemberYear='2026';renderMemberTable();
 }
-window.setMemberYear=function(y,btn){STATE.currentMemberYear=y;document.querySelectorAll('#member-year-tabs .tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');renderMemberTable();};
+
+window.setMemberYear=function(y,btn){
+  STATE.currentMemberYear=y;
+  document.querySelectorAll('#member-year-tabs .tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');renderMemberTable();
+};
+
 function renderMemberTable(){
   if(!STATE.isAdmin)return;
   const year=parseInt(STATE.currentMemberYear);
@@ -1173,13 +1316,14 @@ function renderMemberTable(){
     const paid=sub+wel+gla+ut,bal=Math.max(0,target-paid);
     const pct=target>0?Math.min(100,Math.round((paid/target)*100)):0;
     const sB={active:'<span class="badge b-green">Active</span>',departed:'<span class="badge b-red">Departed</span>',deceased:'<span class="badge b-gray">Deceased</span>'}[m.status]||'';
-    const tB=m.type==='platinum'?`<span class="badge b-gold">P${m.platinumNum||'?'}</span>`:`<span class="badge b-blue">G${m.goldNum||'?'}</span>`;
+    const tB=m.type==='platinum'?'<span class="badge b-gold">P'+(m.platinumNum||'?')+'</span>':'<span class="badge b-blue">G'+(m.goldNum||'?')+'</span>';
     const st=bal===0?'<span class="badge b-green">✓</span>':paid===0?'<span class="badge b-red">None</span>':'<span class="badge b-amber">Partial</span>';
     const barColor=pct>=100?'#1e7a47':pct>=50?'#d97706':'#dc2626';
-    const barHtml=`<div style="min-width:80px"><div class="prog-bar"><div class="prog-fill" style="width:${pct}%;background:${barColor}"></div></div><div style="font-size:10px;color:${barColor};font-weight:600">${pct}%</div></div>`;
-    return`<tr onclick="${STATE.isAdmin?`openMemberProfile('${m.id}')`:'void(0)'}" style="cursor:pointer"><td>${m.type==='platinum'?m.platinumNum:'G'+m.goldNum}</td><td class="member-name">${m.name}</td><td>${tB}</td><td>${sB}</td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${paid?fmt(paid):'—'}</strong></td><td style="color:var(--red)">${bal?fmt(bal):'—'}</td><td>${barHtml}</td></tr>`;
+    const barHtml='<div style="min-width:80px"><div class="prog-bar"><div class="prog-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div><div style="font-size:10px;color:'+barColor+';font-weight:600">'+pct+'%</div></div>';
+    return '<tr onclick="'+(STATE.isAdmin?'openMemberProfile(\''+m.id+'\')':'void(0)')+'" style="cursor:pointer"><td>'+(m.type==='platinum'?m.platinumNum:'G'+m.goldNum)+'</td><td class="member-name">'+m.name+'</td><td>'+tB+'</td><td>'+sB+'</td><td>'+(sub?fmt(sub):'—')+'</td><td>'+(wel?fmt(wel):'—')+'</td><td>'+(gla?fmt(gla):'—')+'</td><td>'+(ut?fmt(ut):'—')+'</td><td><strong>'+(paid?fmt(paid):'—')+'</strong></td><td style="color:var(--red)">'+(bal?fmt(bal):'—')+'</td><td>'+barHtml+'</td></tr>';
   }).join('');
 }
+
 window.openMemberProfile=function(mid){
   if(!STATE.isAdmin)return;
   const m=STATE.members.find(x=>x.id===mid);if(!m)return;
@@ -1189,23 +1333,23 @@ window.openMemberProfile=function(mid){
     const c=(STATE.contributions[y]||{})[mid]||{};
     const sub=(c.sub||[]).reduce((a,b)=>a+b,0),wel=(c.welfare||[]).reduce((a,b)=>a+b,0),gla=(c.gla||[]).reduce((a,b)=>a+b,0),ut=(c.ut||[]).reduce((a,b)=>a+b,0),total=sub+wel+gla+ut;
     grand+=total;if(!total&&y<m.joinYear)return'';
-    return`<tr><td><strong>${y}</strong></td><td>${sub?fmt(sub):'—'}</td><td>${wel?fmt(wel):'—'}</td><td>${gla?fmt(gla):'—'}</td><td>${ut?fmt(ut):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
+    return '<tr><td><strong>'+y+'</strong></td><td>'+(sub?fmt(sub):'—')+'</td><td>'+(wel?fmt(wel):'—')+'</td><td>'+(gla?fmt(gla):'—')+'</td><td>'+(ut?fmt(ut):'—')+'</td><td><strong>'+(total?fmt(total):'—')+'</strong></td></tr>';
   }).join('');
   const ll=loanLimit(mid);
   const div=DIVIDENDS_DATA.find(d=>d.id===mid);
   const tgt=12*(CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut);
   const paid26=yearTotal(mid,2026);
-  document.getElementById('modal-member-body').innerHTML=`
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
-      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Membership</div><div style="font-weight:700">${m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum}</div></div>
-      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Total Contributed</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(grand)}</div></div>
-      <div style="padding:9px;background:#dcfce7;border-radius:8px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase">Loan Limit (25% of 2020–2025)</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(ll)}</div></div>
-      <div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Member Since</div><div style="font-weight:700">${m.joinYear}</div></div>
-    </div>
-    <div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--mid);margin-bottom:6px">2026 ANNUAL PROGRESS</div>${progBar(paid26,tgt)}</div>
-    ${m.notes?`<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>${m.notes}</div></div>`:''}
-    ${div?`<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:10px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Dividends 2021–2023</div><div style="font-weight:800;font-size:17px;color:var(--g2)">UGX ${fmt(div.total)}</div><div style="font-size:11px;color:var(--light)">2021: ${fmt(div.d2021)} · 2022: ${fmt(div.d2022)} · 2023: ${fmt(div.d2023)}</div></div>`:''}
-    <div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div>`;
+  document.getElementById('modal-member-body').innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">'
+    +'<div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Membership</div><div style="font-weight:700">'+(m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum)+'</div></div>'
+    +'<div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Total Contributed</div><div style="font-weight:700;color:var(--g2)">UGX '+fmt(grand)+'</div></div>'
+    +'<div style="padding:9px;background:#dcfce7;border-radius:8px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase">Loan Limit (25% of 2020–2025)</div><div style="font-weight:700;color:var(--g2)">UGX '+fmt(ll)+'</div></div>'
+    +'<div style="padding:9px;background:var(--cream);border-radius:8px"><div style="font-size:10px;color:var(--light);text-transform:uppercase">Member Since</div><div style="font-weight:700">'+m.joinYear+'</div></div>'
+    +'</div>'
+    +'<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:600;color:var(--mid);margin-bottom:6px">2026 ANNUAL PROGRESS</div>'+progBar(paid26,tgt)+'</div>'
+    +(m.notes?'<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>'+m.notes+'</div></div>':'')
+    +(div?'<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:10px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Dividends 2021–2023</div><div style="font-weight:800;font-size:17px;color:var(--g2)">UGX '+fmt(div.total)+'</div><div style="font-size:11px;color:var(--light)">2021: '+fmt(div.d2021)+' · 2022: '+fmt(div.d2022)+' · 2023: '+fmt(div.d2023)+'</div></div>':'')
+    +'<div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>'+histRows+'</tbody></table></div>';
   openModal('member-modal');
 };
 
@@ -1213,15 +1357,18 @@ window.openMemberProfile=function(mid){
 function renderMyAccount(){
   const u=STATE.user;if(!u)return;
   const m=STATE.members.find(x=>x.id===u.memberId);
-  if(!m){document.getElementById('myaccount-content').innerHTML='<div class="alert warn"><div class="alert-icon">⚠️</div><div>No linked member record. Ask admin.</div></div>';return;}
+  if(!m){
+    document.getElementById('myaccount-content').innerHTML='<div class="alert warn"><div class="alert-icon">⚠️</div><div>No linked member record. Ask admin.</div></div>';
+    return;
+  }
   document.getElementById('myaccount-header').querySelector('h2').textContent=m.name;
-  document.getElementById('myaccount-header').querySelector('p').textContent=`${m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum} · Since ${m.joinYear}`;
+  document.getElementById('myaccount-header').querySelector('p').textContent=(m.type==='platinum'?'Platinum P'+m.platinumNum:'Golden G'+m.goldNum)+' · Since '+m.joinYear;
   const years=[2020,2021,2022,2023,2024,2025,2026];let grand=0;
   const histRows=years.map(y=>{
     const c=(STATE.contributions[y]||{})[m.id]||{};
     const s=(c.sub||[]).reduce((a,b)=>a+b,0),w=(c.welfare||[]).reduce((a,b)=>a+b,0),g=(c.gla||[]).reduce((a,b)=>a+b,0),u2=(c.ut||[]).reduce((a,b)=>a+b,0),total=s+w+g+u2;
     grand+=total;if(!total&&y<m.joinYear)return'';
-    return`<tr><td><strong>${y}</strong></td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td></tr>`;
+    return '<tr><td><strong>'+y+'</strong></td><td>'+(s?fmt(s):'—')+'</td><td>'+(w?fmt(w):'—')+'</td><td>'+(g?fmt(g):'—')+'</td><td>'+(u2?fmt(u2):'—')+'</td><td><strong>'+(total?fmt(total):'—')+'</strong></td></tr>';
   }).join('');
   const ll=loanLimit(m.id);
   const div=DIVIDENDS_DATA.find(d=>d.id===m.id);
@@ -1232,467 +1379,424 @@ function renderMyAccount(){
     const s=(cc.sub||[])[i]||0,w=(cc.welfare||[])[i]||0,g=(cc.gla||[])[i]||0,u2=(cc.ut||[])[i]||0,total=s+w+g+u2;
     const full=CONFIG.monthlyRates.sub+CONFIG.monthlyRates.welfare+CONFIG.monthlyRates.gla+CONFIG.monthlyRates.ut;
     const isFuture=(cyear===TODAY_YEAR&&i>TODAY_MONTH);
-    const[badge,cls]=isFuture?['Future','b-gray']:total>=full?['✓ Paid','b-green']:total>0?['Partial','b-amber']:['Due','b-red'];
-    return`<tr><td>${MONTHS_FULL[i]}</td><td>${s?fmt(s):'—'}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u2?fmt(u2):'—'}</td><td><strong>${total?fmt(total):'—'}</strong></td><td><span class="badge ${cls}">${badge}</span></td></tr>`;
+    const badge=isFuture?'Future':total>=full?'✓ Paid':total>0?'Partial':'Due';
+    const cls=isFuture?'b-gray':total>=full?'b-green':total>0?'b-amber':'b-red';
+    return '<tr><td>'+MONTHS_FULL[i]+'</td><td>'+(s?fmt(s):'—')+'</td><td>'+(w?fmt(w):'—')+'</td><td>'+(g?fmt(g):'—')+'</td><td>'+(u2?fmt(u2):'—')+'</td><td><strong>'+(total?fmt(total):'—')+'</strong></td><td><span class="badge '+cls+'">'+badge+'</span></td></tr>';
   }).join('');
-  // My juniors
   const myJuniors=JUNIORS_2024.filter(j=>j.parentId===m.id);
-  const juniorsHtml=myJuniors.length?`<div class="card mb"><div class="card-title">🌿 My Juniors (2024)</div><div class="table-wrap"><table><thead><tr><th>Junior</th><th>Sub</th><th>Welfare</th><th>Total</th><th>Balance</th></tr></thead><tbody>${myJuniors.map(j=>`<tr><td class="member-name">${j.name}</td><td>${j.sub?fmt(j.sub):'—'}</td><td>${j.wel?fmt(j.wel):'—'}</td><td><strong>${fmt(j.sub+j.wel)}</strong></td><td style="color:var(--red)">${j.bal?fmt(j.bal):'—'}</td></tr>`).join('')}</tbody></table></div></div>`:'';
-  document.getElementById('myaccount-content').innerHTML=`
-    <div class="grid-4 mb">
-      <div class="stat gold"><div class="stat-lbl">Total Contributed</div><div class="stat-val">${fmtM(grand)}</div></div>
-      <div class="stat green"><div class="stat-lbl">Loan Limit</div><div class="stat-val">${fmtM(ll)}</div><div class="stat-sub">25% of 2020–2025</div></div>
-      <div class="stat blue"><div class="stat-lbl">Membership</div><div class="stat-val">${2026-m.joinYear} yrs</div></div>
-      <div class="stat purple"><div class="stat-lbl">My Dividends</div><div class="stat-val">${div?fmtM(div.total):'—'}</div></div>
-    </div>
-    <div class="card mb">
-      <div class="card-title">📊 ${cyear} Annual Progress</div>
-      ${progBar(paid26,target)}
-    </div>
-    <div class="grid-2 mb">
-      <div class="card"><div class="card-title">📅 ${cyear} Monthly Breakdown</div><div class="table-wrap"><table><thead><tr><th>Month</th><th>Sub</th><th>Wel</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>${monthRows}</tbody></table></div></div>
-      <div class="card"><div class="car…      <div class="card"><div class="card-title">📜 History (All Years)</div>
-      <div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${histRows}</tbody></table></div></div>
-    </div>
-    ${m.notes?`<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>${m.notes}</div></div>`:''}
-    ${div?`<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:14px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600;margin-bottom:4px">My Dividends 2021–2023</div><div style="font-weight:800;font-size:18px;color:var(--g2)">UGX ${fmt(div.total)}</div><div style="font-size:11px;color:var(--light)">2021: ${div.d2021?fmt(div.d2021):'—'} · 2022: ${div.d2022?fmt(div.d2022):'—'} · 2023: ${div.d2023?fmt(div.d2023):'—'}</div></div>`:''}
-    ${juniorsHtml}
-    <div class="card"><div class="card-title">💰 Loan Eligibility</div>
-      <div class="grid-2">
-        <div style="padding:12px;background:#dcfce7;border-radius:10px">
-          <div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Max Loan (25% of contributions 2020–2025)</div>
-          <div style="font-weight:800;font-size:22px;color:var(--g2);margin:4px 0">UGX ${fmt(ll)}</div>
-          <div style="font-size:11px;color:var(--light)">Based on all your contributions through Dec 2025</div>
-        </div>
-        <div style="padding:12px;background:var(--cream);border-radius:10px;font-size:12px;display:flex;flex-direction:column;gap:6px">
-          <div style="padding:7px;background:#fff;border-radius:7px">📋 Submit feasibility study to secretary</div>
-          <div style="padding:7px;background:#fff;border-radius:7px">💱 Interest at prevailing economic conditions</div>
-          <div style="padding:7px;background:#fff;border-radius:7px">✅ Club is 6 years old — loans now available</div>
-        </div>
-      </div>
-    </div>`;
+  const juniorsHtml=myJuniors.length
+    ?'<div class="card mb"><div class="card-title">🌿 My Juniors (2024)</div><div class="table-wrap"><table><thead><tr><th>Junior</th><th>Sub</th><th>Welfare</th><th>Total</th><th>Balance</th></tr></thead><tbody>'
+      +myJuniors.map(j=>'<tr><td class="member-name">'+j.name+'</td><td>'+(j.sub?fmt(j.sub):'—')+'</td><td>'+(j.wel?fmt(j.wel):'—')+'</td><td><strong>'+fmt(j.sub+j.wel)+'</strong></td><td style="color:var(--red)">'+(j.bal?fmt(j.bal):'—')+'</td></tr>').join('')
+      +'</tbody></table></div></div>'
+    :'';
+
+  /* FIX: was truncated as '<div class="car…' in original — now correctly closed */
+  document.getElementById('myaccount-content').innerHTML=
+    '<div class="grid-4 mb">'
+    +'<div class="stat gold"><div class="stat-lbl">Total Contributed</div><div class="stat-val">'+fmtM(grand)+'</div></div>'
+    +'<div class="stat green"><div class="stat-lbl">Loan Limit</div><div class="stat-val">'+fmtM(ll)+'</div><div class="stat-sub">25% of 2020–2025</div></div>'
+    +'<div class="stat blue"><div class="stat-lbl">Membership</div><div class="stat-val">'+(2026-m.joinYear)+' yrs</div></div>'
+    +'<div class="stat purple"><div class="stat-lbl">My Dividends</div><div class="stat-val">'+(div?fmtM(div.total):'—')+'</div></div>'
+    +'</div>'
+    +'<div class="card mb"><div class="card-title">📊 '+cyear+' Annual Progress</div>'+progBar(paid26,target)+'</div>'
+    +'<div class="grid-2 mb">'
+    +'<div class="card"><div class="card-title">📅 '+cyear+' Monthly Breakdown</div><div class="table-wrap"><table><thead><tr><th>Month</th><th>Sub</th><th>Wel</th><th>GLA</th><th>UT</th><th>Total</th><th>Status</th></tr></thead><tbody>'+monthRows+'</tbody></table></div></div>'
+    +'<div class="card"><div class="card-title">📜 History (All Years)</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Sub</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>'+histRows+'</tbody></table></div></div>'
+    +'</div>'
+    +(m.notes?'<div class="alert info mb"><div class="alert-icon">ℹ️</div><div>'+m.notes+'</div></div>':'')
+    +(div?'<div style="padding:10px;background:#dcfce7;border-radius:8px;margin-bottom:14px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600;margin-bottom:4px">My Dividends 2021–2023</div><div style="font-weight:800;font-size:18px;color:var(--g2)">UGX '+fmt(div.total)+'</div><div style="font-size:11px;color:var(--light)">2021: '+(div.d2021?fmt(div.d2021):'—')+' · 2022: '+(div.d2022?fmt(div.d2022):'—')+' · 2023: '+(div.d2023?fmt(div.d2023):'—')+'</div></div>':'')
+    +juniorsHtml
+    +'<div class="card"><div class="card-title">💰 Loan Eligibility</div>'
+    +'<div class="grid-2">'
+    +'<div style="padding:12px;background:#dcfce7;border-radius:10px"><div style="font-size:10px;color:var(--g2);text-transform:uppercase;font-weight:600">Max Loan (25% of contributions 2020–2025)</div><div style="font-weight:800;font-size:22px;color:var(--g2);margin:4px 0">UGX '+fmt(ll)+'</div><div style="font-size:11px;color:var(--light)">Based on all your contributions through Dec 2025</div></div>'
+    +'<div style="padding:12px;background:var(--cream);border-radius:10px;font-size:12px;display:flex;flex-direction:column;gap:6px"><div style="padding:7px;background:#fff;border-radius:7px">📋 Submit feasibility study to secretary</div><div style="padding:7px;background:#fff;border-radius:7px">💱 Interest at prevailing economic conditions</div><div style="padding:7px;background:#fff;border-radius:7px">✅ Club is 6 years old — loans now available</div></div>'
+    +'</div></div>';
 }
+
 function initMyAccount(){renderMyAccount();}
 
+function initInvestments(){
+  document.getElementById('investment-timeline').innerHTML=INVESTMENTS.map(inv=>{
+    const dotCls={in:'gold',out:'red',land:'land'}[inv.type]||'';
+    const amtEl=inv.type==='in'
+      ?'<div class="tl-profit">▲ UGX '+fmt(inv.amount)+(inv.profit?' (+'+fmt(inv.profit)+' profit)':'')+'</div>'
+      :inv.type==='land'
+      ?'<div style="font-size:12px;font-weight:700;color:var(--blue);margin-top:4px">🏡 UGX '+fmt(inv.amount)+'</div>'
+      :'<div class="tl-loss">▼ UGX '+fmt(inv.amount)+'</div>';
+    return '<div class="tl-item"><div class="tl-dot '+dotCls+'"></div><div class="tl-date">'+inv.date+'</div><div class="tl-title">'+inv.title+'</div>'+(inv.detail?'<div class="tl-detail">'+inv.detail+'</div>':'')+amtEl+'</div>';
+  }).join('');
+  const NSANJA=[
+    {period:'May–Jul 2021',invested:4900000,returned:5480000},
+    {period:'Aug 2021–Jan 2022',invested:6300000,returned:6900000},
+    {period:'Jun–Aug 2022',invested:9000000,returned:10400000},
+    {period:'Aug 2023–Feb 2023',invested:13500000,returned:15000000},
+    {period:'Jul–Aug 2024',invested:5000000,returned:5600000},
+    {period:'Dec 2024–(active)',invested:13500000,returned:null},
+  ];
+  document.getElementById('nsanja-tbody').innerHTML=NSANJA.map(n=>{
+    const p=n.returned?n.returned-n.invested:null;
+    return '<tr><td>'+n.period+'</td><td>UGX '+fmt(n.invested)+'</td><td>'+(n.returned?'UGX '+fmt(n.returned):'<span class="badge b-amber">Active</span>')+'</td><td>'+(p?'<span style="color:var(--g3);font-weight:700">+'+fmt(p)+'</span>':'—')+'</td><td><strong>'+(p?((p/n.invested)*100).toFixed(0)+'%':'—')+'</strong></td></tr>';
+  }).join('');
+}
 
-
-function initInvestments() {
-    document.getElementById('investment-timeline').innerHTML=INVESTMENTS.map(inv=>{
-      const dotCls={in:'gold',out:'red',land:'land'}[inv.type]||'';
-      const amtEl=inv.type==='in'?`<div class="tl-profit">▲ UGX ${fmt(inv.amount)}${inv.profit?' (+'+fmt(inv.profit)+'  profit)':''}</div>`:inv.type==='land'?`<div style="font-size:12px;font-weight:700;color:var(--blue);margin-top:4px">🏡 UGX ${fmt(inv.amount)}</div>`:`<div class="tl-loss">▼ UGX ${fmt(inv.amount)}</div>`;
-      return`<div class="tl-item"><div class="tl-dot ${dotCls}"></div><div class="tl-date">${inv.date}</div><div class="tl-title">${inv.title}</div>${inv.detail?`<div class="tl-detail">${inv.detail}</div>`:''}${amtEl}</div>`;
-    }).join('');
-    const NSANJA=[{period:'May–Jul 2021',invested:4900000,returned:5480000},{period:'Aug 2021–Jan 2022',invested:6300000,returned:6900000},{period:'Jun–Aug 2022',invested:9000000,returned:10400000},{period:'Aug 2023–Feb 2023',invested:13500000,returned:15000000},{period:'Jul–Aug 2024',invested:5000000,returned:5600000},{period:'Dec 2024–(active)',invested:13500000,returned:null}];
-    document.getElementById('nsanja-tbody').innerHTML=NSANJA.map(n=>{const p=n.returned?n.returned-n.invested:null;return`<tr><td>${n.period}</td><td>UGX ${fmt(n.invested)}</td><td>${n.returned?'UGX '+fmt(n.returned):'<span class="badge b-amber">Active</span>'}</td><td>${p?'<span style="color:var(--g3);font-weight:700">+'+fmt(p)+'</span>':'—'}</td><td><strong>${p?((p/n.invested)*100).toFixed(0)+'%':'—'}</strong></td></tr>`;}).join('');
+/* ── DIVIDENDS ── */
+function initDividends(){
+  document.getElementById('dividends-tbody').innerHTML=DIVIDENDS_DATA.map(d=>'<tr><td class="member-name">'+d.name+'</td><td>'+(d.d2021?fmt(d.d2021):'—')+'</td><td>'+(d.d2022?fmt(d.d2022):'—')+'</td><td>'+(d.d2023?fmt(d.d2023):'—')+'</td><td><strong>UGX '+fmt(d.total)+'</strong></td></tr>').join('');
+  const myId=STATE.user&&STATE.user.memberId;
+  const myDiv=myId&&DIVIDENDS_DATA.find(d=>d.id===myId);
+  if(myDiv){
+    document.getElementById('my-dividend-val').textContent=fmt(myDiv.total);
+  }else{
+    document.getElementById('my-dividend-val').textContent='See table';
   }
+}
 
-  /* ============================================================
-     SECTION N — DIVIDENDS, FINANCIALS, JUNIORS
-  ============================================================ */
-  function initDividends(){
-    document.getElementById('dividends-tbody').innerHTML=DIVIDENDS_DATA.map(d=>`<tr><td class="member-name">${d.name}</td><td>${d.d2021?fmt(d.d2021):'—'}</td><td>${d.d2022?fmt(d.d2022):'—'}</td><td>${d.d2023?fmt(d.d2023):'—'}</td><td><strong>UGX ${fmt(d.total)}</strong></td></tr>`).join('');
-    // Show current user's dividend total dynamically
-    const myId = STATE.user && STATE.user.memberId;
-    const myDiv = myId && DIVIDENDS_DATA.find(d => d.id === myId || (d.name && d.name.toLowerCase().replace(/[^a-z]/g,'').includes((STATE.user.name||'').toLowerCase().replace(/[^a-z]/g,'').slice(0,6))));
-    if (myDiv) {
-      document.getElementById('my-dividend-val').textContent = fmt(myDiv.total);
-      document.getElementById('my-dividend-stat').querySelector('.stat-lbl').textContent = 'My Dividends';
-    } else {
-      document.getElementById('my-dividend-val').textContent = 'See table';
-    }
+/* ── FINANCIALS ── */
+function initFinancials(){
+  /* FIX: pass null for btn to avoid null.closest() error on init */
+  showFinTab('income',null);
+}
+
+window.showFinTab=function(tab,btn){
+  if(btn){
+    btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
   }
-
-  function initFinancials(){showFinTab('income',document.querySelector('#page-financials .tab'));}
-  window.showFinTab = function(tab,btn){
-    if(btn){btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
-    document.getElementById('fin-content').innerHTML={
-      income:`<div class="card"><div class="card-title">💼 Income Statement — All Years</div><div class="grid-4 mb"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Total Inflow</div><div style="font-weight:700;font-size:15px">UGX 134,393,100</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700;font-size:15px">UGX 18,632,222</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700;font-size:15px">UGX 75,460,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Bank Balance</div><div style="font-weight:800;font-size:15px;color:var(--g2)">UGX 37,714,589</div></div></div><div class="table-wrap"><table><thead><tr><th>Source</th><th style="text-align:right">Amount</th></tr></thead><tbody>${[['2020 Subscriptions',4876000],['2021 Subscriptions',7376500],['2022 Subscriptions',12355000],['2023 Subscriptions',14720000],['2024 Subscriptions',14240000],['2025 Subscriptions',12556000],['2026 (YTD)',1240000],['Welfare 2021–2026',15035000],['GLA 2024–2026',9087000],['Unit Trust 2024–2026',6990000],['Juniors 2024–2026',3980000],['Investment Returns',22850000],['Diaspora Fees',2200000],['Fines',1690000],['Membership Fees',1832600],['Estates Account',2639000],['Bank Interest',26000]].map(([k,v])=>`<tr><td>${k}</td><td style="text-align:right">${fmt(v)}</td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td style="text-align:right"><strong>134,393,100</strong></td></tr></tbody></table></div></div>`,
-      expenses:`<div class="card"><div class="card-title">💸 Expenses Ledger</div><div style="margin-bottom:10px"><span class="badge b-red">Total: UGX 18,632,222</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>${[['Mar 2021','Club registration + certification',192000],['Aug 2021','Bank account opening',150000],['Oct 2021','Bank closure & transfer',71000],['2022','Logo, stamp, files',285000],['Oct 2022','Club Reunion',1440000],['Jan 2023','AGM 2022',1300000],['Aug 2023','Nakimuli Annet payout (30%)',294000],['Jun 2023','Kenneth burial condolences',1000000],['Sep 2023','Nakacwa Fortunate condolences',1000000],['Dec 2023','AGM 2023',450000],['Aug 2024','Eldaz property recovery',1270000],['Nov 2024','Condolences – Hellen',500000],['Nov 2024','Club Reunion 2024',850000],['Dec 2024','AGM 2024',1500000],['Oct 2025','Namubiru + Nansubuga payout',2540000],['Nov 2025','Dividends – Claire, Kigonya, Kenneth',1162000],['Various','Birthday cakes',400000],['May 2025','Prayers for deceased',200000]].map(([d,p,a])=>`<tr><td style="font-size:11px;color:var(--light)">${d}</td><td>${p}</td><td>${fmt(a)}</td></tr>`).join('')}</tbody></table></div></div>`,
-      diaspora:`<div class="card"><div class="card-title">✈️ Diaspora Fees (UGX 20K/month extra)</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>Total</th></tr></thead><tbody>${[['Nalukenge Rashida',160000,240000,220000,240000],['Namubiru Rose',180000,100000,0,0],['Nakiwala Ruth',0,160000,240000,240000],['Ssali Simon',0,0,60000,240000],['Matovu Julius',0,0,0,60000],['Nampewo Winniefred',0,0,0,60000]].map(([n,...vals])=>`<tr><td class="member-name">${n}</td>${vals.map(v=>`<td>${v?fmt(v):'—'}</td>`).join('')}<td><strong>${fmt(vals.reduce((a,b)=>a+b,0))}</strong></td></tr>`).join('')}</tbody></table></div></div>`,
-      loans:`<div class="card"><div class="card-title">🏦 Loans Book</div><div class="alert success mb"><div class="alert-icon">✅</div><div>All external loans cleared. Member loans available from 2025.</div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Borrower</th><th>Principal</th><th>Rate</th><th>Status</th></tr></thead><tbody><tr><td>Mar 2023</td><td>2Fumbe Kitchen Supplies</td><td>UGX 7,000,000</td><td>10%/mo</td><td><span class="badge b-green">Cleared</span></td></tr><tr><td>Mar 2023</td><td>Eldaz Meat Parlour</td><td>UGX 3,000,000</td><td>15%/mo</td><td><span class="badge b-amber">Partial</span></td></tr></tbody></table></div></div>`,
-      estates:`<div class="card"><div class="card-title">🏛️ Estates Account</div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Principal</th><th>Dividends</th><th>Total</th><th>Status</th></tr></thead><tbody><tr><td class="member-name">Namuyimba Kenneth</td><td>UGX 1,181,500</td><td>UGX 0</td><td><strong>UGX 1,181,500</strong></td><td><span class="badge b-blue">→ Nakiwala Ruth</span></td></tr><tr><td class="member-name">Nakacwa Fortunate</td><td>UGX 1,457,500</td><td>UGX 191,636</td><td><strong>UGX 1,649,136</strong></td><td><span class="badge b-amber">Held</span></td></tr></tbody></table></div></div>`
-    }[tab]||'';
+  const content={
+    income:'<div class="card"><div class="card-title">💼 Income Statement — All Years</div><div class="grid-4 mb"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Total Inflow</div><div style="font-weight:700;font-size:15px">UGX 134,393,100</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700;font-size:15px">UGX 18,632,222</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700;font-size:15px">UGX 75,460,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Bank Balance</div><div style="font-weight:800;font-size:15px;color:var(--g2)">UGX 37,714,589</div></div></div><div class="table-wrap"><table><thead><tr><th>Source</th><th style="text-align:right">Amount</th></tr></thead><tbody>'+[['2020 Subscriptions',4876000],['2021 Subscriptions',7376500],['2022 Subscriptions',12355000],['2023 Subscriptions',14720000],['2024 Subscriptions',14240000],['2025 Subscriptions',12556000],['2026 (YTD)',1240000],['Welfare 2021–2026',15035000],['GLA 2024–2026',9087000],['Unit Trust 2024–2026',6990000],['Juniors 2024–2026',3980000],['Investment Returns',22850000],['Diaspora Fees',2200000],['Fines',1690000],['Membership Fees',1832600],['Estates Account',2639000],['Bank Interest',26000]].map(([k,v])=>'<tr><td>'+k+'</td><td style="text-align:right">'+fmt(v)+'</td></tr>').join('')+'<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td style="text-align:right"><strong>134,393,100</strong></td></tr></tbody></table></div></div>',
+    expenses:'<div class="card"><div class="card-title">💸 Expenses Ledger</div><div style="margin-bottom:10px"><span class="badge b-red">Total: UGX 18,632,222</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+[['Mar 2021','Club registration + certification',192000],['Aug 2021','Bank account opening',150000],['Oct 2021','Bank closure & transfer',71000],['2022','Logo, stamp, files',285000],['Oct 2022','Club Reunion',1440000],['Jan 2023','AGM 2022',1300000],['Aug 2023','Nakimuli Annet payout (30%)',294000],['Jun 2023','Kenneth burial condolences',1000000],['Sep 2023','Nakacwa Fortunate condolences',1000000],['Dec 2023','AGM 2023',450000],['Aug 2024','Eldaz property recovery',1270000],['Nov 2024','Condolences – Hellen',500000],['Nov 2024','Club Reunion 2024',850000],['Dec 2024','AGM 2024',1500000],['Oct 2025','Namubiru + Nansubuga payout',2540000],['Nov 2025','Dividends – Claire, Kigonya, Kenneth',1162000],['Various','Birthday cakes',400000],['May 2025','Prayers for deceased',200000]].map(([d,p,a])=>'<tr><td style="font-size:11px;color:var(--light)">'+d+'</td><td>'+p+'</td><td>'+fmt(a)+'</td></tr>').join('')+'</tbody></table></div></div>',
+    diaspora:'<div class="card"><div class="card-title">✈️ Diaspora Fees (UGX 20K/month extra)</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>Total</th></tr></thead><tbody>'+[['Nalukenge Rashida',160000,240000,220000,240000],['Namubiru Rose',180000,100000,0,0],['Nakiwala Ruth',0,160000,240000,240000],['Ssali Simon',0,0,60000,240000],['Matovu Julius',0,0,0,60000],['Nampewo Winniefred',0,0,0,60000]].map(([n,...vals])=>'<tr><td class="member-name">'+n+'</td>'+vals.map(v=>'<td>'+(v?fmt(v):'—')+'</td>').join('')+'<td><strong>'+fmt(vals.reduce((a,b)=>a+b,0))+'</strong></td></tr>').join('')+'</tbody></table></div></div>',
+    loans:'<div class="card"><div class="card-title">🏦 Loans Book</div><div class="alert success mb"><div class="alert-icon">✅</div><div>All external loans cleared. Member loans available from 2025.</div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Borrower</th><th>Principal</th><th>Rate</th><th>Status</th></tr></thead><tbody><tr><td>Mar 2023</td><td>2Fumbe Kitchen Supplies</td><td>UGX 7,000,000</td><td>10%/mo</td><td><span class="badge b-green">Cleared</span></td></tr><tr><td>Mar 2023</td><td>Eldaz Meat Parlour</td><td>UGX 3,000,000</td><td>15%/mo</td><td><span class="badge b-amber">Partial</span></td></tr></tbody></table></div></div>',
+    estates:'<div class="card"><div class="card-title">🏛️ Estates Account</div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Principal</th><th>Dividends</th><th>Total</th><th>Status</th></tr></thead><tbody><tr><td class="member-name">Namuyimba Kenneth</td><td>UGX 1,181,500</td><td>UGX 0</td><td><strong>UGX 1,181,500</strong></td><td><span class="badge b-blue">→ Nakiwala Ruth</span></td></tr><tr><td class="member-name">Nakacwa Fortunate</td><td>UGX 1,457,500</td><td>UGX 191,636</td><td><strong>UGX 1,649,136</strong></td><td><span class="badge b-amber">Held</span></td></tr></tbody></table></div></div>'
   };
+  document.getElementById('fin-content').innerHTML=content[tab]||'';
+};
 
-  function initJuniors(){showJuniorYear(2024,document.querySelector('#page-juniors .tab'));}
-  window.showJuniorYear = function(year,btn){
-    if(btn){btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
-    const totSub=JUNIORS_2024.reduce((a,j)=>a+j.sub,0),totWel=JUNIORS_2024.reduce((a,j)=>a+j.wel,0);
-    document.getElementById('juniors-content').innerHTML=`<div class="card"><div class="card-title">👶 Junior Members — ${year}</div><div class="grid-4 mb"><div style="padding:10px;background:var(--teal2);border-radius:9px"><div style="font-size:10px;color:var(--teal)">Members</div><div style="font-weight:700;font-size:18px">${JUNIORS_2024.length}</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Subscription</div><div style="font-weight:700;font-size:18px">${fmtM(totSub)}</div></div><div style="padding:10px;background:var(--gold4);border-radius:9px"><div style="font-size:10px;color:var(--gold)">Welfare</div><div style="font-weight:700;font-size:18px">${fmtM(totWel)}</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Monthly</div><div style="font-weight:700;font-size:18px">20K + 5K</div></div></div><div class="table-wrap"><table><thead><tr><th>Junior</th><th>Parent</th><th>Sub</th><th>Welfare</th><th>Total</th><th>Balance</th><th>Progress</th></tr></thead><tbody>${JUNIORS_2024.map(j=>{const tot=j.sub+j.wel,pct=Math.min(100,Math.round((tot/300000)*100));return`<tr><td class="member-name">${j.name}</td><td style="font-size:11px;color:var(--light)">${j.parent}</td><td>${j.sub?fmt(j.sub):'—'}</td><td>${j.wel?fmt(j.wel):'—'}</td><td><strong>${tot?fmt(tot):'—'}</strong></td><td style="color:var(--red)">${j.bal?fmt(j.bal):'—'}</td><td><div class="prog-bar" style="width:70px;display:inline-block"><div class="prog-fill" style="width:${pct}%;background:var(--teal)"></div></div> ${pct}%</td></tr>`;}).join('')}</tbody></table></div></div>`;
-  };
+/* ── JUNIORS ── */
+function initJuniors(){showJuniorYear(2024,null);}
 
-  /* ============================================================
-     SECTION O — VOTING MODULE
-     Admin creates votes in Firestore. Members see them and vote.
-     Each vote is one-per-user (Firestore rules enforce this).
-     Results are only visible to admin until vote closes.
-  ============================================================ */
-  async function renderVotePage() {
-    if (!STATE.votes) return;
-    const activeVotes = STATE.votes.filter(v => v.status === 'open' && new Date() < new Date(v.openUntil));
-    const closedVotes = STATE.votes.filter(v => v.status === 'closed' || new Date() >= new Date(v.openUntil));
-
-    // Render active votes
-    if (activeVotes.length === 0) {
-      document.getElementById('active-votes').innerHTML = '<div class="alert info"><div class="alert-icon">📋</div><div>No active votes at this time. Check back during AGM or election period.</div></div>';
-    } else {
-      document.getElementById('active-votes').innerHTML = `<h3 style="font-family:Playfair Display,serif;color:var(--g1);margin-bottom:12px">🟢 Active Votes</h3>` +
-        (await Promise.all(activeVotes.map(v => renderVoteCard(v)))).join('');
-    }
-
-    // Render closed votes (admin sees results, members see participation only)
-    if (closedVotes.length > 0) {
-      document.getElementById('closed-votes').innerHTML = `<h3 style="font-family:Playfair Display,serif;color:var(--mid);margin:16px 0 12px">🔒 Closed Votes</h3>` +
-        (await Promise.all(closedVotes.map(v => renderVoteCard(v, true)))).join('');
-    }
+window.showJuniorYear=function(year,btn){
+  if(btn){
+    btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
   }
+  const totSub=JUNIORS_2024.reduce((a,j)=>a+j.sub,0),totWel=JUNIORS_2024.reduce((a,j)=>a+j.wel,0);
+  document.getElementById('juniors-content').innerHTML='<div class="card"><div class="card-title">👶 Junior Members — '+year+'</div><div class="grid-4 mb"><div style="padding:10px;background:var(--teal2);border-radius:9px"><div style="font-size:10px;color:var(--teal)">Members</div><div style="font-weight:700;font-size:18px">'+JUNIORS_2024.length+'</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Subscription</div><div style="font-weight:700;font-size:18px">'+fmtM(totSub)+'</div></div><div style="padding:10px;background:var(--gold4);border-radius:9px"><div style="font-size:10px;color:var(--gold)">Welfare</div><div style="font-weight:700;font-size:18px">'+fmtM(totWel)+'</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Monthly</div><div style="font-weight:700;font-size:18px">20K + 5K</div></div></div><div class="table-wrap"><table><thead><tr><th>Junior</th><th>Parent</th><th>Sub</th><th>Welfare</th><th>Total</th><th>Balance</th><th>Progress</th></tr></thead><tbody>'
+    +JUNIORS_2024.map(j=>{const tot=j.sub+j.wel,pct=Math.min(100,Math.round((tot/300000)*100));return '<tr><td class="member-name">'+j.name+'</td><td style="font-size:11px;color:var(--light)">'+j.parent+'</td><td>'+(j.sub?fmt(j.sub):'—')+'</td><td>'+(j.wel?fmt(j.wel):'—')+'</td><td><strong>'+(tot?fmt(tot):'—')+'</strong></td><td style="color:var(--red)">'+(j.bal?fmt(j.bal):'—')+'</td><td><div class="prog-bar" style="width:70px;display:inline-block"><div class="prog-fill" style="width:'+pct+'%;background:var(--teal)"></div></div> '+pct+'%</td></tr>';}).join('')
+    +'</tbody></table></div></div>';
+};
 
-  async function renderVoteCard(vote, isClosed=false) {
-    // Check if current user has voted
-    let hasVoted = false, myChoice = null;
-    if (STATE.user?.uid && !STATE.user.uid.startsWith('demo')) {
-      try {
-        const { db, doc, getDoc } = window._FB;
-        const ballot = await getDoc(doc(db, 'votes', vote.id, 'ballots', STATE.user.uid));
-        if (ballot.exists()) { hasVoted = true; myChoice = ballot.data().choice; }
-      } catch(e) {}
-    }
-
-    // Admin sees results
-    let resultsHtml = '';
-    if (STATE.isAdmin || isClosed) {
-      // Count ballots
-      const counts = {};
-      (vote.options||[]).forEach(o => { counts[o] = 0; });
-      try {
-        const { db, collection, getDocs } = window._FB;
-        const ballots = await getDocs(collection(db, 'votes', vote.id, 'ballots'));
-        ballots.docs.forEach(b => { const c = b.data().choice; if(counts[c]!==undefined) counts[c]++; });
-        const total = Object.values(counts).reduce((a,b)=>a+b,0);
-        resultsHtml = `<div style="margin-top:14px;padding:12px;background:var(--cream);border-radius:10px">
-          <div style="font-weight:700;font-size:12px;color:var(--g1);margin-bottom:10px">${STATE.isAdmin?'📊 Live Results':'📊 Final Results'} (${total} votes cast)</div>
-          ${(vote.options||[]).map(o=>{const pct=total?Math.round((counts[o]/total)*100):0;return`<div class="vote-result-row"><div class="result-label"><span>${o}</span><span>${counts[o]} (${pct}%)</span></div><div class="vote-progress"><div class="vote-progress-fill" style="width:${pct}%"></div></div></div>`;}).join('')}
-        </div>`;
-      } catch(e) {}
-    }
-
-    const timeLeft = isClosed ? '' : (() => {
-      const ms = new Date(vote.openUntil) - new Date();
-      if(ms<=0) return 'Closing…';
-      const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
-      return `Closes in ${h}h ${m}m`;
-    })();
-
-    const optionsHtml = (isClosed || hasVoted) ? '' :
-      `<div class="vote-options">${(vote.options||[]).map(o=>`<button class="vote-option" onclick="castVote('${vote.id}','${o.replace(/'/g,"\\'")}')">${o}</button>`).join('')}</div>`;
-
-    return `<div class="vote-card ${isClosed?'closed':'active'}">
-      <div class="vote-title">${vote.title}</div>
-      <div class="vote-meta">${vote.description||''} ${timeLeft?'· '+timeLeft:''}</div>
-      ${hasVoted?`<div class="alert success"><div class="alert-icon">✅</div><div>You voted: <strong>${myChoice}</strong></div></div>`:''}
-      ${!hasVoted&&!isClosed?optionsHtml:''}
-      ${resultsHtml}
-    </div>`;
+/* ── VOTING ── */
+async function renderVotePage(){
+  if(!STATE.votes)return;
+  const now=new Date();
+  const activeVotes=STATE.votes.filter(v=>v.status==='open'&&new Date(v.openUntil)>now);
+  const closedVotes=STATE.votes.filter(v=>v.status==='closed'||new Date(v.openUntil)<=now);
+  if(activeVotes.length===0){
+    document.getElementById('active-votes').innerHTML='<div class="alert info"><div class="alert-icon">📋</div><div>No active votes at this time. Check back during AGM or election period.</div></div>';
+  }else{
+    document.getElementById('active-votes').innerHTML='<h3 style="font-family:Playfair Display,serif;color:var(--g1);margin-bottom:12px">🟢 Active Votes</h3>'+(await Promise.all(activeVotes.map(v=>renderVoteCard(v)))).join('');
   }
-
-  window.castVote = async function(voteId, choice) {
-    if (STATE.user?.uid?.startsWith('demo')) { showToast('Voting requires real Firebase login', 'error'); return; }
-    if (!confirm(`Confirm your vote: "${choice}"\n\nThis cannot be changed.`)) return;
-    try {
-      const { db, doc, setDoc, serverTimestamp } = window._FB;
-      await setDoc(doc(db, 'votes', voteId, 'ballots', STATE.user.uid), {
-        choice,
-        email: STATE.user.email,
-        timestamp: serverTimestamp(),
-      });
-      showToast('Vote recorded ✓');
-      renderVotePage();
-    } catch(e) {
-      showToast('Error: ' + e.message, 'error');
-    }
-  };
-
-  window.createVote = async function() {
-    if (!STATE.isAdmin) return;
-    const title = document.getElementById('vote-title').value.trim();
-    const desc = document.getElementById('vote-desc').value.trim();
-    const options = document.getElementById('vote-options').value.split('\n').map(o=>o.trim()).filter(Boolean);
-    const hours = parseInt(document.getElementById('vote-duration').value);
-    if (!title || options.length < 2) { alert('Title and at least 2 options required'); return; }
-    if (STATE.user.uid.startsWith('demo')) { showToast('Creating votes requires real Firebase', 'error'); return; }
-    const { db, collection, addDoc, serverTimestamp } = window._FB;
-    await addDoc(collection(db, 'votes'), {
-      title, description: desc, options,
-      openUntil: new Date(Date.now() + hours * 3600000).toISOString(),
-      createdBy: STATE.user.email,
-      createdAt: serverTimestamp(),
-      status: 'open',
-    });
-    document.getElementById('vote-title').value='';
-    document.getElementById('vote-desc').value='';
-    document.getElementById('vote-options').value='';
-    showToast('Vote opened ✓ — Members will see it immediately');
-  };
-
-  window.closeAllVotes = async function() {
-    if (!confirm('Close all active votes now?')) return;
-    const { db, collection, getDocs, doc, setDoc } = window._FB;
-    const snap = await getDocs(collection(db, 'votes'));
-    for (const d of snap.docs) {
-      if (d.data().status === 'open') await setDoc(doc(db,'votes',d.id), {...d.data(), status:'closed'}, {merge:true});
-    }
-    showToast('All votes closed');
-  };
-
-  /* ============================================================
-     SECTION P — COMMITTEE
-  ============================================================ */
-  function initCommittee() {
-    const exec = STATE.committee?.executive || Array(7).fill({}).map((_,i)=>({role:['Chairman','Vice-Chairman','Treasurer','Deputy Treasurer','Secretary','Deputy Secretary','Mobiliser'][i],memberId:''}));
-    const emojis=['👑','🤝','💰','💰','📋','📋','📣'];
-    document.getElementById('exec-committee').innerHTML=exec.map((role,i)=>{
-      const name=role.memberId?memberName(role.memberId):'Vacant',isVacant=!role.memberId;
-      return`<div class="exec-card"><div class="exec-avatar">${isVacant?'?':name[0].toUpperCase()}</div><div class="exec-role">${emojis[i]} ${role.role}</div><div class="exec-name">${isVacant?'<em style="color:var(--light)">Vacant</em>':name}</div>${i<3?'<span class="badge b-gold" style="margin-top:5px">Platinum</span>':''}</div>`;
-    }).join('');
-    const ml=(type,roles)=>{const data=STATE.committee?.[type]||{};return roles.map(r=>{const id=data[r.k];return`<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--cream);border-radius:7px;margin-bottom:5px;font-size:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--g2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">${id?memberName(id)[0]:'?'}</div><div><div style="font-size:10px;color:var(--light);text-transform:uppercase">${r.l}</div><div style="font-weight:600">${id?memberName(id):'<em>Vacant</em>'}</div></div></div>`;}).join('');};
-    document.getElementById('sub-investment').innerHTML=ml('investment',[{k:'chair',l:'Chair'},{k:'sec',l:'Secretary'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'},{k:'m3',l:'Member 3'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">📋</div><div>Prospects, feasibility studies, monitoring.</div></div>';
-    document.getElementById('sub-welfare').innerHTML=ml('welfare',[{k:'chair',l:'Chair'},{k:'treasurer',l:'Treasurer'},{k:'secretary',l:'Secretary'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">❤️</div><div>Social events, welfare spend, member support.</div></div>';
-    document.getElementById('sub-disciplinary').innerHTML=ml('disciplinary',[{k:'patron',l:'Patron'},{k:'whip',l:'Chief Whip'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">⚖️</div><div>Ethics, discipline, conflict resolution.</div></div>';
+  if(closedVotes.length>0){
+    document.getElementById('closed-votes').innerHTML='<h3 style="font-family:Playfair Display,serif;color:var(--mid);margin:16px 0 12px">🔒 Closed Votes</h3>'+(await Promise.all(closedVotes.map(v=>renderVoteCard(v,true)))).join('');
+  }else{
+    document.getElementById('closed-votes').innerHTML='';
   }
+}
 
-  /* ============================================================
-     SECTION Q — REPORTS
-  ============================================================ */
-  function initReports(){showReport('annual',document.querySelector('#page-reports .tab'));}
-  window.showReport = function(type,btn){
-    STATE.currentReportTab=type;
-    if(btn){btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
-    const el=document.getElementById('report-content');
-    if(type==='annual'){
-      const data=[[2020,4876000,0,0,0],[2021,7376500,1475000,0,0],[2022,12355000,2890000,0,0],[2023,14720000,3680000,0,0],[2024,14240000,3560000,4628000,3560000],[2025,12556000,3130000,4069000,3130000],[2026,1240000,300000,390000,300000]];
-      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Annual Financial Summary</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Subscription</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>${data.map(([y,s,w,g,u])=>`<tr><td><strong>${y}</strong></td><td>${fmt(s)}</td><td>${w?fmt(w):'—'}</td><td>${g?fmt(g):'—'}</td><td>${u?fmt(u):'—'}</td><td><strong>${fmt(s+w+g+u)}</strong></td></tr>`).join('')}<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td><strong>67,363,500</strong></td><td><strong>15,035,000</strong></td><td><strong>9,087,000</strong></td><td><strong>6,990,000</strong></td><td><strong>98,475,500</strong></td></tr></tbody></table></div><div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Bank Balance</div><div style="font-weight:700">UGX 37,714,589</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700">UGX 75,460,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Returns</div><div style="font-weight:700">UGX 22,850,000</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700">UGX 18,632,222</div></div></div></div>`;
-    } else if(type==='member'){
-      const rows=activeMembers().map(m=>{const c=(STATE.contributions[2026]||{})[m.id]||{};const total=['sub','welfare','gla','ut'].reduce((a,k)=>a+((c[k]||[]).reduce((x,y)=>x+y,0)),0);const pct=Math.min(100,Math.round((total/876000)*100));return`<tr><td class="member-name">${m.name}</td><td><span class="badge b-${m.type==='platinum'?'gold':'blue'}">${m.type}</span></td><td>${fmt(total)}</td><td style="color:var(--red)">${fmt(Math.max(0,876000-total))}</td><td><div class="prog-bar" style="width:70px;display:inline-block"><div class="prog-fill" style="width:${pct}%"></div></div> ${pct}%</td></tr>`;}).join('');
-      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Member Statement 2026</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>Type</th><th>Total Paid</th><th>Balance</th><th>Progress</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-    } else if(type==='investment'){
-      const totInv=INVESTMENTS.filter(i=>i.type==='out'||i.type==='land').reduce((a,i)=>a+i.amount,0);
-      const totRet=INVESTMENTS.filter(i=>i.type==='in').reduce((a,i)=>a+i.amount,0);
-      const totProfit=INVESTMENTS.filter(i=>i.type==='in'&&i.profit).reduce((a,i)=>a+(i.profit||0),0);
-      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Investment Report</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Capital Deployed</div><div style="font-weight:700">UGX ${fmt(totInv)}</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Total Returned</div><div style="font-weight:700;color:var(--g2)">UGX ${fmt(totRet)}</div></div><div style="padding:10px;background:#fef3c7;border-radius:9px"><div style="font-size:10px;color:var(--gold)">Profit</div><div style="font-weight:700;color:var(--gold)">UGX ${fmt(totProfit)}</div></div></div><div class="timeline">${INVESTMENTS.map(inv=>{const dotCls={in:'gold',out:'red',land:'land'}[inv.type]||'';return`<div class="tl-item"><div class="tl-dot ${dotCls}"></div><div class="tl-date">${inv.date}</div><div class="tl-title">${inv.title}</div>${inv.profit?`<div class="tl-profit">+UGX ${fmt(inv.profit)}</div>`:''}</div>`;}).join('')}</div></div>`;
-    } else if(type==='fines'){
-      el.innerHTML=`<div class="card"><div style="font-family:'Playfair Display',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Fines Report</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Meeting Fines</div><div style="font-weight:700">UGX 915,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Conduct Fines</div><div style="font-weight:700">UGX 775,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Total</div><div style="font-weight:700;color:var(--g2)">UGX 1,690,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Status</div><div style="font-weight:700;color:var(--g2)">✓ All Paid</div></div></div><div class="alert success"><div class="alert-icon">✅</div><div>All fines from 2022–2025 have been paid in full.</div></div></div>`;
-    }
-  };
-  window.exportCSV = function(){const csv='Year,Sub,Welfare,GLA,UT,Total\n2020,4876000,0,0,0,4876000\n2021,7376500,1475000,0,0,8851500\n2022,12355000,2890000,0,0,15245000\n2023,14720000,3680000,0,0,18400000\n2024,14240000,3560000,4628000,3560000,25988000\n2025,12556000,3130000,4069000,3130000,22885000\n2026,1240000,300000,390000,300000,2230000';const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='letsGrow_annual.csv';a.click();};
-
-  /* ============================================================
-     SECTION R — ADMIN PANEL
-  ============================================================ */
-  function initAdmin() {
-    if (!STATE.isAdmin) return;
-    document.getElementById('contrib-member').innerHTML = STATE.members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
-    renderAdminMemberList();
-    renderApprovedEmails();
-    renderActiveSessions();
-    updateAppsScriptCode();
+async function renderVoteCard(vote,isClosed){
+  isClosed=isClosed||false;
+  let hasVoted=false,myChoice=null;
+  if(STATE.user?.uid&&!STATE.user.uid.startsWith('demo')){
+    try{
+      const ballot=await getDoc(doc(db,'votes',vote.id,'ballots',STATE.user.uid));
+      if(ballot.exists()){hasVoted=true;myChoice=ballot.data().choice;}
+    }catch(e){}
   }
-
-  window.saveContribution = async function() {
-    if (!STATE.isAdmin) return;
-    const mid=document.getElementById('contrib-member').value;
-    const year=parseInt(document.getElementById('contrib-year').value);
-    const month=parseInt(document.getElementById('contrib-month').value);
-    const sub=parseInt(document.getElementById('contrib-sub').value)||0;
-    const wel=parseInt(document.getElementById('contrib-wel').value)||0;
-    const gla=parseInt(document.getElementById('contrib-gla').value)||0;
-    const ut=parseInt(document.getElementById('contrib-ut').value)||0;
-
-    // Get existing data first (to do a partial update)
-    const existing = STATE.contributions[year]?.[mid] || {sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
-    existing.sub[month]=sub; existing.welfare[month]=wel; existing.gla[month]=gla; existing.ut[month]=ut;
-
-    const status = document.getElementById('save-status');
-    status.textContent = '💾 Saving…';
-
-    if (STATE.user.uid.startsWith('demo')) {
-      if (!STATE.contributions[year]) STATE.contributions[year]={};
-      STATE.contributions[year][mid] = existing;
-      renderMonthGrid(); renderMemberTable();
-      status.textContent = '✅ Saved locally (demo mode)';
-    } else {
-      try {
-        const { db, doc, setDoc } = window._FB;
-        await setDoc(doc(db, 'contributions', `${year}__${mid}`), existing);
-        status.textContent = `✅ Saved to Firestore — all members see this now`;
-        showToast('Contribution saved ✓');
-      } catch(e) {
-        status.textContent = '❌ Error: ' + e.message;
-      }
-    }
-  };
-
-  window.bulkMarkPaid = async function() {
-    if (!STATE.isAdmin) return;
-    const year=parseInt(document.getElementById('contrib-year').value);
-    const month=parseInt(document.getElementById('contrib-month').value);
-    const monthName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
-    if (!confirm(`Mark ALL active members fully paid for ${monthName} ${year}?`)) return;
-    const r=CONFIG.monthlyRates;
-    for (const m of activeMembers()) {
-      const existing=STATE.contributions[year]?.[m.id]||{sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
-      existing.sub[month]=r.sub; existing.welfare[month]=r.welfare; existing.gla[month]=r.gla; existing.ut[month]=r.ut;
-      if (!STATE.user.uid.startsWith('demo')) {
-        const { db, doc, setDoc } = window._FB;
-        await setDoc(doc(db, 'contributions', `${year}__${m.id}`), existing);
-      } else {
-        if (!STATE.contributions[year]) STATE.contributions[year]={};
-        STATE.contributions[year][m.id]=existing;
-      }
-    }
-    showToast(`All members marked paid for ${monthName} ${year} ✓`);
-    renderMonthGrid();
-  };
-
-  window.saveMemberToFirestore = async function() {
-    if (!STATE.isAdmin) return;
-    const name=document.getElementById('new-member-name').value.trim();
-    if (!name) { alert('Name required'); return; }
-    const id=name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z_]/g,'')+'_'+Date.now();
-    const member={id,name,email:document.getElementById('new-member-email').value.trim(),type:document.getElementById('new-member-type').value,joinYear:parseInt(document.getElementById('new-member-year').value)||2026,status:document.getElementById('new-member-status').value,notes:document.getElementById('new-member-notes').value.trim(),platinumNum:null,jointWith:null};
-    STATE.members.push(member);
-    if (!STATE.user.uid.startsWith('demo')) {
-      const { db, doc, setDoc } = window._FB;
-      await setDoc(doc(db, 'members', id), member);
-    }
-    renderAdminMemberList();
-    showToast(`Member "${name}" added ✓`);
-  };
-
-  function renderAdminMemberList(){
-    document.getElementById('admin-members-tbody').innerHTML=STATE.members.map(m=>`<tr><td class="member-name">${m.name}</td><td><span class="badge b-${m.type==='platinum'?'gold':'blue'}">${m.type}</span></td><td style="font-size:11px">${m.email||'—'}</td><td><span class="badge ${m.status==='active'?'b-green':m.status==='departed'?'b-red':'b-gray'}">${m.status}</span></td><td><button class="btn btn-sm btn-danger" onclick="deleteMember('${m.id}')">Remove</button></td></tr>`).join('');
+  let resultsHtml='';
+  if(STATE.isAdmin||isClosed){
+    const counts={};
+    (vote.options||[]).forEach(o=>{counts[o]=0;});
+    try{
+      const ballots=await getDocs(collection(db,'votes',vote.id,'ballots'));
+      ballots.docs.forEach(b=>{const c=b.data().choice;if(counts[c]!==undefined)counts[c]++;});
+      const total=Object.values(counts).reduce((a,b)=>a+b,0);
+      resultsHtml='<div style="margin-top:14px;padding:12px;background:var(--cream);border-radius:10px"><div style="font-weight:700;font-size:12px;color:var(--g1);margin-bottom:10px">'+(STATE.isAdmin?'📊 Live Results':'📊 Final Results')+' ('+total+' votes cast)</div>'+(vote.options||[]).map(o=>{const pct=total?Math.round((counts[o]/total)*100):0;return '<div class="vote-result-row"><div class="result-label"><span>'+o+'</span><span>'+counts[o]+' ('+pct+'%)</span></div><div class="vote-progress"><div class="vote-progress-fill" style="width:'+pct+'%"></div></div></div>';}).join('')+'</div>';
+    }catch(e){}
   }
-  window.deleteMember = async function(id){
-    if (!confirm('Remove this member?')) return;
-    STATE.members=STATE.members.filter(m=>m.id!==id);
-    if (!STATE.user.uid.startsWith('demo')) {
-      const { db, doc, deleteDoc } = window._FB;
-      await deleteDoc(doc(db, 'members', id));
-    }
-    renderAdminMemberList(); renderMemberTable();
-    showToast('Member removed');
-  };
+  const timeLeft=isClosed?'':function(){const ms=new Date(vote.openUntil)-new Date();if(ms<=0)return 'Closing…';const h=Math.floor(ms/3600000),mi=Math.floor((ms%3600000)/60000);return 'Closes in '+h+'h '+mi+'m';}();
+  const optionsHtml=(isClosed||hasVoted)?'':'<div class="vote-options">'+(vote.options||[]).map(o=>'<button class="vote-option" onclick="castVote(\''+vote.id+'\',\''+o.replace(/'/g,"\\'")+'\')">' +o+'</button>').join('')+'</div>';
+  return '<div class="vote-card '+(isClosed?'closed':'active')+'">'
+    +'<div class="vote-title">'+vote.title+'</div>'
+    +'<div class="vote-meta">'+(vote.description||'')+(timeLeft?' · '+timeLeft:'')+'</div>'
+    +(hasVoted?'<div class="alert success"><div class="alert-icon">✅</div><div>You voted: <strong>'+myChoice+'</strong></div></div>':'')
+    +(!hasVoted&&!isClosed?optionsHtml:'')
+    +resultsHtml
+    +'</div>';
+}
 
-  window.addApprovedEmail = async function() {
-    const email=document.getElementById('new-email').value.trim().toLowerCase();
-    const name=document.getElementById('new-email-name').value.trim();
-    const role=document.getElementById('new-email-role').value;
-    if (!email) return;
-    if (!STATE.user.uid.startsWith('demo')) {
-      const { db, doc, setDoc } = window._FB;
-      await setDoc(doc(db, 'approvedEmails', email), { name, role, addedBy: STATE.user.email, addedAt: new Date().toISOString() });
-    }
-    STATE.approvedEmails.push({ email, name, role });
-    document.getElementById('new-email').value=''; document.getElementById('new-email-name').value='';
-    renderApprovedEmails();
-    showToast(`${email} registered ✓`);
-  };
-
-  function renderApprovedEmails(){
-    if (!document.getElementById('email-list')) return;
-    document.getElementById('email-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Gmail</th><th>Name</th><th>Role</th><th></th></tr></thead><tbody>${STATE.approvedEmails.map(e=>`<tr><td>${e.email}</td><td>${e.name||'—'}</td><td><span class="badge ${e.role==='admin'?'b-gold':'b-green'}">${e.role}</span></td><td><button class="btn btn-sm btn-danger" onclick="revokeEmail('${e.email}')">Revoke</button></td></tr>`).join('')}</tbody></table></div>`;
-  }
-  window.revokeEmail = async function(email) {
-    if (!confirm(`Revoke access for ${email}? They will be unable to log in immediately.`)) return;
-    if (!STATE.user.uid.startsWith('demo')) {
-      const { db, doc, deleteDoc } = window._FB;
-      await deleteDoc(doc(db, 'approvedEmails', email));
-    }
-    STATE.approvedEmails=STATE.approvedEmails.filter(e=>e.email!==email);
-    renderApprovedEmails();
-    showToast(`${email} access revoked`);
-  };
-
-  async function renderActiveSessions(){
-    if (!document.getElementById('sessions-list')) return;
-    if (STATE.user.uid.startsWith('demo')) { document.getElementById('sessions-list').innerHTML='<div class="alert info"><div class="alert-icon">ℹ️</div><div>Session management requires Firebase.</div></div>'; return; }
-    try {
-      const { db, collection, getDocs } = window._FB;
-      const snap = await getDocs(collection(db, 'sessions'));
-      document.getElementById('sessions-list').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Email</th><th>Device</th><th>Login Time</th></tr></thead><tbody>${snap.docs.map(d=>{const s=d.data();return`<tr><td>${s.email}</td><td style="font-size:10px;color:var(--light)">${(s.device||'').slice(0,60)}…</td><td style="font-size:11px">${s.loginTime?.toDate?.().toLocaleString()||'—'}</td></tr>`;}).join('')}</tbody></table></div>`;
-    } catch(e) {}
-  }
-
-  window.killAllSessions = async function() {
-    if (!confirm('Force logout all members? They will need to sign in again.')) return;
-    const { db, collection, getDocs, deleteDoc, doc } = window._FB;
-    const snap = await getDocs(collection(db, 'sessions'));
-    for (const d of snap.docs) await deleteDoc(doc(db, 'sessions', d.id));
-    showToast('All sessions cleared. Members logged out on next activity.');
-  };
-
-  function updateAppsScriptCode(){
-    const pid = document.getElementById('fb-project-id')?.value || 'YOUR_PROJECT_ID';
-    const el = document.getElementById('apps-script-code');
-    if (el) el.textContent = el.textContent.replace(/YOUR_PROJECT_ID/g, pid);
-  }
-
-  window.copyAppsScript = function(){
-    navigator.clipboard.writeText(document.getElementById('apps-script-code').textContent);
-    showToast('Apps Script copied to clipboard ✓');
-  };
-  window.copySecurityRules = function(){
-    const code = document.querySelector('#admin-tab-security .code-block').textContent;
-    navigator.clipboard.writeText(code);
-    showToast('Security rules copied ✓');
-  };
-
-  window.showAdminTab = function(tab,btn){
-    document.querySelectorAll('.admin-tab').forEach(t=>t.style.display='none');
-    document.getElementById('admin-tab-'+tab).style.display='block';
-    btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');
-    if (tab==='access') { renderApprovedEmails(); renderActiveSessions(); }
-  };
-
-  /* ============================================================
-     SECTION S — NOTIFICATIONS
-  ============================================================ */
-  window.showNotifications = function() {
-    document.getElementById('notif-modal-body').innerHTML=[
-      {cls:'success',icon:'🌾',msg:'Nsanja UGX 5M partial return received 14 Mar 2026'},
-      {cls:'warn',icon:'💰',msg:'2026 contributions: most members yet to pay — action needed'},
-      {cls:'success',icon:'🏦',msg:'Bank balance: UGX 37,714,589 as of 28 Mar 2026'},
-      {cls:'info',icon:'🗳️',msg:'New elections due Dec 2026 — nominate subcommittee members'},
-    ].map(n=>`<div class="alert ${n.cls}"><div class="alert-icon">${n.icon}</div><div class="alert-msg">${n.msg}</div></div>`).join('');
-    document.getElementById('notif-dot').style.display='none';
-    openModal('notif-modal');
-  };
-
-  /* ============================================================
-     SECTION T — MODALS
-  ============================================================ */
-  window.openModal = id => document.getElementById(id).classList.add('open');
-  window.closeModal = id => document.getElementById(id).classList.remove('open');
-  document.addEventListener('keydown', e => { if(e.key==='Escape') document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open')); });
-
-  /* ============================================================
-     SECTION U — INIT ALL PAGES
-  ============================================================ */
-  function initAllPages() {
-    initDashboard();
-    initMembers();
-    initMyAccount();
-    initInvestments();
-    initDividends();
-    initFinancials();
-    initJuniors();
-    initCommittee();
-    initReports();
+window.castVote=async function(voteId,choice){
+  if(STATE.user?.uid?.startsWith('demo')){showToast('Voting requires real Firebase login','error');return;}
+  if(!confirm('Confirm your vote: "'+choice+'"\n\nThis cannot be changed.'))return;
+  try{
+    await setDoc(doc(db,'votes',voteId,'ballots',STATE.user.uid),{choice,email:STATE.user.email,timestamp:serverTimestamp()});
+    showToast('Vote recorded ✓');
     renderVotePage();
-    if (STATE.isAdmin) initAdmin();
-    setTimeout(renderAnnualChart, 300);
+  }catch(e){showToast('Error: '+e.message,'error');}
+};
+
+window.createVote=async function(){
+  if(!STATE.isAdmin)return;
+  const title=document.getElementById('vote-title').value.trim();
+  const desc=document.getElementById('vote-desc').value.trim();
+  const options=document.getElementById('vote-options').value.split('\n').map(o=>o.trim()).filter(Boolean);
+  const hours=parseInt(document.getElementById('vote-duration').value);
+  if(!title||options.length<2){alert('Title and at least 2 options required');return;}
+  if(STATE.user.uid.startsWith('demo')){showToast('Creating votes requires real Firebase','error');return;}
+  await addDoc(collection(db,'votes'),{title,description:desc,options,openUntil:new Date(Date.now()+hours*3600000).toISOString(),createdBy:STATE.user.email,createdAt:serverTimestamp(),status:'open'});
+  document.getElementById('vote-title').value='';
+  document.getElementById('vote-desc').value='';
+  document.getElementById('vote-options').value='';
+  showToast('Vote opened ✓ — Members will see it immediately');
+};
+
+window.closeAllVotes=async function(){
+  if(!confirm('Close all active votes now?'))return;
+  const snap=await getDocs(collection(db,'votes'));
+  for(const d of snap.docs){
+    if(d.data().status==='open')await setDoc(doc(db,'votes',d.id),{...d.data(),status:'closed'},{merge:true});
   }
+  showToast('All votes closed');
+};
+
+/* ── COMMITTEE ── */
+function initCommittee(){
+  const exec=STATE.committee?.executive||Array(7).fill(null).map((_,i)=>({role:['Chairman','Vice-Chairman','Treasurer','Deputy Treasurer','Secretary','Deputy Secretary','Mobiliser'][i],memberId:''}));
+  const emojis=['👑','🤝','💰','💰','📋','📋','📣'];
+  document.getElementById('exec-committee').innerHTML=exec.map((role,i)=>{
+    const name=role.memberId?memberName(role.memberId):'Vacant',isVacant=!role.memberId;
+    return '<div class="exec-card"><div class="exec-avatar">'+(isVacant?'?':name[0].toUpperCase())+'</div><div class="exec-role">'+emojis[i]+' '+role.role+'</div><div class="exec-name">'+(isVacant?'<em style="color:var(--light)">Vacant</em>':name)+'</div>'+(i<3?'<span class="badge b-gold" style="margin-top:5px">Platinum</span>':'')+'</div>';
+  }).join('');
+  const ml=(type,roles)=>{const data=STATE.committee?.[type]||{};return roles.map(r=>{const id=data[r.k];return '<div style="display:flex;align-items:center;gap:8px;padding:7px;background:var(--cream);border-radius:7px;margin-bottom:5px;font-size:12px"><div style="width:28px;height:28px;border-radius:50%;background:var(--g2);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;flex-shrink:0">'+(id?memberName(id)[0]:'?')+'</div><div><div style="font-size:10px;color:var(--light);text-transform:uppercase">'+r.l+'</div><div style="font-weight:600">'+(id?memberName(id):'<em>Vacant</em>')+'</div></div></div>';}).join('');};
+  document.getElementById('sub-investment').innerHTML=ml('investment',[{k:'chair',l:'Chair'},{k:'sec',l:'Secretary'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'},{k:'m3',l:'Member 3'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">📋</div><div>Prospects, feasibility studies, monitoring.</div></div>';
+  document.getElementById('sub-welfare').innerHTML=ml('welfare',[{k:'chair',l:'Chair'},{k:'treasurer',l:'Treasurer'},{k:'secretary',l:'Secretary'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">❤️</div><div>Social events, welfare spend, member support.</div></div>';
+  document.getElementById('sub-disciplinary').innerHTML=ml('disciplinary',[{k:'patron',l:'Patron'},{k:'whip',l:'Chief Whip'},{k:'m1',l:'Member 1'},{k:'m2',l:'Member 2'}])+'<div class="alert info" style="margin-top:8px;font-size:11px"><div class="alert-icon">⚖️</div><div>Ethics, discipline, conflict resolution.</div></div>';
+}
+
+/* ── REPORTS ── */
+function initReports(){showReport('annual',null);}
+
+window.showReport=function(type,btn){
+  STATE.currentReportTab=type;
+  if(btn){
+    btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const el=document.getElementById('report-content');
+  if(type==='annual'){
+    const data=[[2020,4876000,0,0,0],[2021,7376500,1475000,0,0],[2022,12355000,2890000,0,0],[2023,14720000,3680000,0,0],[2024,14240000,3560000,4628000,3560000],[2025,12556000,3130000,4069000,3130000],[2026,1240000,300000,390000,300000]];
+    el.innerHTML='<div class="card"><div style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Annual Financial Summary</div><div class="table-wrap"><table><thead><tr><th>Year</th><th>Subscription</th><th>Welfare</th><th>GLA</th><th>UT</th><th>Total</th></tr></thead><tbody>'+data.map(([y,s,w,g,u])=>'<tr><td><strong>'+y+'</strong></td><td>'+fmt(s)+'</td><td>'+(w?fmt(w):'—')+'</td><td>'+(g?fmt(g):'—')+'</td><td>'+(u?fmt(u):'—')+'</td><td><strong>'+fmt(s+w+g+u)+'</strong></td></tr>').join('')+'<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td><strong>67,363,500</strong></td><td><strong>15,035,000</strong></td><td><strong>9,087,000</strong></td><td><strong>6,990,000</strong></td><td><strong>98,475,500</strong></td></tr></tbody></table></div><div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Bank Balance</div><div style="font-weight:700">UGX 37,714,589</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700">UGX 75,460,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Returns</div><div style="font-weight:700">UGX 22,850,000</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700">UGX 18,632,222</div></div></div></div>';
+  }else if(type==='member'){
+    const rows=activeMembers().map(m=>{const c=(STATE.contributions[2026]||{})[m.id]||{};const total=['sub','welfare','gla','ut'].reduce((a,k)=>a+((c[k]||[]).reduce((x,y)=>x+y,0)),0);const pct=Math.min(100,Math.round((total/876000)*100));return '<tr><td class="member-name">'+m.name+'</td><td><span class="badge b-'+(m.type==='platinum'?'gold':'blue')+'">'+m.type+'</span></td><td>'+fmt(total)+'</td><td style="color:var(--red)">'+fmt(Math.max(0,876000-total))+'</td><td><div class="prog-bar" style="width:70px;display:inline-block"><div class="prog-fill" style="width:'+pct+'%"></div></div> '+pct+'%</td></tr>';}).join('');
+    el.innerHTML='<div class="card"><div style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Member Statement 2026</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>Type</th><th>Total Paid</th><th>Balance</th><th>Progress</th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  }else if(type==='investment'){
+    const totInv=INVESTMENTS.filter(i=>i.type==='out'||i.type==='land').reduce((a,i)=>a+i.amount,0);
+    const totRet=INVESTMENTS.filter(i=>i.type==='in').reduce((a,i)=>a+i.amount,0);
+    const totProfit=INVESTMENTS.filter(i=>i.type==='in'&&i.profit).reduce((a,i)=>a+(i.profit||0),0);
+    el.innerHTML='<div class="card"><div style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Investment Report</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:14px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Capital Deployed</div><div style="font-weight:700">UGX '+fmt(totInv)+'</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Total Returned</div><div style="font-weight:700;color:var(--g2)">UGX '+fmt(totRet)+'</div></div><div style="padding:10px;background:#fef3c7;border-radius:9px"><div style="font-size:10px;color:var(--gold)">Profit</div><div style="font-weight:700;color:var(--gold)">UGX '+fmt(totProfit)+'</div></div></div><div class="timeline">'+INVESTMENTS.map(inv=>{const dotCls={in:'gold',out:'red',land:'land'}[inv.type]||'';return '<div class="tl-item"><div class="tl-dot '+dotCls+'"></div><div class="tl-date">'+inv.date+'</div><div class="tl-title">'+inv.title+'</div>'+(inv.profit?'<div class="tl-profit">+UGX '+fmt(inv.profit)+'</div>':'')+'</div>';}).join('')+'</div></div>';
+  }else if(type==='fines'){
+    el.innerHTML='<div class="card"><div style="font-family:\'Playfair Display\',serif;font-size:20px;color:var(--g1);margin-bottom:14px">Fines Report</div><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Meeting Fines</div><div style="font-weight:700">UGX 915,000</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Conduct Fines</div><div style="font-weight:700">UGX 775,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Total</div><div style="font-weight:700;color:var(--g2)">UGX 1,690,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Status</div><div style="font-weight:700;color:var(--g2)">✓ All Paid</div></div></div><div class="alert success"><div class="alert-icon">✅</div><div>All fines from 2022–2025 have been paid in full.</div></div></div>';
+  }
+};
+
+window.exportCSV=function(){
+  const csv='Year,Sub,Welfare,GLA,UT,Total\n2020,4876000,0,0,0,4876000\n2021,7376500,1475000,0,0,8851500\n2022,12355000,2890000,0,0,15245000\n2023,14720000,3680000,0,0,18400000\n2024,14240000,3560000,4628000,3560000,25988000\n2025,12556000,3130000,4069000,3130000,22885000\n2026,1240000,300000,390000,300000,2230000';
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+  a.download='letsGrow_annual.csv';
+  a.click();
+};
+
+/* ── ADMIN ── */
+function initAdmin(){
+  if(!STATE.isAdmin)return;
+  document.getElementById('contrib-member').innerHTML=STATE.members.map(m=>'<option value="'+m.id+'">'+m.name+'</option>').join('');
+  renderAdminMemberList();
+  renderApprovedEmails();
+  renderActiveSessions();
+}
+
+window.saveContribution=async function(){
+  if(!STATE.isAdmin)return;
+  const mid=document.getElementById('contrib-member').value;
+  const year=parseInt(document.getElementById('contrib-year').value);
+  const month=parseInt(document.getElementById('contrib-month').value);
+  const sub=parseInt(document.getElementById('contrib-sub').value)||0;
+  const wel=parseInt(document.getElementById('contrib-wel').value)||0;
+  const gla=parseInt(document.getElementById('contrib-gla').value)||0;
+  const ut=parseInt(document.getElementById('contrib-ut').value)||0;
+  const existing=STATE.contributions[year]?.[mid]||{sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
+  existing.sub[month]=sub;existing.welfare[month]=wel;existing.gla[month]=gla;existing.ut[month]=ut;
+  const status=document.getElementById('save-status');
+  status.textContent='💾 Saving…';
+  if(STATE.user.uid.startsWith('demo')){
+    if(!STATE.contributions[year])STATE.contributions[year]={};
+    STATE.contributions[year][mid]=existing;
+    renderMonthGrid();renderMemberTable();
+    status.textContent='✅ Saved locally (demo mode)';
+  }else{
+    try{
+      await setDoc(doc(db,'contributions',year+'__'+mid),existing);
+      status.textContent='✅ Saved to Firestore — all members see this now';
+      showToast('Contribution saved ✓');
+    }catch(e){status.textContent='❌ Error: '+e.message;}
+  }
+};
+
+window.bulkMarkPaid=async function(){
+  if(!STATE.isAdmin)return;
+  const year=parseInt(document.getElementById('contrib-year').value);
+  const month=parseInt(document.getElementById('contrib-month').value);
+  const monthName=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month];
+  if(!confirm('Mark ALL active members fully paid for '+monthName+' '+year+'?'))return;
+  const r=CONFIG.monthlyRates;
+  for(const m of activeMembers()){
+    const existing=STATE.contributions[year]?.[m.id]||{sub:Array(12).fill(0),welfare:Array(12).fill(0),gla:Array(12).fill(0),ut:Array(12).fill(0)};
+    existing.sub[month]=r.sub;existing.welfare[month]=r.welfare;existing.gla[month]=r.gla;existing.ut[month]=r.ut;
+    if(!STATE.user.uid.startsWith('demo')){
+      await setDoc(doc(db,'contributions',year+'__'+m.id),existing);
+    }else{
+      if(!STATE.contributions[year])STATE.contributions[year]={};
+      STATE.contributions[year][m.id]=existing;
+    }
+  }
+  showToast('All members marked paid for '+monthName+' '+year+' ✓');
+  renderMonthGrid();
+};
+
+window.saveMemberToFirestore=async function(){
+  if(!STATE.isAdmin)return;
+  const name=document.getElementById('new-member-name').value.trim();
+  if(!name){alert('Name required');return;}
+  const id=name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z_]/g,'')+'_'+Date.now();
+  const member={id,name,email:document.getElementById('new-member-email').value.trim(),type:document.getElementById('new-member-type').value,joinYear:parseInt(document.getElementById('new-member-year').value)||2026,status:document.getElementById('new-member-status').value,notes:document.getElementById('new-member-notes').value.trim(),platinumNum:null,jointWith:null};
+  STATE.members.push(member);
+  if(!STATE.user.uid.startsWith('demo')){await setDoc(doc(db,'members',id),member);}
+  renderAdminMemberList();
+  showToast('Member "'+name+'" added ✓');
+};
+
+function renderAdminMemberList(){
+  document.getElementById('admin-members-tbody').innerHTML=STATE.members.map(m=>'<tr><td class="member-name">'+m.name+'</td><td><span class="badge b-'+(m.type==='platinum'?'gold':'blue')+'">'+m.type+'</span></td><td style="font-size:11px">'+(m.email||'—')+'</td><td><span class="badge '+(m.status==='active'?'b-green':m.status==='departed'?'b-red':'b-gray')+'">'+m.status+'</span></td><td><button class="btn btn-sm btn-danger" onclick="deleteMember(\''+m.id+'\')">Remove</button></td></tr>').join('');
+}
+
+window.deleteMember=async function(id){
+  if(!confirm('Remove this member?'))return;
+  STATE.members=STATE.members.filter(m=>m.id!==id);
+  if(!STATE.user.uid.startsWith('demo')){await deleteDoc(doc(db,'members',id));}
+  renderAdminMemberList();renderMemberTable();
+  showToast('Member removed');
+};
+
+window.addApprovedEmail=async function(){
+  const email=document.getElementById('new-email').value.trim().toLowerCase();
+  const name=document.getElementById('new-email-name').value.trim();
+  const role=document.getElementById('new-email-role').value;
+  if(!email)return;
+  if(!STATE.user.uid.startsWith('demo')){
+    await setDoc(doc(db,'approvedEmails',email),{name,role,addedBy:STATE.user.email,addedAt:new Date().toISOString()});
+  }
+  STATE.approvedEmails.push({email,name,role});
+  document.getElementById('new-email').value='';document.getElementById('new-email-name').value='';
+  renderApprovedEmails();
+  showToast(email+' registered ✓');
+};
+
+function renderApprovedEmails(){
+  if(!document.getElementById('email-list'))return;
+  document.getElementById('email-list').innerHTML='<div class="table-wrap"><table><thead><tr><th>Gmail</th><th>Name</th><th>Role</th><th></th></tr></thead><tbody>'+STATE.approvedEmails.map(e=>'<tr><td>'+e.email+'</td><td>'+(e.name||'—')+'</td><td><span class="badge '+(e.role==='admin'?'b-gold':'b-green')+'">'+e.role+'</span></td><td><button class="btn btn-sm btn-danger" onclick="revokeEmail(\''+e.email+'\')">Revoke</button></td></tr>').join('')+'</tbody></table></div>';
+}
+
+window.revokeEmail=async function(email){
+  if(!confirm('Revoke access for '+email+'? They will be unable to log in immediately.'))return;
+  if(!STATE.user.uid.startsWith('demo')){await deleteDoc(doc(db,'approvedEmails',email));}
+  STATE.approvedEmails=STATE.approvedEmails.filter(e=>e.email!==email);
+  renderApprovedEmails();
+  showToast(email+' access revoked');
+};
+
+async function renderActiveSessions(){
+  if(!document.getElementById('sessions-list'))return;
+  if(STATE.user.uid.startsWith('demo')){
+    document.getElementById('sessions-list').innerHTML='<div class="alert info"><div class="alert-icon">ℹ️</div><div>Session management requires Firebase.</div></div>';
+    return;
+  }
+  try{
+    const snap=await getDocs(collection(db,'sessions'));
+    document.getElementById('sessions-list').innerHTML='<div class="table-wrap"><table><thead><tr><th>Email</th><th>Device</th><th>Login Time</th></tr></thead><tbody>'+snap.docs.map(d=>{const s=d.data();return '<tr><td>'+s.email+'</td><td style="font-size:10px;color:var(--light)">'+(s.device||'').slice(0,60)+'…</td><td style="font-size:11px">'+(s.loginTime?.toDate?.().toLocaleString()||'—')+'</td></tr>';}).join('')+'</tbody></table></div>';
+  }catch(e){}
+}
+
+window.killAllSessions=async function(){
+  if(!confirm('Force logout all members? They will need to sign in again.'))return;
+  const snap=await getDocs(collection(db,'sessions'));
+  for(const d of snap.docs)await deleteDoc(doc(db,'sessions',d.id));
+  showToast('All sessions cleared. Members logged out on next activity.');
+};
+
+window.showAdminTab=function(tab,btn){
+  document.querySelectorAll('.admin-tab').forEach(t=>t.style.display='none');
+  document.getElementById('admin-tab-'+tab).style.display='block';
+  btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  if(tab==='access'){renderApprovedEmails();renderActiveSessions();}
+};
+
+window.copyAppsScript=function(){
+  navigator.clipboard.writeText(document.getElementById('apps-script-code').textContent);
+  showToast('Apps Script copied to clipboard ✓');
+};
+
+window.copySecurityRules=function(){
+  const code=document.querySelector('#admin-tab-security .code-block').textContent;
+  navigator.clipboard.writeText(code);
+  showToast('Security rules copied ✓');
+};
+
+/* ── NOTIFICATIONS ── */
+window.showNotifications=function(){
+  document.getElementById('notif-modal-body').innerHTML=[
+    {cls:'success',icon:'🌾',msg:'Nsanja UGX 5M partial return received 14 Mar 2026'},
+    {cls:'warn',icon:'💰',msg:'2026 contributions: most members yet to pay — action needed'},
+    {cls:'success',icon:'🏦',msg:'Bank balance: UGX 37,714,589 as of 28 Mar 2026'},
+    {cls:'info',icon:'🗳️',msg:'New elections due Dec 2026 — nominate subcommittee members'},
+  ].map(n=>'<div class="alert '+n.cls+'"><div class="alert-icon">'+n.icon+'</div><div class="alert-msg">'+n.msg+'</div></div>').join('');
+  document.getElementById('notif-dot').style.display='none';
+  openModal('notif-modal');
+};
+
+/* ── MODALS ── */
+window.openModal=id=>document.getElementById(id).classList.add('open');
+window.closeModal=id=>document.getElementById(id).classList.remove('open');
+document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));});
+
+/* ── INIT ALL PAGES ── */
+function initAllPages(){
+  initDashboard();
+  initMembers();
+  initMyAccount();
+  initInvestments();
+  initDividends();
+  initFinancials();
+  initJuniors();
+  initCommittee();
+  initReports();
+  renderVotePage();
+  if(STATE.isAdmin)initAdmin();
+  setTimeout(renderAnnualChart,300);
+}
 
 }); // end waitForFirebase
 </script>
 </body>
-  </html>
+</html>
