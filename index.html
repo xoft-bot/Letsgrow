@@ -289,6 +289,18 @@ tr:hover td{background:var(--cream)}
 }
 @media(max-width:500px){#sync-indicator{display:none!important}#user-name{display:none}.logout-btn{padding:5px 8px!important;font-size:11px!important}.topbar-name{font-size:14px}}
 @media print{.topbar,.sidebar,.sidebar-overlay{display:none!important}.card{box-shadow:none;border:1px solid #ddd}body{background:#fff}}
+
+/* LOANS */
+.loan-card{background:var(--white);border-radius:var(--r);padding:18px 20px;box-shadow:var(--sh);margin-bottom:12px;border-left:4px solid var(--teal)}
+.loan-card.overdue{border-left-color:var(--red)!important}
+.loan-card.paid{border-left-color:var(--g3)!important;opacity:.85}
+.loan-card.pending{border-left-color:var(--gold2)!important}
+.credit-track{background:var(--cream2);border-radius:8px;height:14px;overflow:hidden;margin:6px 0}
+.credit-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--teal),#14b8a6);transition:width .7s ease}
+.pool-ring{width:110px;height:110px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-direction:column;border:8px solid var(--teal2);font-family:'Playfair Display',serif;flex-shrink:0}
+.pool-ring-val{font-size:16px;font-weight:900;color:var(--teal)}
+.pool-ring-lbl{font-size:9px;color:var(--light);text-transform:uppercase;letter-spacing:.06em}
+.cycle-badge{display:inline-flex;align-items:center;gap:4px;background:var(--teal2);color:var(--teal);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700}
 </style>
 </head>
 <body>
@@ -364,6 +376,7 @@ tr:hover td{background:var(--cream)}
       <div class="sidebar-section">
         <div class="sidebar-label">My Account</div>
         <button class="nav-btn" onclick="showPage('myaccount',this)"><span class="nav-icon">🪙</span>My Account</button>
+        <button class="nav-btn" onclick="showPage('loans',this)"><span class="nav-icon">🏦</span>Loans</button>
         <button class="nav-btn" onclick="showPage('juniors',this)"><span class="nav-icon">🌿</span>Juniors</button>
       </div>
       <div class="sidebar-section">
@@ -500,9 +513,14 @@ tr:hover td{background:var(--cream)}
         <div class="card-title">💰 Recent Disbursements (2025)</div>
         <div class="table-wrap"><table><thead><tr><th>Date</th><th>Member</th><th>Amount</th><th>Notes</th></tr></thead>
         <tbody>
-          <tr><td>22 Oct 2025</td><td class="member-name">Namutebi Claire</td><td>UGX 290,000</td><td>Dividends cashed out</td></tr>
+          <tr><td>22 Oct 2025</td><td class="member-name">Namutebi Claire</td><td>UGX 290,000</td><td>Dividends cashed out (with Winnie & Jane exit)</td></tr>
           <tr><td>22 Oct 2025</td><td class="member-name">Mr & Mrs Kigonya</td><td>UGX 582,000</td><td>Dividends cashed out</td></tr>
           <tr><td>25 Nov 2025</td><td class="member-name">Nakiwala Ruth</td><td>UGX 290,000</td><td>Kenneth's estate dividends → next of kin</td></tr>
+          <tr><td>25 Nov 2025</td><td class="member-name">Nuwahereza Edson</td><td>UGX 290,000</td><td>Dividends cashed out</td></tr>
+          <tr><td>29 Dec 2025</td><td class="member-name">Namubiru Rose</td><td>UGX 295,000</td><td>Dividends cashed out</td></tr>
+          <tr><td>30 Jan 2026</td><td class="member-name">Mr & Mrs Luutu</td><td>UGX 582,148</td><td>Dividends cashed out</td></tr>
+          <tr><td>03 Feb 2026</td><td class="member-name">Nabunya Shamera</td><td>UGX 291,074</td><td>Dividends cashed out</td></tr>
+          <tr><td>29 Mar 2026</td><td class="member-name">Sekiranda & Neria</td><td>UGX 450,000</td><td>Partial dividends cashed out</td></tr>
         </tbody></table></div>
       </div>
       <div class="card"><div class="card-title">📊 Full Dividend Summary (2021–2023)</div>
@@ -532,6 +550,14 @@ tr:hover td{background:var(--cream)}
         <button class="tab" onclick="showJuniorYear(2025,this)">2025</button>
       </div>
       <div id="juniors-content"></div>
+    </div>
+
+    <!-- LOANS -->
+    <div class="page" id="page-loans">
+      <div class="page-header" data-emoji="🏦"><h2>Loans</h2><p>Member loan eligibility · Credit cycles · Club pool</p></div>
+      <div id="loans-content">
+        <div class="alert info"><div class="alert-icon">⏳</div><div>Loading loan data…</div></div>
+      </div>
     </div>
 
     <!-- VOTING -->
@@ -646,6 +672,7 @@ tr:hover td{background:var(--cream)}
       <div class="tab-group">
         <button class="tab active" onclick="showAdminTab('contributions',this)">📝 Contributions</button>
         <button class="tab" onclick="showAdminTab('members-mgmt',this)">👥 Members</button>
+        <button class="tab" onclick="showAdminTab('finance-overview',this)">💰 Finances</button>
         <button class="tab" onclick="showAdminTab('access',this)">🔐 Access Control</button>
         <button class="tab" onclick="showAdminTab('sheets',this)">📊 Sheets Sync</button>
         <button class="tab" onclick="showAdminTab('security',this)">🛡️ Security</button>
@@ -682,7 +709,8 @@ tr:hover td{background:var(--cream)}
           <div class="grid-2">
             <div>
               <div class="form-row"><label class="form-label">Full Name</label><input class="form-input" id="new-member-name"></div>
-              <div class="form-row"><label class="form-label">Gmail (for login)</label><input class="form-input" id="new-member-email" type="email"></div>
+              <div class="form-row"><label class="form-label">Gmail (for login)</label><input class="form-input" id="new-member-email" type="email" placeholder="member@gmail.com"></div>
+              <div class="form-row"><label class="form-label">Contact Email (for reminders)</label><input class="form-input" id="new-member-contact-email" type="email" placeholder="personal or club email"></div>
               <div class="form-row"><label class="form-label">Type</label><select class="form-input form-select" id="new-member-type"><option value="platinum">Platinum</option><option value="golden">Golden</option></select></div>
               <div class="form-row"><label class="form-label">Year Joined</label><input class="form-input" id="new-member-year" type="number" value="2026"></div>
             </div>
@@ -694,7 +722,66 @@ tr:hover td{background:var(--cream)}
           <div class="btn-row"><button class="btn btn-primary" onclick="saveMemberToFirestore()">💾 Save Member</button></div>
         </div>
         <div class="admin-section"><div class="admin-section-title">👥 All Members</div>
-          <div class="table-wrap"><table><thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Status</th><th></th></tr></thead><tbody id="admin-members-tbody"></tbody></table></div>
+          <div class="table-wrap"><table><thead id="admin-members-thead"><tr><th>Name</th><th>Type</th><th>Login Gmail</th><th>Contact Email</th><th>Status</th><th></th></tr></thead><tbody id="admin-members-tbody"></tbody></table></div>
+        </div>
+      </div>
+      <div id="admin-tab-finance-overview" class="admin-tab" style="display:none">
+        <div class="admin-section">
+          <div class="admin-section-title">💰 Club Financial Overview</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px">
+            <div style="padding:12px;background:#dcfce7;border-radius:10px;border-left:4px solid var(--g3)">
+              <div style="font-size:10px;color:var(--g3);text-transform:uppercase;letter-spacing:.06em">Bank Balance</div>
+              <div style="font-weight:800;font-size:18px;color:var(--g2)">UGX 37,714,589</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">As of 28 Mar 2026</div>
+            </div>
+            <div style="padding:12px;background:var(--teal2);border-radius:10px;border-left:4px solid var(--teal)">
+              <div style="font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:.06em">Loan Pool (30%)</div>
+              <div style="font-weight:800;font-size:18px;color:var(--teal)">UGX 11,314,376</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">Available for member loans</div>
+            </div>
+            <div style="padding:12px;background:#fef3c7;border-radius:10px;border-left:4px solid var(--gold)">
+              <div style="font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:.06em">Welfare Fund (est.)</div>
+              <div style="font-weight:800;font-size:18px;color:var(--gold)">UGX 15,035,000</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">Total collected 2021–2026</div>
+            </div>
+            <div style="padding:12px;background:var(--red2);border-radius:10px;border-left:4px solid var(--red)">
+              <div style="font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:.06em">Total Expenses</div>
+              <div style="font-weight:800;font-size:18px;color:var(--red)">UGX 18,632,222</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">All years combined</div>
+            </div>
+            <div style="padding:12px;background:var(--cream);border-radius:10px;border-left:4px solid var(--g3)">
+              <div style="font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.06em">Land Asset</div>
+              <div style="font-weight:800;font-size:18px">≈ UGX 51,845,000</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">Kagera plot (purchase + title)</div>
+            </div>
+            <div style="padding:12px;background:var(--cream);border-radius:10px;border-left:4px solid var(--gold2)">
+              <div style="font-size:10px;color:var(--light);text-transform:uppercase;letter-spacing:.06em">Total Invested</div>
+              <div style="font-weight:800;font-size:18px">UGX 75,460,000</div>
+              <div style="font-size:10px;color:var(--light);margin-top:2px">Deployed since 2021</div>
+            </div>
+          </div>
+          <div style="margin-bottom:16px">
+            <div style="font-weight:700;margin-bottom:8px;font-size:13px">Credit Pool Allocation (30% of Balance)</div>
+            <div class="credit-track" style="height:20px"><div class="credit-fill" style="width:30%"></div></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--light);margin-top:4px">
+              <span>Loan Pool: UGX 11,314,376</span><span>Balance: UGX 37,714,589</span>
+            </div>
+            <div style="margin-top:10px;font-size:12px;color:var(--mid);background:var(--cream);padding:10px;border-radius:8px">
+              <strong>Per-member equal share</strong> from pool ÷ active members.<br>
+              Credit limit = cycle% × 25% of member's total contributions.<br>
+              Cycle 1: 40% · Cycle 2: 60% · Cycle 3: 80% · Cycle 4: 100%
+            </div>
+          </div>
+          <div>
+            <div style="font-weight:700;margin-bottom:8px;font-size:13px">2026 Expenses to Date</div>
+            <div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>
+              <tr><td>30 Jan 2026</td><td>Dividends – Mr & Mrs Luutu</td><td>UGX 582,148</td></tr>
+              <tr><td>03 Feb 2026</td><td>Dividends – Nabunya Shamera</td><td>UGX 291,074</td></tr>
+              <tr><td>23 Mar 2026</td><td>AGM 2026</td><td>UGX 1,280,000</td></tr>
+              <tr><td>29 Mar 2026</td><td>Dividends – Sekiranda & Neria</td><td>UGX 450,000</td></tr>
+              <tr style="background:var(--cream)"><td colspan="2"><strong>2026 Total</strong></td><td><strong>UGX 2,603,222</strong></td></tr>
+            </tbody></table></div>
+          </div>
         </div>
       </div>
       <div id="admin-tab-access" class="admin-tab" style="display:none">
@@ -744,6 +831,7 @@ service cloud.firestore {
       match /ballots/{userId} { allow create: if request.auth.uid == userId && isRegistered(); allow read: if isAdmin(); allow update, delete: if false; }
     }
     match /sheetsSync/{id} { allow read, write: if isAdmin(); }
+    match /loans/{id} { allow read: if isRegistered(); allow write: if isAdmin(); }
   }
 }</div>
           <div class="btn-row"><button class="btn btn-ghost" onclick="copySecurityRules()">📋 Copy Rules</button></div>
@@ -766,6 +854,60 @@ service cloud.firestore {
 </div>
 <div class="modal-bg" id="vote-result-modal" onclick="if(event.target===this)closeModal('vote-result-modal')">
   <div class="modal" style="max-width:520px"><div class="modal-head"><div class="modal-title" id="vote-result-title">Vote Results</div><button class="modal-close" onclick="closeModal('vote-result-modal')">✕</button></div><div class="modal-body" id="vote-result-body"></div></div>
+</div>
+<div class="modal-bg" id="loan-modal" onclick="if(event.target===this)closeModal('loan-modal')">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-head"><div class="modal-title">🏦 Issue New Loan</div><button class="modal-close" onclick="closeModal('loan-modal')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label class="form-label">Member</label>
+        <select class="form-input form-select" id="loan-member-sel"></select>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label class="form-label">Principal (UGX)</label><input class="form-input" type="number" id="loan-amount" placeholder="e.g. 500000"></div>
+        <div class="form-row"><label class="form-label">Interest Rate (% / month)</label><input class="form-input" type="number" id="loan-rate" value="2" step="0.5"></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-row"><label class="form-label">Issue Date</label><input class="form-input" type="date" id="loan-start"></div>
+        <div class="form-row"><label class="form-label">Due Date</label><input class="form-input" type="date" id="loan-due"></div>
+      </div>
+      <div class="form-row"><label class="form-label">Credit Cycle</label>
+        <select class="form-input form-select" id="loan-cycle">
+          <option value="1">Cycle 1 — up to 40% of limit</option>
+          <option value="2">Cycle 2 — up to 60% of limit</option>
+          <option value="3">Cycle 3 — up to 80% of limit</option>
+          <option value="4">Cycle 4 — up to 100% of limit</option>
+        </select>
+      </div>
+      <div class="form-row"><label class="form-label">Notes</label><input class="form-input" id="loan-notes" placeholder="Purpose or reference"></div>
+      <div style="margin-top:14px;padding:12px;background:var(--cream);border-radius:9px;font-size:12px;color:var(--mid)">
+        <strong>Reminder:</strong> Max loan = credit cycle % × 25% of member's total contributions. Pool cap = 30% of club bank balance.
+      </div>
+      <div class="btn-row" style="margin-top:14px">
+        <button class="btn btn-primary" onclick="issueLoan()">✅ Issue Loan</button>
+        <button class="btn" onclick="closeModal('loan-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="repay-modal" onclick="if(event.target===this)closeModal('repay-modal')">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-head"><div class="modal-title">💳 Record Repayment</div><button class="modal-close" onclick="closeModal('repay-modal')">✕</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="repay-loan-id">
+      <div class="form-row"><label class="form-label">Amount Paid (UGX)</label><input class="form-input" type="number" id="repay-amount"></div>
+      <div class="form-row"><label class="form-label">Date</label><input class="form-input" type="date" id="repay-date"></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-primary" onclick="recordRepayment()">✅ Record Payment</button>
+        <button class="btn" onclick="closeModal('repay-modal')">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="email-reminder-modal" onclick="if(event.target===this)closeModal('email-reminder-modal')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-head"><div class="modal-title">📧 Email Reminder</div><button class="modal-close" onclick="closeModal('email-reminder-modal')">✕</button></div>
+    <div class="modal-body" id="email-reminder-body"></div>
+  </div>
 </div>
 
 <script>
@@ -925,9 +1067,9 @@ const DIVIDENDS_DATA=[
 ];
 
 const JUNIORS_2024=[
-  {name:'Nathan Jade Lule Luutu',parent:'Lule Stephen',parentId:'lule_stephen',sub:240000,wel:60000,bal:0},
+  {name:'Nathan Jade Kirabira',parent:'Kirabira Jane & Jude',parentId:'kirabira_jude',sub:240000,wel:60000,bal:0},
   {name:'Jasper Ssali Ssewanonda',parent:'Ssali Simon',parentId:'ssali_simon',sub:240000,wel:60000,bal:0},
-  {name:'Ryan Cyprian Lule Lwanga',parent:'Lule Stephen',parentId:'lule_stephen',sub:80000,wel:20000,bal:200000},
+  {name:'Ryan Cyprian Lule Lwanga',parent:'Bangi Aidah & Kigonya Antonio',parentId:'kigonya_antonio',sub:80000,wel:20000,bal:200000},
   {name:'Hezel Wenceslaus Matovu',parent:'Matovu Julius',parentId:'matovu_julius',sub:240000,wel:60000,bal:0},
   {name:'Erik Danil Nuwahereza',parent:'Nuwahereza Edson',parentId:'nuwahereza_edson',sub:0,wel:0,bal:300000},
   {name:'Elisha Joshua Nuwahereza',parent:'Nuwahereza Edson',parentId:'nuwahereza_edson',sub:0,wel:0,bal:300000},
@@ -935,15 +1077,15 @@ const JUNIORS_2024=[
   {name:'Jayden Elvis Liam Izimba',parent:'Member',parentId:null,sub:100000,wel:25000,bal:175000},
   {name:'Bianca Ssali',parent:'Ssali Simon',parentId:'ssali_simon',sub:40000,wel:10000,bal:250000},
   {name:'Ssentongo Remigius Smith',parent:'Member',parentId:null,sub:60000,wel:15000,bal:225000},
-  {name:'Liam Joseph Luutu',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
-  {name:'Lael Orion Luutu',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
+  {name:'Liam Joseph Luutu',parent:'Luutu Daniel & Nagawa Ruth',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
+  {name:'Lael Orion Luutu',parent:'Luutu Daniel & Nagawa Ruth',parentId:'luutu_daniel',sub:200000,wel:50000,bal:50000},
   {name:'Senyange Ziwa Jerom',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
   {name:'Kyambbadde Jayden',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
   {name:'Nsimbi Jayson',parent:'Member',parentId:null,sub:120000,wel:30000,bal:150000},
   {name:'Nakirijja Esther Elyse',parent:'Member',parentId:null,sub:60000,wel:15000,bal:225000},
   {name:'Nambatya Elyna Jenkins',parent:'Member',parentId:null,sub:40000,wel:15000,bal:245000},
   {name:'Sekiranda Fortunate Grace',parent:'Sekiranda Simon',parentId:'sekiranda_simon',sub:240000,wel:60000,bal:0},
-  {name:'Ndagire Catherine Skylar',parent:'Luutu Daniel',parentId:'luutu_daniel',sub:20000,wel:5000,bal:275000},
+  {name:'Ndagire Catherine Skylar',parent:'Luutu Daniel & Nagawa Ruth',parentId:'luutu_daniel',sub:20000,wel:5000,bal:275000},
 ];
 
 const INVESTMENTS=[
@@ -1464,7 +1606,7 @@ window.showFinTab=function(tab,btn){
   }
   const content={
     income:'<div class="card"><div class="card-title">💼 Income Statement — All Years</div><div class="grid-4 mb"><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Total Inflow</div><div style="font-weight:700;font-size:15px">UGX 134,393,100</div></div><div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Expenses</div><div style="font-weight:700;font-size:15px">UGX 18,632,222</div></div><div style="padding:10px;background:var(--cream);border-radius:9px"><div style="font-size:10px;color:var(--light)">Invested</div><div style="font-weight:700;font-size:15px">UGX 75,460,000</div></div><div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g2)">Bank Balance</div><div style="font-weight:800;font-size:15px;color:var(--g2)">UGX 37,714,589</div></div></div><div class="table-wrap"><table><thead><tr><th>Source</th><th style="text-align:right">Amount</th></tr></thead><tbody>'+[['2020 Subscriptions',4876000],['2021 Subscriptions',7376500],['2022 Subscriptions',12355000],['2023 Subscriptions',14720000],['2024 Subscriptions',14240000],['2025 Subscriptions',12556000],['2026 (YTD)',1240000],['Welfare 2021–2026',15035000],['GLA 2024–2026',9087000],['Unit Trust 2024–2026',6990000],['Juniors 2024–2026',3980000],['Investment Returns',22850000],['Diaspora Fees',2200000],['Fines',1690000],['Membership Fees',1832600],['Estates Account',2639000],['Bank Interest',26000]].map(([k,v])=>'<tr><td>'+k+'</td><td style="text-align:right">'+fmt(v)+'</td></tr>').join('')+'<tr style="background:var(--cream)"><td><strong>TOTAL</strong></td><td style="text-align:right"><strong>134,393,100</strong></td></tr></tbody></table></div></div>',
-    expenses:'<div class="card"><div class="card-title">💸 Expenses Ledger</div><div style="margin-bottom:10px"><span class="badge b-red">Total: UGX 18,632,222</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th>Amount</th></tr></thead><tbody>'+[['Mar 2021','Club registration + certification',192000],['Aug 2021','Bank account opening',150000],['Oct 2021','Bank closure & transfer',71000],['2022','Logo, stamp, files',285000],['Oct 2022','Club Reunion',1440000],['Jan 2023','AGM 2022',1300000],['Aug 2023','Nakimuli Annet payout (30%)',294000],['Jun 2023','Kenneth burial condolences',1000000],['Sep 2023','Nakacwa Fortunate condolences',1000000],['Dec 2023','AGM 2023',450000],['Aug 2024','Eldaz property recovery',1270000],['Nov 2024','Condolences – Hellen',500000],['Nov 2024','Club Reunion 2024',850000],['Dec 2024','AGM 2024',1500000],['Oct 2025','Namubiru + Nansubuga payout',2540000],['Nov 2025','Dividends – Claire, Kigonya, Kenneth',1162000],['Various','Birthday cakes',400000],['May 2025','Prayers for deceased',200000]].map(([d,p,a])=>'<tr><td style="font-size:11px;color:var(--light)">'+d+'</td><td>'+p+'</td><td>'+fmt(a)+'</td></tr>').join('')+'</tbody></table></div></div>',
+    expenses:'<div class="card"><div class="card-title">💸 Expenses Ledger</div><div style="margin-bottom:10px"><span class="badge b-red">Total: UGX 18,632,222</span> <span class="badge b-gray" style="font-size:10px">incl. estimated bank charges</span></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Description</th><th style="text-align:right">Amount (UGX)</th></tr></thead><tbody>'+[['28 Mar 2021','Club registration + certification',192000],['Aug 2021','Bank account opening fees & transport',150000],['Oct 2021','Bank closure + transfer fees',71000],['16 Jun 2022','Logo design, stamp, files, transport',285000],['29 Oct 2022','Club Reunion',1440000],['29 Jan 2023','AGM 2022 (venue, food, projector, Rev.)',1300000],['08 Jan 2023','Nakimuli Annet exit payout (30%)',294000],['06 Mar 2023','Condolences – Kenneth burial',1000000],['Mar 2023','Birthday cake – Q1 (Faith)',100000],['Jun 2023','Birthday cake – Q2 (Jane)',100000],['19 Sep 2023','Condolences – Nakacwa Fortunate',1000000],['Oct 2023','Birthday cake – Q3 (Faith)',100000],['Dec 2023','AGM 2023 minutes printing',350000],['Dec 2023','Birthday cake – Q4 (Jane)',100000],['08 Feb 2024','Eldaz Meat Parlour property recovery',1270000],['11 Mar 2024','Condolences – Hellen',500000],['Mar 2024','Birthday cake – Q1 (Faith)',100000],['Jun 2024','Birthday cake – Q2 (Faith)',100000],['Sep 2024','Birthday cake – Q3 (Jane)',100000],['11 Dec 2024','Club Reunion 2024',850000],['Dec 2024','Birthday cake – Q4 (Faith)',100000],['22 Dec 2024','Annual General Meeting 2024',1500000],['22 Oct 2025','Winnie + Jane Frances exit payout',2540000],['22 Oct 2025','Dividends – Claire, Kigonya, Kenneth',1162000],['25 Nov 2025','Dividends – Nuwahereza Edson',290000],['29 Dec 2025','Dividends – Namubiru Rose',295000],['31 Mar 2025','Birthday cake – Q1 (Jane)',100000],['31 May 2025','Prayers for deceased',200000],['30 Jun 2025','Birthday cake – Q2 (Faith)',100000],['29 Sep 2025','Birthday cake – Q3 (Jane)',100000],['30 Jan 2026','Dividends – Mr & Mrs Luutu',582148],['03 Feb 2026','Dividends – Nabunya Shamera',291074],['23 Mar 2026','Annual General Meeting 2026',1280000],['29 Mar 2026','Dividends – Sekiranda & Neria',450000],['Est.','Bank charges Jan 2020 – Dec 2025',252000]].map(([d,p,a])=>'<tr><td style="font-size:11px;color:var(--light);white-space:nowrap">'+d+'</td><td>'+p+'</td><td style="text-align:right">'+fmt(a)+'</td></tr>').join('')+'<tr style="background:var(--cream)"><td colspan="2"><strong>TOTAL</strong></td><td style="text-align:right"><strong>'+fmt(18632222)+'</strong></td></tr></tbody></table></div></div>',
     diaspora:'<div class="card"><div class="card-title">✈️ Diaspora Fees (UGX 20K/month extra)</div><div class="table-wrap"><table><thead><tr><th>Member</th><th>2022</th><th>2023</th><th>2024</th><th>2025</th><th>Total</th></tr></thead><tbody>'+[['Nalukenge Rashida',160000,240000,220000,240000],['Namubiru Rose',180000,100000,0,0],['Nakiwala Ruth',0,160000,240000,240000],['Ssali Simon',0,0,60000,240000],['Matovu Julius',0,0,0,60000],['Nampewo Winniefred',0,0,0,60000]].map(([n,...vals])=>'<tr><td class="member-name">'+n+'</td>'+vals.map(v=>'<td>'+(v?fmt(v):'—')+'</td>').join('')+'<td><strong>'+fmt(vals.reduce((a,b)=>a+b,0))+'</strong></td></tr>').join('')+'</tbody></table></div></div>',
     loans:'<div class="card"><div class="card-title">🏦 Loans Book</div><div class="alert success mb"><div class="alert-icon">✅</div><div>All external loans cleared. Member loans available from 2025.</div></div><div class="table-wrap"><table><thead><tr><th>Date</th><th>Borrower</th><th>Principal</th><th>Rate</th><th>Status</th></tr></thead><tbody><tr><td>Mar 2023</td><td>2Fumbe Kitchen Supplies</td><td>UGX 7,000,000</td><td>10%/mo</td><td><span class="badge b-green">Cleared</span></td></tr><tr><td>Mar 2023</td><td>Eldaz Meat Parlour</td><td>UGX 3,000,000</td><td>15%/mo</td><td><span class="badge b-amber">Partial</span></td></tr></tbody></table></div></div>',
     estates:'<div class="card"><div class="card-title">🏛️ Estates Account</div><div class="table-wrap"><table><thead><tr><th>Name</th><th>Principal</th><th>Dividends</th><th>Total</th><th>Status</th></tr></thead><tbody><tr><td class="member-name">Namuyimba Kenneth</td><td>UGX 1,181,500</td><td>UGX 0</td><td><strong>UGX 1,181,500</strong></td><td><span class="badge b-blue">→ Nakiwala Ruth</span></td></tr><tr><td class="member-name">Nakacwa Fortunate</td><td>UGX 1,457,500</td><td>UGX 191,636</td><td><strong>UGX 1,649,136</strong></td><td><span class="badge b-amber">Held</span></td></tr></tbody></table></div></div>'
@@ -1679,7 +1821,7 @@ window.saveMemberToFirestore=async function(){
   const name=document.getElementById('new-member-name').value.trim();
   if(!name){alert('Name required');return;}
   const id=name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z_]/g,'')+'_'+Date.now();
-  const member={id,name,email:document.getElementById('new-member-email').value.trim(),type:document.getElementById('new-member-type').value,joinYear:parseInt(document.getElementById('new-member-year').value)||2026,status:document.getElementById('new-member-status').value,notes:document.getElementById('new-member-notes').value.trim(),platinumNum:null,jointWith:null};
+  const member={id,name,email:document.getElementById('new-member-email').value.trim(),contactEmail:document.getElementById('new-member-contact-email').value.trim(),type:document.getElementById('new-member-type').value,joinYear:parseInt(document.getElementById('new-member-year').value)||2026,status:document.getElementById('new-member-status').value,notes:document.getElementById('new-member-notes').value.trim(),platinumNum:null,jointWith:null};
   STATE.members.push(member);
   if(!STATE.user.uid.startsWith('demo')){await setDoc(doc(db,'members',id),member);}
   renderAdminMemberList();
@@ -1687,7 +1829,16 @@ window.saveMemberToFirestore=async function(){
 };
 
 function renderAdminMemberList(){
-  document.getElementById('admin-members-tbody').innerHTML=STATE.members.map(m=>'<tr><td class="member-name">'+m.name+'</td><td><span class="badge b-'+(m.type==='platinum'?'gold':'blue')+'">'+m.type+'</span></td><td style="font-size:11px">'+(m.email||'—')+'</td><td><span class="badge '+(m.status==='active'?'b-green':m.status==='departed'?'b-red':'b-gray')+'">'+m.status+'</span></td><td><button class="btn btn-sm btn-danger" onclick="deleteMember(\''+m.id+'\')">Remove</button></td></tr>').join('');
+  document.getElementById('admin-members-tbody').innerHTML=STATE.members.map(m=>`
+    <tr>
+      <td class="member-name">${m.name}</td>
+      <td><span class="badge b-${m.type==='platinum'?'gold':'blue'}">${m.type}</span></td>
+      <td style="font-size:10px;color:var(--teal)">${m.email||'—'}</td>
+      <td style="font-size:10px;color:var(--mid)">${m.contactEmail||'—'} <button class="btn btn-sm" style="padding:2px 6px;font-size:10px" onclick="editMemberEmail('${m.id}')">✏️</button></td>
+      <td><span class="badge ${m.status==='active'?'b-green':m.status==='departed'?'b-red':'b-gray'}">${m.status}</span></td>
+      <td><button class="btn btn-sm btn-danger" onclick="deleteMember('${m.id}')">Remove</button></td>
+    </tr>`).join('');
+  document.getElementById('admin-members-thead').innerHTML='<tr><th>Name</th><th>Type</th><th>Login Gmail</th><th>Contact Email</th><th>Status</th><th></th></tr>';
 }
 
 window.deleteMember=async function(id){
@@ -1696,6 +1847,20 @@ window.deleteMember=async function(id){
   if(!STATE.user.uid.startsWith('demo')){await deleteDoc(doc(db,'members',id));}
   renderAdminMemberList();renderMemberTable();
   showToast('Member removed');
+};
+
+window.editMemberEmail=async function(id){
+  const m=STATE.members.find(x=>x.id===id);
+  if(!m)return;
+  const cur=m.contactEmail||'';
+  const val=prompt('Contact email for '+m.name+' (used for reminders):',cur);
+  if(val===null)return;
+  m.contactEmail=val.trim();
+  if(!STATE.user.uid.startsWith('demo')){
+    try{await setDoc(doc(db,'members',id),m);}catch(e){showToast('Error saving: '+e.message);return;}
+  }
+  renderAdminMemberList();
+  showToast('Email updated for '+m.name+' ✓');
 };
 
 window.addApprovedEmail=async function(){
@@ -1746,11 +1911,23 @@ window.killAllSessions=async function(){
 
 window.showAdminTab=function(tab,btn){
   document.querySelectorAll('.admin-tab').forEach(t=>t.style.display='none');
-  document.getElementById('admin-tab-'+tab).style.display='block';
-  btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
+  const el=document.getElementById('admin-tab-'+tab);
+  if(el)el.style.display='block';
+  if(btn){btn.closest('.tab-group').querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');}
   if(tab==='access'){renderApprovedEmails();renderActiveSessions();}
+  if(tab==='finance-overview'){renderAdminFinanceOverview();}
 };
+
+function renderAdminFinanceOverview(){
+  const el=document.getElementById('admin-tab-finance-overview');
+  if(!el)return;
+  const loans=STATE.loans||[];
+  const totalDeployed=loans.filter(l=>l.status==='active'||l.status==='overdue').reduce((a,l)=>a+(l.principal||0),0);
+  const pool=loanPool();
+  const avail=Math.max(0,pool-totalDeployed);
+  const fill=el.querySelector('.credit-track .credit-fill');
+  if(fill)fill.style.width=Math.min(100,Math.round((totalDeployed/pool)*100))+'%';
+}
 
 window.copyAppsScript=function(){
   navigator.clipboard.writeText(document.getElementById('apps-script-code').textContent);
@@ -1780,6 +1957,304 @@ window.openModal=id=>document.getElementById(id).classList.add('open');
 window.closeModal=id=>document.getElementById(id).classList.remove('open');
 document.addEventListener('keydown',e=>{if(e.key==='Escape')document.querySelectorAll('.modal-bg.open').forEach(m=>m.classList.remove('open'));});
 
+/* ── LOANS ── */
+const BANK_BALANCE = 37714589;
+const LOAN_POOL_PCT = 0.30;
+const LOAN_LIMIT_PCT = 0.25;
+const CYCLE_PCTS = [0, 0.40, 0.60, 0.80, 1.00]; // index by cycle 1-4
+
+function memberTotalContrib(mid) {
+  let tot = 0;
+  for (const yr of Object.values(STATE.contributions || {})) {
+    const c = yr[mid];
+    if (!c) continue;
+    ['sub','welfare','gla','ut'].forEach(k => {
+      if (Array.isArray(c[k])) tot += c[k].reduce((a,b)=>a+b,0);
+    });
+  }
+  return tot;
+}
+
+function loanEligible(mid, cycle) {
+  const total = memberTotalContrib(mid);
+  const baseLimit = total * LOAN_LIMIT_PCT;
+  const pct = CYCLE_PCTS[Math.max(1, Math.min(4, cycle || 1))];
+  return Math.floor(baseLimit * pct);
+}
+
+function loanPool() {
+  return Math.floor(BANK_BALANCE * LOAN_POOL_PCT);
+}
+
+function loanPoolPerMember() {
+  const am = activeMembers();
+  return am.length ? Math.floor(loanPool() / am.length) : 0;
+}
+
+async function loadLoans() {
+  if (STATE.user.uid.startsWith('demo')) return STATE.loans || [];
+  try {
+    const snap = await getDocs(collection(db, 'loans'));
+    STATE.loans = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  } catch(e) { STATE.loans = []; }
+  return STATE.loans || [];
+}
+
+async function initLoans() {
+  STATE.loans = STATE.loans || [];
+  await loadLoans();
+  renderLoansPage();
+}
+
+function renderLoansPage() {
+  const el = document.getElementById('loans-content');
+  if (!el) return;
+  const pool = loanPool();
+  const perMember = loanPoolPerMember();
+  const loans = STATE.loans || [];
+  const today = new Date();
+
+  const totalActive = loans.filter(l=>l.status==='active').reduce((a,l)=>a+(l.principal||0),0);
+  const available = Math.max(0, pool - totalActive);
+
+  // Find current user's loan(s)
+  const myId = STATE.user?.memberId||null;
+  const myLoans = myId ? loans.filter(l=>l.memberId===myId) : [];
+  const myActiveLoan = myLoans.find(l=>l.status==='active'||l.status==='overdue');
+  const myCycle = (myLoans.filter(l=>l.status==='paid').length) + 1;
+  const myEligible = myId ? Math.min(loanEligible(myId, myCycle), perMember) : 0;
+
+  // Status tag
+  function statusTag(s) {
+    const map={active:'b-green',overdue:'b-red',paid:'b-gold',pending:'b-blue'};
+    return '<span class="badge '+(map[s]||'b-gray')+'">'+s+'</span>';
+  }
+
+  // Admin admin pool section
+  let adminHtml = '';
+  if (STATE.isAdmin) {
+    const breakdown = loans.filter(l=>l.status==='active'||l.status==='overdue');
+    adminHtml = `
+    <div class="card mb">
+      <div class="card-title">🏦 Loan Pool — Admin Overview</div>
+      <div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:16px">
+        <div class="pool-ring">
+          <div class="pool-ring-val">${Math.round((available/pool)*100)}%</div>
+          <div class="pool-ring-lbl">Available</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div class="credit-track"><div class="credit-fill" style="width:${Math.min(100,Math.round((totalActive/pool)*100))}%;background:linear-gradient(90deg,var(--gold2),var(--gold))"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--light);margin-top:3px"><span>Deployed: UGX ${fmt(totalActive)}</span><span>Pool: UGX ${fmt(pool)}</span></div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin-bottom:16px">
+        <div style="padding:10px;background:var(--teal2);border-radius:9px"><div style="font-size:10px;color:var(--teal)">Total Pool (30%)</div><div style="font-weight:800;color:var(--teal)">UGX ${fmt(pool)}</div></div>
+        <div style="padding:10px;background:#dcfce7;border-radius:9px"><div style="font-size:10px;color:var(--g3)">Available Now</div><div style="font-weight:800;color:var(--g2)">UGX ${fmt(available)}</div></div>
+        <div style="padding:10px;background:#fef3c7;border-radius:9px"><div style="font-size:10px;color:var(--gold)">Per-Member Share</div><div style="font-weight:800;color:var(--gold)">UGX ${fmt(perMember)}</div></div>
+        <div style="padding:10px;background:var(--red2);border-radius:9px"><div style="font-size:10px;color:var(--red)">Deployed</div><div style="font-weight:800;color:var(--red)">UGX ${fmt(totalActive)}</div></div>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="openLoanModal()">➕ Issue New Loan</button></div>
+    </div>
+    <div class="card mb">
+      <div class="card-title">📋 All Running Loans</div>
+      ${breakdown.length===0?'<div class="alert info"><div class="alert-icon">ℹ️</div><div>No active loans at the moment.</div></div>':
+        '<div class="table-wrap"><table><thead><tr><th>Member</th><th>Principal</th><th>Rate</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead><tbody>'+
+        breakdown.map(l=>{
+          const due=l.dueDate?new Date(l.dueDate):null;
+          const overdue=due&&due<today&&l.status==='active';
+          if(overdue&&l.status==='active')l.status='overdue';
+          return `<tr>
+            <td class="member-name">${l.memberName||l.memberId}</td>
+            <td>UGX ${fmt(l.principal||0)}</td>
+            <td>${l.rate||2}%/mo</td>
+            <td style="color:${overdue?'var(--red)':'inherit'}">${l.dueDate||'—'}</td>
+            <td>${statusTag(l.status)}</td>
+            <td><button class="btn btn-sm" onclick="openRepayModal('${l.id}')">💳 Repay</button></td>
+          </tr>`;
+        }).join('')+'</tbody></table></div>'
+      }
+    </div>
+    <div class="card mb">
+      <div class="card-title">📊 All Members — Loan Eligibility</div>
+      <div class="table-wrap"><table><thead><tr><th>Member</th><th>Contributions</th><th>25% Limit</th><th>Cycle</th><th>Max Now</th><th>Status</th></tr></thead><tbody>
+      ${activeMembers().map(m=>{
+        const tc=memberTotalContrib(m.id);
+        const mLoans=loans.filter(l=>l.memberId===m.id);
+        const mc=mLoans.filter(l=>l.status==='paid').length+1;
+        const maxNow=Math.min(loanEligible(m.id,mc),perMember);
+        const hasActive=mLoans.some(l=>l.status==='active'||l.status==='overdue');
+        return `<tr>
+          <td class="member-name">${m.name}</td>
+          <td>UGX ${fmt(tc)}</td>
+          <td>UGX ${fmt(Math.floor(tc*0.25))}</td>
+          <td><span class="cycle-badge">Cycle ${mc}</span></td>
+          <td style="font-weight:700;color:var(--teal)">UGX ${fmt(maxNow)}</td>
+          <td>${hasActive?'<span class="badge b-red">Active Loan</span>':'<span class="badge b-green">Eligible</span>'}</td>
+        </tr>`;
+      }).join('')}
+      </tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📧 Send Loan Reminders</div>
+      <div class="alert warn" style="margin-bottom:12px"><div class="alert-icon">⚠️</div><div>Email reminders are sent manually via Gmail. Click a member below to prepare a reminder message.</div></div>
+      ${loans.filter(l=>l.status==='active'||l.status==='overdue').map(l=>`
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px;background:var(--cream);border-radius:9px;margin-bottom:8px">
+          <div><div style="font-weight:600">${l.memberName}</div><div style="font-size:11px;color:var(--light)">Due: ${l.dueDate||'—'} · UGX ${fmt(l.principal)}</div></div>
+          <button class="btn btn-sm" onclick="showEmailReminder('${l.id}','loan')">📧 Remind</button>
+        </div>`).join('')||'<div class="alert success"><div class="alert-icon">✅</div><div>No outstanding loans to remind.</div></div>'}
+    </div>`;
+  }
+
+  // Member section
+  let memberHtml = '';
+  if (myId) {
+    memberHtml = `
+    <div class="card mb">
+      <div class="card-title">🏦 My Loan Eligibility</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px">
+        <div style="padding:10px;background:var(--teal2);border-radius:9px">
+          <div style="font-size:10px;color:var(--teal)">My Max (Cycle ${myCycle})</div>
+          <div style="font-weight:800;font-size:18px;color:var(--teal)">UGX ${fmt(myEligible)}</div>
+        </div>
+        <div style="padding:10px;background:var(--cream);border-radius:9px">
+          <div style="font-size:10px;color:var(--light)">Credit Cycle</div>
+          <div class="cycle-badge" style="margin-top:4px">Cycle ${myCycle} (${CYCLE_PCTS[Math.min(myCycle,4)]*100}%)</div>
+        </div>
+        <div style="padding:10px;background:var(--cream);border-radius:9px">
+          <div style="font-size:10px;color:var(--light)">Pool Share</div>
+          <div style="font-weight:700">UGX ${fmt(perMember)}</div>
+        </div>
+      </div>
+      <div class="credit-track"><div class="credit-fill" style="width:${CYCLE_PCTS[Math.min(myCycle,4)]*100}%"></div></div>
+      <div style="font-size:11px;color:var(--light);margin-top:4px">Credit progress: Cycle ${myCycle} of 4 — ${CYCLE_PCTS[Math.min(myCycle,4)]*100}% access</div>
+      ${myCycle<5?'<div style="font-size:11px;color:var(--mid);margin-top:8px;padding:8px;background:var(--cream);border-radius:8px">Next cycle after repayment: Cycle '+(myCycle+1)+' ('+Math.min(100,(myCycle)*20+40)+'% access)</div>':''}
+      <div class="alert info" style="margin-top:12px"><div class="alert-icon">📋</div><div>To apply for a loan, contact the club admin. Loans are subject to availability in the pool.</div></div>
+    </div>
+    ${myActiveLoan?`
+    <div class="card mb">
+      <div class="card-title">💳 My Active Loan</div>
+      <div class="loan-card ${myActiveLoan.status}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:16px">UGX ${fmt(myActiveLoan.principal||0)}</div>
+            <div style="font-size:11px;color:var(--light);margin-top:3px">${myActiveLoan.rate||2}% per month · Cycle ${myActiveLoan.cycle||1}</div>
+          </div>
+          ${statusTag(myActiveLoan.status)}
+        </div>
+        <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+          <div><div style="color:var(--light)">Issue Date</div><div style="font-weight:600">${myActiveLoan.startDate||'—'}</div></div>
+          <div><div style="color:var(--light)">Due Date</div><div style="font-weight:600;color:${myActiveLoan.status==='overdue'?'var(--red)':'inherit'}">${myActiveLoan.dueDate||'—'}</div></div>
+          <div><div style="color:var(--light)">Amount Paid</div><div style="font-weight:600;color:var(--g3)">UGX ${fmt(myActiveLoan.paidAmount||0)}</div></div>
+          <div><div style="color:var(--light)">Balance</div><div style="font-weight:700;color:var(--red)">UGX ${fmt(Math.max(0,(myActiveLoan.principal||0)-(myActiveLoan.paidAmount||0)))}</div></div>
+        </div>
+        ${myActiveLoan.notes?'<div style="margin-top:8px;font-size:11px;color:var(--light)">'+myActiveLoan.notes+'</div>':''}
+      </div>
+    </div>` : '<div class="card mb"><div class="alert success"><div class="alert-icon">✅</div><div>You have no active loan. Contact admin to apply.</div></div></div>'}
+    ${myLoans.filter(l=>l.status==='paid').length?`
+    <div class="card">
+      <div class="card-title">📜 My Loan History</div>
+      ${myLoans.filter(l=>l.status==='paid').map(l=>`
+        <div class="loan-card paid" style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-weight:700">UGX ${fmt(l.principal||0)}</span>${statusTag('paid')}</div>
+          <div style="font-size:11px;color:var(--light);margin-top:4px">${l.startDate||''} → ${l.dueDate||''} · Cycle ${l.cycle||1}</div>
+        </div>`).join('')}
+    </div>`:''}`;
+  } else {
+    memberHtml = `<div class="alert info"><div class="alert-icon">ℹ️</div><div>Your member profile is not yet linked. Contact the admin.</div></div>`;
+  }
+
+  el.innerHTML = (adminHtml || '') + memberHtml;
+}
+
+window.openLoanModal = function() {
+  if (!STATE.isAdmin) return;
+  document.getElementById('loan-member-sel').innerHTML = activeMembers().map(m=>`<option value="${m.id}">${m.name}</option>`).join('');
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('loan-start').value = today;
+  const due = new Date(); due.setMonth(due.getMonth()+6);
+  document.getElementById('loan-due').value = due.toISOString().split('T')[0];
+  openModal('loan-modal');
+};
+
+window.issueLoan = async function() {
+  if (!STATE.isAdmin) return;
+  const mid = document.getElementById('loan-member-sel').value;
+  const m = STATE.members.find(x=>x.id===mid);
+  const principal = parseInt(document.getElementById('loan-amount').value)||0;
+  const rate = parseFloat(document.getElementById('loan-rate').value)||2;
+  const startDate = document.getElementById('loan-start').value;
+  const dueDate = document.getElementById('loan-due').value;
+  const cycle = parseInt(document.getElementById('loan-cycle').value)||1;
+  const notes = document.getElementById('loan-notes').value.trim();
+  if (!principal||!startDate||!dueDate) { showToast('Fill all required fields'); return; }
+  const loans = STATE.loans||[];
+  const myCycle = loans.filter(l=>l.memberId===mid&&l.status==='paid').length+1;
+  const maxElig = Math.min(loanEligible(mid,myCycle),loanPoolPerMember());
+  if (principal>maxElig) {
+    if(!confirm(`UGX ${fmt(principal)} exceeds eligible amount of UGX ${fmt(maxElig)} for this cycle. Issue anyway?`)) return;
+  }
+  const pool = loanPool();
+  const totalActive = loans.filter(l=>l.status==='active').reduce((a,l)=>a+(l.principal||0),0);
+  if (totalActive+principal>pool) {
+    if(!confirm(`This would exceed the loan pool. Pool: UGX ${fmt(pool)}, Deployed: UGX ${fmt(totalActive)}. Proceed?`)) return;
+  }
+  const loan = {memberId:mid,memberName:m?.name||mid,principal,rate,startDate,dueDate,cycle,notes,status:'active',paidAmount:0,createdAt:new Date().toISOString(),createdBy:STATE.user?.email||'admin'};
+  if (!STATE.user.uid.startsWith('demo')) {
+    try {
+      const ref = await addDoc(collection(db,'loans'),loan);
+      loan.id = ref.id;
+    } catch(e) { showToast('Error: '+e.message); return; }
+  } else { loan.id='demo_'+Date.now(); }
+  STATE.loans = STATE.loans||[];
+  STATE.loans.push(loan);
+  closeModal('loan-modal');
+  showToast('Loan issued to '+m?.name+' ✓');
+  renderLoansPage();
+};
+
+window.openRepayModal = function(loanId) {
+  document.getElementById('repay-loan-id').value = loanId;
+  document.getElementById('repay-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('repay-amount').value = '';
+  openModal('repay-modal');
+};
+
+window.recordRepayment = async function() {
+  const loanId = document.getElementById('repay-loan-id').value;
+  const amount = parseInt(document.getElementById('repay-amount').value)||0;
+  const date = document.getElementById('repay-date').value;
+  if (!amount||!date) { showToast('Enter amount and date'); return; }
+  const loan = (STATE.loans||[]).find(l=>l.id===loanId);
+  if (!loan) return;
+  loan.paidAmount = (loan.paidAmount||0)+amount;
+  loan.lastPaymentDate = date;
+  if (loan.paidAmount >= loan.principal) loan.status = 'paid';
+  if (!STATE.user.uid.startsWith('demo')) {
+    try { await setDoc(doc(db,'loans',loanId),loan); } catch(e){}
+  }
+  closeModal('repay-modal');
+  showToast('Payment of UGX '+fmt(amount)+' recorded ✓');
+  renderLoansPage();
+};
+
+window.showEmailReminder = function(loanId, type) {
+  const loan = (STATE.loans||[]).find(l=>l.id===loanId);
+  if (!loan) return;
+  const m = STATE.members.find(x=>x.id===loan.memberId);
+  const email = m?.contactEmail||m?.email||'(email not set)';
+  const subject = type==='loan'?`Let's Grow – Loan Repayment Reminder`:`Let's Grow – Subscription Reminder`;
+  const body = type==='loan'
+    ? `Dear ${loan.memberName},\n\nThis is a reminder that your loan of UGX ${fmt(loan.principal)} is due on ${loan.dueDate}.\nAmount paid so far: UGX ${fmt(loan.paidAmount||0)}.\nOutstanding balance: UGX ${fmt(Math.max(0,(loan.principal||0)-(loan.paidAmount||0)))}.\n\nPlease arrange payment at your earliest convenience.\n\nBest regards,\nLet's Grow Investment Club`
+    : `Dear member,\n\nThis is a reminder to pay your monthly club subscription.\n\nBest regards,\nLet's Grow Investment Club`;
+  const mailtoLink = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  document.getElementById('email-reminder-body').innerHTML = `
+    <div style="margin-bottom:12px"><div style="font-size:11px;color:var(--light);margin-bottom:4px">To</div><div style="font-weight:700">${loan.memberName} <span style="color:var(--teal)">${email}</span></div></div>
+    <div style="background:var(--cream);border-radius:9px;padding:14px;font-size:12px;white-space:pre-wrap;color:var(--dark);margin-bottom:14px">${body}</div>
+    ${email!=='(email not set)'?`<a href="${mailtoLink}" class="btn btn-primary" style="text-decoration:none;display:inline-block">📧 Open in Gmail</a>`:'<div class="alert warn"><div class="alert-icon">⚠️</div><div>No email address set for this member. Update their profile in Admin → Members.</div></div>'}
+  `;
+  openModal('email-reminder-modal');
+};
+
 /* ── INIT ALL PAGES ── */
 function initAllPages(){
   initDashboard();
@@ -1788,6 +2263,7 @@ function initAllPages(){
   initInvestments();
   initDividends();
   initFinancials();
+  initLoans();
   initJuniors();
   initCommittee();
   initReports();
