@@ -2,350 +2,574 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>Let's Grow Investment Club</title>
-  <meta name="theme-color" content="#1e3a5f">
+  <meta name="theme-color" content="#0a1628">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --primary: #1a56db;
-      --primary-dark: #1e40af;
-      --bg: #0f172a;
-      --bg2: #1e293b;
-      --bg3: #334155;
-      --text: #f1f5f9;
-      --text2: #94a3b8;
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --card: #1e293b;
-      --border: #334155;
+      --ink:     #0a1628;
+      --ink2:    #1e3a5f;
+      --gold:    #c9a84c;
+      --gold2:   #e8c97a;
+      --cream:   #f5f0e8;
+      --muted:   #8a9ab5;
+      --success: #1a6b3c;
+      --danger:  #8b1a1a;
+      --card:    #ffffff;
+      --border:  #e2ddd4;
+      --bg:      #f5f0e8;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 14px; }
 
-    /* ── Loading ── */
+    /* ── LOADING ──────────────────────────────────────────── */
     #loading-screen {
-      position: fixed; inset: 0; background: var(--bg);
-      display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000;
+      position: fixed; inset: 0;
+      background: var(--ink);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 1000; gap: 20px;
     }
-    .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin .8s linear infinite; margin-top: 20px; }
+    .load-logo { width: 64px; height: 64px; }
+    .load-text { color: var(--gold); font-family: 'DM Serif Display', serif; font-size: 22px; letter-spacing: 1px; }
+    .load-sub  { color: var(--muted); font-size: 11px; letter-spacing: 3px; text-transform: uppercase; }
+    .spinner   { width: 28px; height: 28px; border: 2px solid rgba(201,168,76,.2); border-top-color: var(--gold); border-radius: 50%; animation: spin .8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Login ── */
+    /* ── LOGIN ────────────────────────────────────────────── */
     #login-screen {
-      display: none; min-height: 100vh; align-items: center; justify-content: center;
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-      flex-direction: column; padding: 20px;
+      display: none; min-height: 100vh;
+      background: var(--ink);
+      align-items: center; justify-content: center; flex-direction: column;
+      padding: 24px;
     }
     #login-screen.visible { display: flex; }
     .login-card {
-      background: var(--card); border-radius: 16px; padding: 40px 32px;
-      width: 100%; max-width: 380px; text-align: center; border: 1px solid var(--border);
-      box-shadow: 0 20px 60px rgba(0,0,0,.4);
+      background: #ffffff10; border: 1px solid #ffffff18;
+      border-radius: 20px; padding: 40px 28px;
+      width: 100%; max-width: 360px; text-align: center;
+      backdrop-filter: blur(10px);
     }
-    .login-card h2 { font-size: 24px; margin: 16px 0 6px; }
-    .login-card p { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
-    .btn-google {
-      width: 100%; padding: 14px; border-radius: 10px; border: none;
-      background: #fff; color: #333; font-size: 15px; font-weight: 600;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+    .login-logo { margin-bottom: 20px; }
+    .login-card h1 { font-family: 'DM Serif Display', serif; color: var(--gold); font-size: 26px; margin-bottom: 4px; }
+    .login-card .tagline { color: var(--muted); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 32px; }
+    .inp-wrap { position: relative; margin-bottom: 14px; text-align: left; }
+    .inp-wrap label { display: block; color: var(--muted); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .inp-wrap input {
+      width: 100%; padding: 12px 14px; border-radius: 10px;
+      border: 1px solid #ffffff20; background: #ffffff08;
+      color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border .2s;
     }
-    .btn-google:hover { background: #f1f5f9; }
-    .login-note { margin-top: 18px; color: var(--text2); font-size: 12px; line-height: 1.6; }
-    .error-msg { margin-top: 14px; background: var(--danger); color: #fff; padding: 10px 16px; border-radius: 8px; font-size: 13px; display: none; }
-    .error-msg.show { display: block; }
+    .inp-wrap input:focus { border-color: var(--gold); }
+    .inp-wrap input::placeholder { color: #ffffff30; }
+    .btn-login {
+      width: 100%; padding: 13px; border-radius: 10px; border: none;
+      background: var(--gold); color: var(--ink);
+      font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+      cursor: pointer; margin-top: 6px; letter-spacing: .3px;
+      transition: background .2s, transform .1s;
+    }
+    .btn-login:hover { background: var(--gold2); }
+    .btn-login:active { transform: scale(.98); }
+    .btn-forgot { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; margin-top: 16px; text-decoration: underline; }
+    .login-note { color: #ffffff30; font-size: 11px; margin-top: 24px; line-height: 1.6; }
+    .login-error { background: #8b1a1a30; border: 1px solid #8b1a1a60; color: #ffaaaa; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; display: none; }
+    .login-error.show { display: block; }
+    .login-success { background: #1a6b3c30; border: 1px solid #1a6b3c60; color: #aaffcc; padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-top: 12px; display: none; }
+    .login-success.show { display: block; }
 
-    /* ── Toast ── */
+    /* ── TOAST ────────────────────────────────────────────── */
     #toast {
-      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-      background: var(--bg3); color: var(--text); padding: 10px 18px;
-      border-radius: 8px; font-size: 13px; z-index: 9999; opacity: 0;
-      transition: opacity .3s; pointer-events: none; max-width: 300px; text-align: center;
+      position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%);
+      background: var(--ink); color: #fff; padding: 10px 18px;
+      border-radius: 8px; font-size: 12px; z-index: 9999;
+      opacity: 0; transition: opacity .3s; pointer-events: none;
+      max-width: 280px; text-align: center; border: 1px solid #ffffff20;
     }
     #toast.show { opacity: 1; }
-    #toast.error { background: var(--danger); }
-    #toast.success { background: #166534; }
+    #toast.error   { background: var(--danger); border-color: transparent; }
+    #toast.success { background: var(--success); border-color: transparent; }
+    #toast.gold    { background: var(--gold); color: var(--ink); border-color: transparent; }
 
-    /* ── App ── */
+    /* ── APP SHELL ────────────────────────────────────────── */
     #app { display: none; flex-direction: column; min-height: 100vh; }
     #app.visible { display: flex; }
 
-    /* ── Topbar ── */
+    /* ── TOPBAR ───────────────────────────────────────────── */
     .topbar {
-      background: var(--bg2); border-bottom: 1px solid var(--border);
-      padding: 10px 16px; display: flex; align-items: center; gap: 10px;
+      background: var(--ink); padding: 12px 16px;
+      display: flex; align-items: center; gap: 10px;
       position: sticky; top: 0; z-index: 100;
+      border-bottom: 1px solid #ffffff10;
     }
-    .topbar-brand { flex: 1; display: flex; align-items: center; gap: 8px; }
-    .brand-text { font-size: 13px; font-weight: 700; line-height: 1.2; }
-    .brand-text span { display: block; color: var(--text2); font-size: 10px; font-weight: 400; }
-    .user-bubble {
-      width: 32px; height: 32px; border-radius: 50%; background: var(--primary);
-      display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0;
+    .topbar-brand { flex: 1; }
+    .topbar-brand .club-name { font-family: 'DM Serif Display', serif; color: var(--gold); font-size: 15px; line-height: 1; }
+    .topbar-brand .club-sub  { color: var(--muted); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+    .user-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: var(--gold); color: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px; flex-shrink: 0;
     }
-    .admin-pill { background: #b45309; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; display: none; }
-    .btn-out { padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text2); font-size: 12px; cursor: pointer; }
+    .tier-badge {
+      padding: 2px 8px; border-radius: 4px; font-size: 9px;
+      font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .tier-platinum { background: linear-gradient(135deg, #c9a84c, #e8c97a); color: var(--ink); }
+    .tier-gold     { background: #c9a84c30; color: var(--gold); border: 1px solid var(--gold); }
+    .tier-admin    { background: #1e3a5f; color: #60a5fa; border: 1px solid #60a5fa40; }
+    .btn-out { padding: 5px 10px; border-radius: 6px; border: 1px solid #ffffff15; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
 
-    /* ── Sections ── */
-    .main { flex: 1; padding: 14px; max-width: 600px; margin: 0 auto; width: 100%; }
-    .section { display: none; padding-bottom: 80px; }
+    /* ── MAIN CONTENT ─────────────────────────────────────── */
+    .main { flex: 1; padding: 14px; max-width: 600px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
+    .section { display: none; }
     .section.active { display: block; }
 
-    /* ── Hero ── */
-    .hero {
-      background: linear-gradient(135deg, #1a3a6b, #1a56db);
-      border-radius: 16px; padding: 22px; margin-bottom: 14px;
-    }
-    .hero h2 { font-size: 17px; font-weight: 700; margin-bottom: 3px; }
-    .hero p { color: rgba(255,255,255,.65); font-size: 12px; margin-bottom: 18px; }
-    .hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-    .hero-stat label { color: rgba(255,255,255,.65); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 2px; }
-    .hero-stat .hval { font-size: 22px; font-weight: 800; }
+    /* ── SECTION HEADER ───────────────────────────────────── */
+    .sec-hdr { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--ink); margin-bottom: 16px; }
+    .sec-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* ── Stat cards ── */
-    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    /* ── CARDS ────────────────────────────────────────────── */
+    .card {
+      background: var(--card); border-radius: 14px; padding: 16px;
+      border: 1px solid var(--border); margin-bottom: 12px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.04);
+    }
+    .card-title { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+    /* ── HERO DASHBOARD ───────────────────────────────────── */
+    .hero-card {
+      background: var(--ink); border-radius: 16px; padding: 22px;
+      margin-bottom: 12px; position: relative; overflow: hidden;
+    }
+    .hero-card::before {
+      content: ''; position: absolute; top: -40px; right: -40px;
+      width: 160px; height: 160px; border-radius: 50%;
+      background: var(--gold); opacity: .06;
+    }
+    .hero-label { color: var(--gold); font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 4px; }
+    .hero-value { color: #fff; font-family: 'DM Serif Display', serif; font-size: 28px; margin-bottom: 2px; }
+    .hero-sub   { color: var(--muted); font-size: 11px; }
+    .hero-grid  { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 16px; }
+    .hero-stat label { color: rgba(255,255,255,.45); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 3px; }
+    .hero-stat .hv   { color: #fff; font-size: 17px; font-weight: 600; }
+
+    /* ── STAT GRID ────────────────────────────────────────── */
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
     .stat-card { background: var(--card); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
-    .stat-card label { color: var(--text2); font-size: 10px; text-transform: uppercase; letter-spacing: .4px; display: block; margin-bottom: 4px; }
-    .stat-card .sval { font-size: 19px; font-weight: 700; }
-    .stat-card .ssub { font-size: 11px; color: var(--text2); margin-top: 2px; }
-    .bt-gold { border-top: 3px solid #f59e0b; }
-    .bt-green { border-top: 3px solid #22c55e; }
-    .bt-blue { border-top: 3px solid #60a5fa; }
+    .stat-card label { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 4px; }
+    .stat-card .sv   { font-size: 18px; font-weight: 700; color: var(--ink); }
+    .stat-card .ss   { font-size: 10px; color: var(--muted); margin-top: 2px; }
+    .bt-gold   { border-top: 3px solid var(--gold); }
+    .bt-green  { border-top: 3px solid #22c55e; }
+    .bt-blue   { border-top: 3px solid #60a5fa; }
     .bt-purple { border-top: 3px solid #a78bfa; }
 
-    /* ── Card ── */
-    .card { background: var(--card); border-radius: 12px; padding: 16px; border: 1px solid var(--border); margin-bottom: 12px; }
-    .card-title { font-size: 12px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; }
+    /* ── PROGRESS BAR ─────────────────────────────────────── */
+    .progress-wrap { margin-bottom: 8px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--gold); border-radius: 3px; transition: width .6s ease; }
+    .progress-fill.green  { background: #22c55e; }
+    .progress-fill.danger { background: var(--danger); }
 
-    /* ── Legend ── */
-    .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
-    .leg { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text2); }
-    .leg-dot { width: 10px; height: 10px; border-radius: 2px; }
-    .d-paid { background: #166534; }
-    .d-partial { background: #78350f; }
-    .d-due { background: #7f1d1d; }
-    .d-future { background: var(--bg3); }
-
-    /* ── Tracker ── */
-    .tracker-card { background: var(--bg3); border-radius: 10px; padding: 12px; margin-bottom: 10px; }
-    .tracker-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .tracker-name { font-size: 13px; font-weight: 600; }
-    .months-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+    /* ── CONTRIBUTION TRACKER ─────────────────────────────── */
+    .tracker-row { margin-bottom: 14px; }
+    .tracker-name { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--ink); }
+    .months-grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
     .mo {
-      aspect-ratio: 1; border-radius: 4px; display: flex; align-items: center;
-      justify-content: center; font-size: 8px; font-weight: 700;
+      aspect-ratio: 1; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 7px; font-weight: 700;
     }
-    .mo-paid { background: #166534; color: #bbf7d0; }
+    .mo-paid    { background: #166534; color: #bbf7d0; }
     .mo-partial { background: #78350f; color: #fde68a; }
-    .mo-due { background: #7f1d1d; color: #fecaca; }
-    .mo-future { background: var(--bg2); color: var(--text2); }
+    .mo-due     { background: #7f1d1d; color: #fecaca; }
+    .mo-future  { background: var(--border); color: var(--muted); }
+    .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+    .leg { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--muted); }
+    .leg-dot { width: 8px; height: 8px; border-radius: 2px; }
 
-    /* ── Members ── */
+    /* ── MY ACCOUNT ───────────────────────────────────────── */
+    .account-hero {
+      background: linear-gradient(135deg, var(--ink), var(--ink2));
+      border-radius: 16px; padding: 22px; margin-bottom: 12px;
+      color: #fff;
+    }
+    .account-hero .acc-name   { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 4px; }
+    .account-hero .acc-id     { color: var(--muted); font-size: 11px; margin-bottom: 16px; }
+    .account-hero .acc-label  { color: rgba(255,255,255,.5); font-size: 9px; text-transform: uppercase; letter-spacing: 1px; }
+    .account-hero .acc-value  { font-size: 26px; font-weight: 700; color: var(--gold); margin-top: 2px; }
+    .account-hero .acc-sub    { color: rgba(255,255,255,.5); font-size: 11px; margin-top: 4px; }
+    .loan-eligibility {
+      background: var(--gold); color: var(--ink); border-radius: 10px;
+      padding: 12px 14px; margin-top: 14px; display: flex; justify-content: space-between; align-items: center;
+    }
+    .loan-eligibility .le-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .loan-eligibility .le-value { font-size: 18px; font-weight: 700; }
+
+    /* ── MEMBERS LIST ─────────────────────────────────────── */
     .member-row {
       display: flex; align-items: center; gap: 12px;
-      background: var(--card); border-radius: 10px; padding: 12px 14px;
+      background: var(--card); border-radius: 12px; padding: 12px 14px;
       border: 1px solid var(--border); margin-bottom: 8px;
     }
-    .m-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 700; flex-shrink: 0; }
-    .m-info { flex: 1; }
-    .m-name { font-size: 13px; font-weight: 600; }
-    .m-sub { font-size: 11px; color: var(--text2); }
-    .badge { padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 600; }
-    .b-active { background: #166534; color: #bbf7d0; }
-    .b-inactive { background: #7f1d1d; color: #fecaca; }
-
-    /* ── Loans ── */
-    .loan-row { margin-bottom: 10px; }
-    .loan-row .lname { font-weight: 600; font-size: 13px; }
-    .loan-row .ldet { font-size: 12px; color: var(--text2); margin-top: 4px; }
-
-    /* ── Forms ── */
-    .form-group { margin-bottom: 12px; }
-    .form-group label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 5px; }
-    .form-group input, .form-group select {
-      width: 100%; padding: 10px 12px; border-radius: 8px;
-      border: 1px solid var(--border); background: var(--bg3); color: var(--text); font-size: 14px;
+    .m-avatar {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--ink2); color: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 15px; flex-shrink: 0;
     }
-    .btn-primary { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--primary); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px; }
-    .btn-primary:hover { background: var(--primary-dark); }
+    .m-avatar.deceased { background: #4a4a4a; color: #aaa; }
+    .m-info { flex: 1; min-width: 0; }
+    .m-name { font-size: 13px; font-weight: 500; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .m-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .status-badge { padding: 2px 8px; border-radius: 20px; font-size: 9px; font-weight: 600; white-space: nowrap; }
+    .s-active   { background: #dcfce7; color: #166534; }
+    .s-partial  { background: #fef9c3; color: #854d0e; }
+    .s-inactive { background: #f1f5f9; color: #64748b; }
+    .s-deceased { background: #f1f5f9; color: #64748b; }
+    .s-diaspora { background: #dbeafe; color: #1e40af; }
+    .s-exited   { background: #fee2e2; color: #991b1b; }
 
-    /* ── Sec header ── */
-    .sec-hdr { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+    /* ── INVESTMENTS ──────────────────────────────────────── */
+    .inv-row { background: var(--card); border-radius: 12px; padding: 14px; border: 1px solid var(--border); margin-bottom: 8px; }
+    .inv-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .inv-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+    .inv-type { font-size: 9px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+    .inv-type.trade      { color: #7c3aed; }
+    .inv-type.loan       { color: #0369a1; }
+    .inv-type.real_estate{ color: #166534; }
+    .inv-type.unit_trust { color: var(--gold); }
+    .inv-row .amount { font-size: 16px; font-weight: 700; color: var(--ink); }
+    .inv-row .returns { font-size: 11px; color: var(--success); margin-top: 2px; }
+    .inv-tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9px; font-weight: 600; }
+    .inv-active  { background: #dcfce7; color: #166534; }
+    .inv-closed  { background: #f1f5f9; color: #64748b; }
+    .inv-partial { background: #fef9c3; color: #854d0e; }
 
-    /* ── Empty ── */
-    .empty { text-align: center; padding: 36px 16px; color: var(--text2); font-size: 13px; }
+    /* ── NOTIFICATIONS ────────────────────────────────────── */
+    .notif-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .notif-row:last-child { border-bottom: none; }
+    .notif-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; margin-top: 4px; }
+    .notif-dot.read { background: var(--border); }
+    .notif-body { flex: 1; }
+    .notif-title { font-size: 13px; font-weight: 500; color: var(--ink); margin-bottom: 2px; }
+    .notif-text  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+    .notif-date  { font-size: 10px; color: var(--muted); margin-top: 4px; }
 
-    /* ── Bottom nav ── */
+    /* ── ADMIN FORMS ──────────────────────────────────────── */
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px 12px; border-radius: 8px;
+      border: 1px solid var(--border); background: #fafaf8;
+      color: var(--ink); font-size: 14px; font-family: 'DM Sans', sans-serif;
+      outline: none; transition: border .2s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--ink2); }
+    .btn-primary { width: 100%; padding: 12px; border-radius: 8px; border: none; background: var(--ink); color: #fff; font-size: 14px; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 4px; transition: background .2s; }
+    .btn-primary:hover { background: var(--ink2); }
+    .btn-gold { background: var(--gold); color: var(--ink); }
+    .btn-gold:hover { background: var(--gold2); }
+
+    /* ── ESTATE CARD ──────────────────────────────────────── */
+    .estate-card { background: #f8f4ec; border: 1px solid #e8dfc8; border-radius: 12px; padding: 14px; margin-bottom: 8px; }
+    .estate-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+    .estate-sub  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .estate-val  { font-size: 18px; font-weight: 700; color: var(--gold); margin-top: 6px; }
+
+    /* ── EMPTY STATE ──────────────────────────────────────── */
+    .empty { text-align: center; padding: 40px 16px; color: var(--muted); }
+    .empty-icon { font-size: 32px; margin-bottom: 10px; }
+
+    /* ── ERROR OVERLAY ────────────────────────────────────── */
+    #err-overlay { position: fixed; bottom: 0; left: 0; right: 0; background: #111; color: #0f0; font-family: monospace; font-size: 10px; padding: 8px 12px; max-height: 120px; overflow-y: auto; z-index: 9998; display: none; }
+    #err-overlay.show { display: block; }
+    #err-close { background: #c00; color: #fff; border: none; padding: 2px 8px; cursor: pointer; margin-bottom: 4px; font-size: 10px; }
+
+    /* ── BOTTOM NAV ───────────────────────────────────────── */
     .bottomnav {
       position: fixed; bottom: 0; left: 0; right: 0;
-      background: var(--bg2); border-top: 1px solid var(--border);
-      display: flex; padding: 6px 0 env(safe-area-inset-bottom, 6px);
+      background: var(--ink); border-top: 1px solid #ffffff10;
+      display: flex; padding: 6px 0 env(safe-area-inset-bottom,6px);
+      z-index: 100;
     }
     .nav-btn {
       flex: 1; display: flex; flex-direction: column; align-items: center;
-      padding: 5px 0; cursor: pointer; color: var(--text2); font-size: 10px; gap: 3px;
-      border: none; background: none; transition: color .2s;
+      padding: 6px 0; cursor: pointer; color: var(--muted);
+      font-size: 9px; gap: 3px; border: none; background: none;
+      transition: color .2s; letter-spacing: .5px; text-transform: uppercase;
     }
-    .nav-btn.active { color: var(--primary); }
+    .nav-btn.active { color: var(--gold); }
     .nav-btn svg { width: 20px; height: 20px; }
+    .notif-badge {
+      position: absolute; top: 4px; right: calc(50% - 18px);
+      background: var(--gold); color: var(--ink);
+      width: 14px; height: 14px; border-radius: 50%; font-size: 8px;
+      font-weight: 700; display: flex; align-items: center; justify-content: center;
+    }
+    .nav-wrap { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; }
 
-    /* ── Error overlay ── */
-    #err-overlay { position: fixed; bottom: 0; left: 0; right: 0; background: #000; color: #0f0; font-family: monospace; font-size: 11px; padding: 8px 12px; max-height: 130px; overflow-y: auto; z-index: 9998; display: none; }
-    #err-overlay.show { display: block; }
-    #err-close { background: #c00; color: #fff; border: none; padding: 2px 8px; cursor: pointer; margin-bottom: 4px; font-size: 11px; }
+    /* ── DIVIDER ──────────────────────────────────────────── */
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+    .pill { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; }
   </style>
 </head>
 <body>
 
-<!-- Loading -->
+<!-- LOADING -->
 <div id="loading-screen">
-  <svg width="72" height="72" viewBox="0 0 72 72" fill="none">
-    <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#1a56db" stroke-width="2"/>
-    <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-    <circle cx="62" cy="14" r="4" fill="#22c55e"/>
+  <svg class="load-logo" viewBox="0 0 72 72" fill="none">
+    <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#c9a84c" stroke-width="1.5"/>
+    <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="62" cy="14" r="4" fill="#c9a84c"/>
   </svg>
-  <div style="margin-top:14px;color:var(--text2);font-size:13px">Let's Grow Investment Club</div>
+  <div class="load-text">Let's Grow</div>
+  <div class="load-sub">Investment Club</div>
   <div class="spinner"></div>
 </div>
 
-<!-- Login -->
+<!-- LOGIN -->
 <div id="login-screen">
   <div class="login-card">
-    <svg width="56" height="56" viewBox="0 0 72 72" fill="none">
-      <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#1a56db" stroke-width="2"/>
-      <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-      <circle cx="62" cy="14" r="4" fill="#22c55e"/>
-    </svg>
-    <h2>Let's Grow</h2>
-    <p>Investment Club · Members Only</p>
-    <button class="btn-google" onclick="doGoogleSignIn()">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.4 30.2 0 24 0 14.8 0 6.9 5.4 3 13.3l7.8 6c1.8-5.4 6.9-9.8 13.2-9.8z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 2.9-2.2 5.4-4.7 7l7.3 5.7c4.3-4 6.9-9.9 6.9-16.7h.3z"/><path fill="#FBBC05" d="M10.8 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.8-4.6l-7.8-6A23.9 23.9 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.3-6.2z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.3-5.7c-2 1.4-4.6 2.2-7.9 2.2-6.3 0-11.6-4.3-13.5-10l-7.8 6C6.8 42.5 14.8 48 24 48z"/></svg>
-      Sign in with Google
-    </button>
-    <div class="error-msg" id="login-error"></div>
-    <p class="login-note">Your Gmail must be registered by the club admin.<br>Contact Edson Nuwahereza to register.</p>
+    <div class="login-logo">
+      <svg width="56" height="56" viewBox="0 0 72 72" fill="none">
+        <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#c9a84c" stroke-width="1.5"/>
+        <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="62" cy="14" r="4" fill="#c9a84c"/>
+      </svg>
+    </div>
+    <h1>Let's Grow</h1>
+    <div class="tagline">Members Portal · Private</div>
+
+    <div id="login-form">
+      <div class="inp-wrap">
+        <label>Email Address</label>
+        <input type="email" id="login-email" placeholder="your@email.com" autocomplete="email">
+      </div>
+      <div class="inp-wrap">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn-login" onclick="doEmailLogin()">Sign In</button>
+      <button class="btn-forgot" onclick="showForgot()">Forgot password?</button>
+    </div>
+
+    <div id="forgot-form" style="display:none">
+      <div class="inp-wrap">
+        <label>Your Email Address</label>
+        <input type="email" id="reset-email" placeholder="your@email.com">
+      </div>
+      <button class="btn-login" onclick="doPasswordReset()">Send Reset Link</button>
+      <button class="btn-forgot" onclick="showLogin()">Back to sign in</button>
+      <div class="login-success" id="reset-success">Reset link sent — check your email.</div>
+    </div>
+
+    <div class="login-error" id="login-error"></div>
+    <p class="login-note">Access is by invitation only.<br>Contact the club admin to be registered.</p>
   </div>
 </div>
 
-<!-- App -->
+<!-- APP -->
 <div id="app">
   <div class="topbar">
     <div class="topbar-brand">
-      <svg width="30" height="30" viewBox="0 0 72 72" fill="none">
-        <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#1a56db" stroke-width="2"/>
-        <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#60a5fa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-        <circle cx="62" cy="14" r="3.5" fill="#22c55e"/>
-      </svg>
-      <div class="brand-text">Let's Grow <span>INVESTMENT CLUB · V6</span></div>
+      <div class="club-name">Let's Grow</div>
+      <div class="club-sub">Investment Club</div>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
-      <div class="user-bubble" id="user-initial">?</div>
-      <span class="admin-pill" id="admin-pill">ADMIN</span>
-      <button class="btn-out" onclick="doSignOut()">Sign out</button>
+      <div class="user-avatar" id="user-initial">?</div>
+      <span class="tier-badge tier-platinum" id="tier-pill" style="display:none"></span>
+      <span class="tier-badge tier-admin" id="admin-pill" style="display:none">Admin</span>
+      <button class="btn-out" onclick="doSignOut()">Out</button>
     </div>
   </div>
 
   <div class="main">
 
-    <!-- Dashboard -->
+    <!-- ── DASHBOARD ── -->
     <div class="section active" id="sec-dashboard">
-      <div class="hero">
-        <h2>Club Dashboard — FY 2026</h2>
-        <p>Live data · Updates in real-time as admin records contributions</p>
+      <div class="hero-card">
+        <div class="hero-label">Club Bank Balance</div>
+        <div class="hero-value" id="h-balance">—</div>
+        <div class="hero-sub">Uganda Shillings · As of Feb 2026</div>
         <div class="hero-grid">
-          <div class="hero-stat">
-            <label>Bank Balance (UGX)</label>
-            <div class="hval" id="h-balance">—</div>
-          </div>
-          <div class="hero-stat">
-            <label>Total Inflow</label>
-            <div class="hval" id="h-inflow">—</div>
-          </div>
-          <div class="hero-stat" style="margin-top:10px">
-            <label>Investment Returns</label>
-            <div class="hval" id="h-roi">—</div>
-          </div>
-          <div class="hero-stat" style="margin-top:10px">
-            <label>Total Invested</label>
-            <div class="hval" id="h-invested">—</div>
-          </div>
+          <div class="hero-stat"><label>Total Inflow</label><div class="hv" id="h-inflow">—</div></div>
+          <div class="hero-stat"><label>Total Invested</label><div class="hv" id="h-invested">—</div></div>
+          <div class="hero-stat"><label>Confirmed ROI</label><div class="hv" id="h-roi">—</div></div>
+          <div class="hero-stat"><label>Unit Trust</label><div class="hv" id="h-ut">—</div></div>
         </div>
       </div>
 
       <div class="stat-grid">
         <div class="stat-card bt-gold">
           <label>Bank Balance</label>
-          <div class="sval" id="s-balance">—</div>
-          <div class="ssub" id="s-balance-sub">UGX</div>
+          <div class="sv" id="s-balance">—</div>
+          <div class="ss">UGX</div>
         </div>
         <div class="stat-card bt-green">
-          <label>Total Inflow</label>
-          <div class="sval" id="s-inflow">—</div>
-          <div class="ssub">2020–2026</div>
+          <label>Active Members</label>
+          <div class="sv" id="s-active">—</div>
+          <div class="ss">Fully paid 2025</div>
         </div>
         <div class="stat-card bt-blue">
           <label>Total Invested</label>
-          <div class="sval" id="s-invested">—</div>
+          <div class="sv" id="s-invested">—</div>
+          <div class="ss">2020–2025</div>
         </div>
         <div class="stat-card bt-purple">
-          <label>Confirmed ROI</label>
-          <div class="sval" id="s-roi">—</div>
+          <label>Overall ROI</label>
+          <div class="sv">23.7%</div>
+          <div class="ss">Cumulative</div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">📅 2026 — Monthly Contribution Tracker</div>
+        <div class="card-title">2026 Contribution Tracker</div>
         <div class="legend">
-          <div class="leg"><div class="leg-dot d-paid"></div>Paid</div>
-          <div class="leg"><div class="leg-dot d-partial"></div>Partial</div>
-          <div class="leg"><div class="leg-dot d-due"></div>Due</div>
-          <div class="leg"><div class="leg-dot d-future"></div>Future</div>
+          <div class="leg"><div class="leg-dot" style="background:#166534"></div>Paid</div>
+          <div class="leg"><div class="leg-dot" style="background:#78350f"></div>Partial</div>
+          <div class="leg"><div class="leg-dot" style="background:#7f1d1d"></div>Due</div>
+          <div class="leg"><div class="leg-dot" style="background:#e2ddd4"></div>Future</div>
         </div>
-        <div id="tracker-wrap"><div class="empty">Loading...</div></div>
+        <div id="tracker-wrap"><div class="empty"><div class="empty-icon">📅</div>Loading tracker...</div></div>
+      </div>
+
+      <!-- 2025 Annual Progress -->
+      <div class="card">
+        <div class="card-title">FY2025 vs Target</div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Subscriptions</span><span>UGX 12.0M / 17.5M</span></div>
+          <div class="progress-bar"><div class="progress-fill" style="width:68%"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Investment Returns</span><span>UGX 0 / target</span></div>
+          <div class="progress-bar"><div class="progress-fill danger" style="width:0%"></div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-label"><span>Unit Trust Growth</span><span>UGX 8.3M</span></div>
+          <div class="progress-bar"><div class="progress-fill green" style="width:83%"></div></div>
+        </div>
       </div>
     </div>
 
-    <!-- Members -->
+    <!-- ── MY ACCOUNT ── -->
+    <div class="section" id="sec-account">
+      <div id="account-content"><div class="empty"><div class="spinner" style="margin:0 auto"></div></div></div>
+    </div>
+
+    <!-- ── MEMBERS ── -->
     <div class="section" id="sec-members">
-      <div class="sec-hdr">👥 Members</div>
-      <div id="members-list"><div class="empty">Loading...</div></div>
+      <div class="sec-hdr">Members <span style="font-family:'DM Sans';font-size:14px;color:var(--muted)" id="member-count"></span></div>
+
+      <!-- Filter tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px">
+        <button class="pill" style="background:var(--ink);color:#fff;border:none;cursor:pointer" onclick="filterMembers('all',this)">All</button>
+        <button class="pill" style="background:var(--border);color:var(--ink);border:none;cursor:pointer" onclick="filterMembers('active',this)">Active</button>
+        <button class="pill" style="background:var(--border);color:var(--ink);border:none;cursor:pointer" onclick="filterMembers('platinum',this)">Platinum</button>
+        <button class="pill" style="background:var(--border);color:var(--ink);border:none;cursor:pointer" onclick="filterMembers('gold',this)">Gold</button>
+        <button class="pill" style="background:var(--border);color:var(--ink);border:none;cursor:pointer" onclick="filterMembers('diaspora',this)">Diaspora</button>
+        <button class="pill" style="background:var(--border);color:var(--ink);border:none;cursor:pointer" onclick="filterMembers('inactive',this)">Inactive</button>
+      </div>
+
+      <div id="members-list"><div class="empty"><div class="spinner" style="margin:0 auto"></div></div></div>
+
+      <!-- Estates -->
+      <div id="estates-section" style="display:none">
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:10px">Estate Accounts</div>
+        <div id="estates-list"></div>
+      </div>
+
+      <!-- Juniors -->
+      <div id="juniors-section" style="display:none">
+        <div class="divider"></div>
+        <div class="card-title" style="margin-bottom:10px">Let's Grow Juniors</div>
+        <div id="juniors-list"></div>
+      </div>
     </div>
 
-    <!-- Loans -->
-    <div class="section" id="sec-loans">
-      <div class="sec-hdr">💰 Loans</div>
-      <div id="loans-list"><div class="empty">Loading...</div></div>
+    <!-- ── INVESTMENTS ── -->
+    <div class="section" id="sec-investments">
+      <div class="sec-hdr">Investments</div>
+
+      <!-- Portfolio summary -->
+      <div class="card" style="background:var(--ink);color:#fff;border:none">
+        <div class="card-title" style="color:var(--gold)">Portfolio Overview</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div><div style="color:rgba(255,255,255,.5);font-size:9px;text-transform:uppercase;letter-spacing:1px">Total Deployed</div><div style="font-size:18px;font-weight:700;color:var(--gold)">UGX 75.5M</div></div>
+          <div><div style="color:rgba(255,255,255,.5);font-size:9px;text-transform:uppercase;letter-spacing:1px">Total Returns</div><div style="font-size:18px;font-weight:700;color:#22c55e">UGX 17.9M</div></div>
+          <div><div style="color:rgba(255,255,255,.5);font-size:9px;text-transform:uppercase;letter-spacing:1px">Overall ROI</div><div style="font-size:18px;font-weight:700">23.66%</div></div>
+          <div><div style="color:rgba(255,255,255,.5);font-size:9px;text-transform:uppercase;letter-spacing:1px">Unit Trust</div><div style="font-size:18px;font-weight:700;color:var(--gold)">UGX 8.3M</div></div>
+        </div>
+      </div>
+
+      <div id="investments-list"><div class="empty"><div class="spinner" style="margin:0 auto"></div></div></div>
     </div>
 
-    <!-- Admin -->
+    <!-- ── NOTIFICATIONS ── -->
+    <div class="section" id="sec-notifications">
+      <div class="sec-hdr">Notifications</div>
+      <div class="card" id="notif-list">
+        <div class="empty"><div class="empty-icon">🔔</div>No notifications</div>
+      </div>
+    </div>
+
+    <!-- ── ADMIN ── -->
     <div class="section" id="sec-admin">
-      <div class="sec-hdr">⚙️ Admin Panel</div>
+      <div class="sec-hdr">Admin Panel</div>
 
+      <!-- Add Member -->
       <div class="card">
-        <div class="card-title">Add Approved Email</div>
+        <div class="card-title">Invite New Member</div>
         <div class="form-group">
-          <label>Gmail Address</label>
+          <label>Full Name</label>
+          <input type="text" id="new-name" placeholder="e.g. Katende Robert">
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
           <input type="email" id="new-email" placeholder="member@gmail.com">
         </div>
         <div class="form-group">
-          <label>Role</label>
-          <select id="new-role">
-            <option value="member">Member</option>
-            <option value="admin">Admin</option>
+          <label>Membership Tier</label>
+          <select id="new-tier">
+            <option value="gold">Gold Member</option>
+            <option value="platinum">Platinum Member</option>
           </select>
         </div>
-        <button class="btn-primary" onclick="addApprovedEmail()">Add Email</button>
+        <div class="form-group">
+          <label>Account Type</label>
+          <select id="new-acct-type">
+            <option value="single">Single Account</option>
+            <option value="joint">Joint Account</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Monthly Rate (UGX)</label>
+          <select id="new-rate">
+            <option value="40000">40,000 — Individual</option>
+            <option value="80000">80,000 — Couple/Joint</option>
+          </select>
+        </div>
+        <button class="btn-primary btn-gold" onclick="inviteMember()">Send Invitation Email</button>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px">Member will receive a password setup email and can log in immediately after setting their password.</div>
       </div>
 
+      <!-- Update Financials -->
       <div class="card">
         <div class="card-title">Update Club Financials</div>
         <div class="form-group"><label>Bank Balance (UGX)</label><input type="number" id="f-balance" placeholder="0"></div>
         <div class="form-group"><label>Total Inflow (UGX)</label><input type="number" id="f-inflow" placeholder="0"></div>
         <div class="form-group"><label>Total Invested (UGX)</label><input type="number" id="f-invested" placeholder="0"></div>
         <div class="form-group"><label>Confirmed ROI (UGX)</label><input type="number" id="f-roi" placeholder="0"></div>
+        <div class="form-group"><label>Unit Trust Balance (UGX)</label><input type="number" id="f-ut" placeholder="0"></div>
         <button class="btn-primary" onclick="saveFinancials()">Save Financials</button>
       </div>
 
+      <!-- Record Contribution -->
       <div class="card">
         <div class="card-title">Record Contribution</div>
         <div class="form-group">
@@ -353,8 +577,19 @@
           <select id="c-member"><option value="">Select member...</option></select>
         </div>
         <div class="form-group">
-          <label>Month (0=Jan ... 11=Dec)</label>
-          <input type="number" id="c-month" min="0" max="11" placeholder="0">
+          <label>Month</label>
+          <select id="c-month">
+            <option value="0">January</option><option value="1">February</option>
+            <option value="2">March</option><option value="3">April</option>
+            <option value="4">May</option><option value="5">June</option>
+            <option value="6">July</option><option value="7">August</option>
+            <option value="8">September</option><option value="9">October</option>
+            <option value="10">November</option><option value="11">December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year</label>
+          <input type="number" id="c-year" value="2026" min="2020" max="2030">
         </div>
         <div class="form-group">
           <label>Status</label>
@@ -363,7 +598,29 @@
             <option value="partial">Partial</option>
           </select>
         </div>
+        <div class="form-group">
+          <label>Amount (UGX)</label>
+          <input type="number" id="c-amount" placeholder="40000">
+        </div>
         <button class="btn-primary" onclick="recordContribution()">Record</button>
+      </div>
+
+      <!-- Post Notification -->
+      <div class="card">
+        <div class="card-title">Post Notification / Event</div>
+        <div class="form-group">
+          <label>Title</label>
+          <input type="text" id="notif-title" placeholder="e.g. January Meeting">
+        </div>
+        <div class="form-group">
+          <label>Message</label>
+          <textarea id="notif-body" rows="3" placeholder="Meeting details, venue, time..." style="resize:vertical"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="notif-date">
+        </div>
+        <button class="btn-primary" onclick="postNotification()">Post to All Members</button>
       </div>
     </div>
 
@@ -371,26 +628,36 @@
 
   <nav class="bottomnav">
     <button class="nav-btn active" id="nav-dashboard" onclick="showSection('dashboard',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-      Dashboard
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" id="nav-account" onclick="showSection('account',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      My Account
     </button>
     <button class="nav-btn" id="nav-members" onclick="showSection('members',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="7" r="2"/><path d="M23 21v-1a3 3 0 0 0-2-2.83"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="7" r="2"/><path d="M23 21v-1a3 3 0 0 0-2-2.83"/></svg>
       Members
     </button>
-    <button class="nav-btn" id="nav-loans" onclick="showSection('loans',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-      Loans
+    <button class="nav-btn" id="nav-investments" onclick="showSection('investments',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      Invest
     </button>
+    <div class="nav-wrap">
+      <button class="nav-btn" id="nav-notifications" onclick="showSection('notifications',this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        Alerts
+      </button>
+      <div class="notif-badge" id="notif-count" style="display:none">0</div>
+    </div>
     <button class="nav-btn" id="nav-admin" style="display:none" onclick="showSection('admin',this)">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41"/></svg>
       Admin
     </button>
   </nav>
 </div>
 
 <div id="toast"></div>
-
 <div id="err-overlay">
   <button id="err-close" onclick="document.getElementById('err-overlay').classList.remove('show')">X Close</button>
   <div id="err-log"></div>
@@ -398,76 +665,100 @@
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs,
-         addDoc, serverTimestamp, query, where }
-  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import {
+  getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
+  signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import {
+  getFirestore, doc, getDoc, setDoc, collection, getDocs,
+  addDoc, serverTimestamp, query, where, orderBy, limit
+} from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
-// ─── IMPORTANT: paste your full config from Firebase Console ──────────────────
-// Project settings → Your apps → Web app → Config
 const firebaseConfig = {
-  apiKey: "AIzaSyBAqSyHInBIfwOKzWfOwhgWwFP3-YUQ3vQ",
+  apiKey: "AIzaSyBAqSyHIn8IfwOKzWf0whgWwFP3-YUQ3vQ",
   authDomain: "letsgrowinvestmentclub-26878.firebaseapp.com",
   projectId: "letsgrowinvestmentclub-26878",
-  storageBucket: "letsgrowinvestmentclub-26878.appspot.com",
-  messagingSenderId: "REPLACE_WITH_YOURS",
-  appId: "REPLACE_WITH_YOURS"
+  storageBucket: "letsgrowinvestmentclub-26878.firebasestorage.app",
+  messagingSenderId: "209749782294",
+  appId: "1:209749782294:web:069f8353e806da0d6a2a37",
+  measurementId: "G-L3215N99KY"
 };
-// ─────────────────────────────────────────────────────────────────────────────
 
-const fbApp  = initializeApp(firebaseConfig);
-const auth   = getAuth(fbApp);
-const db     = getFirestore(fbApp);
-const prov   = new GoogleAuthProvider();
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
 
 // Error overlay
-window.addEventListener('error', e => log(`[ERROR] ${e.message} line:${e.lineno}`));
+window.addEventListener('error', e => log(`[ERR] ${e.message} line:${e.lineno}`));
 window.addEventListener('unhandledrejection', e => log(`[PROMISE] ${e.reason?.message||e.reason}`));
 function log(msg) {
   document.getElementById('err-overlay').classList.add('show');
   document.getElementById('err-log').innerHTML += msg + '<br>';
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const STATE  = { user: null, member: null, isAdmin: false, allMembers: [] };
 
 function fmt(n) {
   if (n === undefined || n === null) return '—';
   n = Number(n);
+  if (n >= 1e9) return (n/1e9).toFixed(2) + 'B';
   if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
-  if (n >= 1e3) return (n/1e3).toFixed(0) + 'K';
+  if (n >= 1e3) return Math.round(n/1e3) + 'K';
   return n.toLocaleString();
+}
+
+function fmtFull(n) {
+  if (!n) return '—';
+  return 'UGX ' + Number(n).toLocaleString();
 }
 
 function toast(msg, type='') {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'show' + (type ? ' '+type : '');
+  t.textContent = msg; t.className = 'show' + (type ? ' '+type : '');
   setTimeout(() => t.className = '', 3000);
 }
 
-// ─── State ────────────────────────────────────────────────────────────────────
-const STATE = { user: null, isAdmin: false, members: [] };
-
-// ─── Navigation ───────────────────────────────────────────────────────────────
-window.showSection = function(name, btn) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('sec-'+name)?.classList.add('active');
-  btn?.classList.add('active');
-  if (name === 'members') loadMembers();
-  if (name === 'loans')   loadLoans();
+// ── LOGIN UI ─────────────────────────────────────────────────
+window.showForgot = () => {
+  document.getElementById('login-form').style.display = 'none';
+  document.getElementById('forgot-form').style.display = 'block';
+  document.getElementById('login-error').classList.remove('show');
+};
+window.showLogin = () => {
+  document.getElementById('forgot-form').style.display = 'none';
+  document.getElementById('login-form').style.display = 'block';
 };
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
-window.doGoogleSignIn = async function() {
+window.doEmailLogin = async function() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
   errEl.classList.remove('show');
+  if (!email || !pass) { errEl.textContent = 'Please enter email and password.'; errEl.classList.add('show'); return; }
   try {
-    await signInWithPopup(auth, prov);
+    await signInWithEmailAndPassword(auth, email, pass);
   } catch(e) {
-    errEl.textContent = 'Sign-in failed: ' + e.message;
+    const msgs = {
+      'auth/wrong-password': 'Incorrect password.',
+      'auth/user-not-found': 'No account found for this email.',
+      'auth/invalid-email':  'Please enter a valid email address.',
+      'auth/too-many-requests': 'Too many attempts. Try again later.',
+    };
+    errEl.textContent = msgs[e.code] || 'Sign-in failed. Contact admin.';
+    errEl.classList.add('show');
+  }
+};
+
+window.doPasswordReset = async function() {
+  const email = document.getElementById('reset-email').value.trim();
+  const errEl = document.getElementById('login-error');
+  if (!email) { errEl.textContent = 'Enter your email address.'; errEl.classList.add('show'); return; }
+  try {
+    await sendPasswordResetEmail(auth, email);
+    document.getElementById('reset-success').classList.add('show');
+  } catch(e) {
+    errEl.textContent = 'Could not send reset email. Check the address.';
     errEl.classList.add('show');
   }
 };
@@ -476,6 +767,7 @@ window.doSignOut = async function() {
   try { await signOut(auth); } catch(e) { toast(e.message,'error'); }
 };
 
+// ── AUTH STATE ────────────────────────────────────────────────
 onAuthStateChanged(auth, async user => {
   const loading = document.getElementById('loading-screen');
   const loginEl = document.getElementById('login-screen');
@@ -489,42 +781,71 @@ onAuthStateChanged(auth, async user => {
   }
 
   try {
+    // Check approvedEmails
     const snap = await getDoc(doc(db, 'approvedEmails', user.email));
     if (!snap.exists()) {
-      toast('Access denied — ' + user.email + ' is not registered.', 'error');
+      toast('Access denied — not registered.', 'error');
       await signOut(auth);
       loading.style.display = 'none';
       loginEl.classList.add('visible');
       return;
     }
 
-    const data = snap.data();
-    STATE.user    = user;
-    STATE.isAdmin = data.role === 'admin';
+    const data     = snap.data();
+    STATE.user     = user;
+    STATE.isAdmin  = data.role === 'admin';
 
-    document.getElementById('user-initial').textContent =
-      (user.displayName || user.email)[0].toUpperCase();
+    // Load member profile
+    if (data.memberId) {
+      const mSnap = await getDoc(doc(db, 'members', data.memberId));
+      if (mSnap.exists()) STATE.member = { id: mSnap.id, ...mSnap.data() };
+    }
+
+    // UI setup
+    const initial = (STATE.member?.name || user.email)[0].toUpperCase();
+    document.getElementById('user-initial').textContent = initial;
+
+    if (STATE.member?.tier) {
+      const pill = document.getElementById('tier-pill');
+      pill.textContent = STATE.member.tier.charAt(0).toUpperCase() + STATE.member.tier.slice(1);
+      pill.style.display = 'inline';
+      pill.className = `tier-badge tier-${STATE.member.tier}`;
+    }
 
     if (STATE.isAdmin) {
-      document.getElementById('admin-pill').style.display  = 'inline';
-      document.getElementById('nav-admin').style.display   = 'flex';
+      document.getElementById('admin-pill').style.display = 'inline';
+      document.getElementById('nav-admin').style.display  = 'flex';
     }
 
     loading.style.display = 'none';
     loginEl.classList.remove('visible');
     appEl.classList.add('visible');
 
-    await loadDashboard();
+    // Load data
+    await Promise.all([loadDashboard(), loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
 
   } catch(e) {
-    toast('Auth error: ' + e.message, 'error');
+    log('Auth error: ' + e.message);
+    toast('Error loading profile.', 'error');
     loading.style.display = 'none';
     loginEl.classList.add('visible');
   }
 });
 
-// ─── Dashboard ────────────────────────────────────────────────────────────────
+// ── NAVIGATION ────────────────────────────────────────────────
+window.showSection = function(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-'+name)?.classList.add('active');
+  btn?.classList.add('active');
+  if (name === 'members')     loadMembers();
+  if (name === 'investments') loadInvestments();
+  if (name === 'account')     loadMyAccount();
+  if (name === 'notifications') markNotifsRead();
+};
+
+// ── DASHBOARD ─────────────────────────────────────────────────
 async function loadDashboard() {
   try {
     const snap = await getDoc(doc(db, 'settings', 'financials'));
@@ -532,21 +853,20 @@ async function loadDashboard() {
       const d = snap.data();
       document.getElementById('h-balance').textContent  = fmt(d.bankBalance);
       document.getElementById('h-inflow').textContent   = fmt(d.totalInflow);
-      document.getElementById('h-roi').textContent      = fmt(d.confirmedROI);
       document.getElementById('h-invested').textContent = fmt(d.totalInvested);
+      document.getElementById('h-roi').textContent      = fmt(d.confirmedROI);
+      document.getElementById('h-ut').textContent       = fmt(d.unitTrustBalance);
       document.getElementById('s-balance').textContent  = fmt(d.bankBalance);
-      document.getElementById('s-balance-sub').textContent = 'UGX ' + Number(d.bankBalance||0).toLocaleString();
-      document.getElementById('s-inflow').textContent   = fmt(d.totalInflow);
       document.getElementById('s-invested').textContent = fmt(d.totalInvested);
-      document.getElementById('s-roi').textContent      = fmt(d.confirmedROI);
       if (STATE.isAdmin) {
         document.getElementById('f-balance').value  = d.bankBalance  || '';
         document.getElementById('f-inflow').value   = d.totalInflow  || '';
         document.getElementById('f-invested').value = d.totalInvested|| '';
         document.getElementById('f-roi').value      = d.confirmedROI || '';
+        document.getElementById('f-ut').value       = d.unitTrustBalance || '';
       }
     }
-  } catch(e) { console.error('Financials:', e); }
+  } catch(e) { log('Financials: '+e.message); }
 
   await loadTracker();
 }
@@ -554,155 +874,426 @@ async function loadDashboard() {
 async function loadTracker() {
   const wrap = document.getElementById('tracker-wrap');
   const currentMonth = new Date().getMonth();
-  const currentYear  = 2026;
+  const currentYear  = new Date().getFullYear();
 
   try {
     const mSnap = await getDocs(collection(db, 'members'));
-    STATE.members = [];
-    mSnap.forEach(d => STATE.members.push({ id: d.id, ...d.data() }));
-    const active = STATE.members.filter(m => m.status === 'active');
+    STATE.allMembers = [];
+    let activeCount = 0;
+    mSnap.forEach(d => {
+      const m = { id: d.id, ...d.data() };
+      STATE.allMembers.push(m);
+      if (m.status === 'active' || m.status === 'diaspora') activeCount++;
+    });
+    document.getElementById('s-active').textContent = activeCount;
+
+    const active = STATE.allMembers.filter(m => ['active','diaspora'].includes(m.status) && m.accountType !== 'joint' || (m.accountType === 'joint' && m.monthlyRate > 0));
 
     if (!active.length) { wrap.innerHTML = '<div class="empty">No active members</div>'; return; }
 
     let html = '';
     for (const m of active) {
-      const cSnap = await getDocs(
-        query(collection(db,'contributions'),
-              where('memberId','==', m.id),
-              where('year','==', currentYear))
-      );
+      const cSnap = await getDocs(query(
+        collection(db,'contributions'),
+        where('memberId','==',m.id),
+        where('year','==',currentYear)
+      ));
       const paid = {};
       cSnap.forEach(d => { const c = d.data(); paid[c.month] = c.status || 'paid'; });
 
       let dots = '';
       for (let mo = 0; mo < 12; mo++) {
         let cls, lbl;
-        if      (paid[mo] === 'paid')    { cls = 'mo-paid';    lbl = '✓'; }
-        else if (paid[mo] === 'partial') { cls = 'mo-partial'; lbl = '~'; }
-        else if (mo <= currentMonth)     { cls = 'mo-due';     lbl = '!'; }
-        else                             { cls = 'mo-future';  lbl = MONTHS[mo][0]; }
+        if      (paid[mo]==='paid')    { cls='mo-paid';    lbl='✓'; }
+        else if (paid[mo]==='partial') { cls='mo-partial'; lbl='~'; }
+        else if (mo <= currentMonth)   { cls='mo-due';     lbl='!'; }
+        else                           { cls='mo-future';  lbl=MONTHS[mo][0]; }
         dots += `<div class="mo ${cls}" title="${MONTHS[mo]}">${lbl}</div>`;
       }
-      html += `<div class="tracker-card">
-        <div class="tracker-top"><div class="tracker-name">${m.name}</div>
-        <span class="badge b-active">active</span></div>
+
+      const displayName = m.jointLabel || m.name;
+      html += `<div class="tracker-row">
+        <div class="tracker-name">${displayName}</div>
         <div class="months-grid">${dots}</div>
       </div>`;
     }
     wrap.innerHTML = html || '<div class="empty">No data</div>';
   } catch(e) {
     wrap.innerHTML = '<div class="empty">Could not load tracker</div>';
-    console.error(e);
+    log('Tracker: '+e.message);
   }
 }
 
-// ─── Members ──────────────────────────────────────────────────────────────────
+// ── MY ACCOUNT ────────────────────────────────────────────────
+async function loadMyAccount() {
+  const wrap = document.getElementById('account-content');
+  if (!STATE.member) {
+    wrap.innerHTML = '<div class="empty">Profile not linked to a member record.<br>Contact admin.</div>';
+    return;
+  }
+  const m = STATE.member;
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth();
+
+  // Load my contributions this year
+  const cSnap = await getDocs(query(
+    collection(db,'contributions'),
+    where('memberId','==',m.id),
+    where('year','==',currentYear)
+  ));
+  const paid = {};
+  let paidTotal = 0;
+  cSnap.forEach(d => { const c = d.data(); paid[c.month] = c; paidTotal += c.amount || m.monthlyRate || 40000; });
+
+  const monthsTarget = currentMonth + 1;
+  const paidMonths   = Object.keys(paid).length;
+  const pct          = Math.round((paidMonths / 12) * 100);
+
+  // Share capital from 2025
+  const sc2025 = m.totalSubscriptions2025 || 0;
+  const loanEligible = Math.round(sc2025 * 0.25);
+
+  let dots = '';
+  for (let mo = 0; mo < 12; mo++) {
+    let cls, lbl;
+    if      (paid[mo]?.status==='paid')    { cls='mo-paid';    lbl='✓'; }
+    else if (paid[mo]?.status==='partial') { cls='mo-partial'; lbl='~'; }
+    else if (mo <= currentMonth)           { cls='mo-due';     lbl='!'; }
+    else                                   { cls='mo-future';  lbl=MONTHS[mo][0]; }
+    dots += `<div class="mo ${cls}" title="${MONTHS[mo]}">${lbl}</div>`;
+  }
+
+  const tierLabel = (m.tier||'member').charAt(0).toUpperCase()+(m.tier||'member').slice(1);
+  const jointNote = m.jointWith ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">Joint account · ${m.jointLabel||''}</div>` : '';
+
+  wrap.innerHTML = `
+    <div class="account-hero">
+      <div class="acc-name">${m.name}</div>
+      <div class="acc-id">${tierLabel} Member · ${m.accountType==='joint'?'Joint':'Single'} Account</div>
+      ${jointNote}
+      <div style="margin-top:16px">
+        <div class="acc-label">2025 Subscriptions Paid</div>
+        <div class="acc-value">${fmtFull(sc2025)}</div>
+        <div class="acc-sub">Monthly rate: ${fmtFull(m.monthlyRate)} · Joined ${m.joinYear||'—'}</div>
+      </div>
+      <div class="loan-eligibility">
+        <div>
+          <div class="le-label">Loan Eligibility</div>
+          <div style="font-size:10px;opacity:.7">25% of 2025 subscriptions</div>
+        </div>
+        <div class="le-value">${fmtFull(loanEligible)}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">${currentYear} Contribution Tracker</div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px">
+        <span>${paidMonths} of 12 months paid</span>
+        <span>${pct}%</span>
+      </div>
+      <div class="progress-bar" style="margin-bottom:12px">
+        <div class="progress-fill ${pct===100?'green':pct>=50?'':'danger'}" style="width:${pct}%"></div>
+      </div>
+      <div class="months-grid">${dots}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Share Capital History</div>
+      ${Object.entries(m.shareCapital||{}).map(([yr,amt]) =>
+        `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+          <span style="color:var(--muted)">${yr}</span>
+          <span style="font-weight:500">${fmtFull(amt)}</span>
+        </div>`
+      ).join('') || '<div style="color:var(--muted);font-size:12px">No history available</div>'}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Membership Status</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
+        <span style="color:var(--muted);font-size:12px">Status</span>
+        <span class="status-badge s-${m.status}">${m.status}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px">Tier</span>
+        <span class="tier-badge tier-${m.tier}">${tierLabel}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px">Member Since</span>
+        <span style="font-size:12px;font-weight:500">${m.joinYear||'—'}</span>
+      </div>
+      ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${m.note}</div>` : ''}
+    </div>
+  `;
+}
+
+// ── MEMBERS ───────────────────────────────────────────────────
+let allMembersCache = [];
 async function loadMembers() {
   const list = document.getElementById('members-list');
-  list.innerHTML = '<div class="empty">Loading...</div>';
+  list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+
   try {
-    const snap = await getDocs(collection(db, 'members'));
-    if (snap.empty) { list.innerHTML = '<div class="empty">No members found</div>'; return; }
+    if (!allMembersCache.length) {
+      const snap = await getDocs(collection(db,'members'));
+      snap.forEach(d => allMembersCache.push({ id: d.id, ...d.data() }));
+    }
+    document.getElementById('member-count').textContent = `(${allMembersCache.length})`;
+    renderMembers(allMembersCache);
+
+    // Estates
+    const eSnap = await getDocs(collection(db,'estates'));
+    if (!eSnap.empty) {
+      document.getElementById('estates-section').style.display = 'block';
+      let eHtml = '';
+      eSnap.forEach(d => {
+        const e = d.data();
+        eHtml += `<div class="estate-card">
+          <div class="estate-name">Estate of ${e.memberName}</div>
+          <div class="estate-sub">Principal Date: ${e.startDate||'—'} · Next of Kin: ${e.nextOfKin||'TBD'}</div>
+          <div class="estate-val">${fmtFull(e.principal)}</div>
+        </div>`;
+      });
+      document.getElementById('estates-list').innerHTML = eHtml;
+    }
+
+    // Juniors
+    const jSnap = await getDocs(collection(db,'juniors'));
+    if (!jSnap.empty) {
+      document.getElementById('juniors-section').style.display = 'block';
+      let jHtml = '';
+      jSnap.forEach(d => {
+        const j = d.data();
+        jHtml += `<div class="member-row">
+          <div class="m-avatar" style="background:#f5f0e8;color:var(--ink);font-size:12px">JR</div>
+          <div class="m-info">
+            <div class="m-name">${j.name}</div>
+            <div class="m-sub">Junior · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
+          </div>
+          <span class="status-badge s-${j.status}">${j.status}</span>
+        </div>`;
+      });
+      document.getElementById('juniors-list').innerHTML = jHtml;
+    }
+  } catch(e) {
+    list.innerHTML = '<div class="empty">Error loading members</div>';
+    log('Members: '+e.message);
+  }
+}
+
+function renderMembers(members) {
+  const list = document.getElementById('members-list');
+  if (!members.length) { list.innerHTML = '<div class="empty">No members found</div>'; return; }
+  let html = '';
+  members.forEach(m => {
+    const ini = (m.name||'?')[0].toUpperCase();
+    const subLine = [
+      m.tier ? (m.tier.charAt(0).toUpperCase()+m.tier.slice(1)) : '',
+      m.accountType==='joint' ? `Joint · ${m.jointLabel||''}` : 'Individual',
+      m.joinYear ? `Since ${m.joinYear}` : ''
+    ].filter(Boolean).join(' · ');
+    html += `<div class="member-row">
+      <div class="m-avatar ${m.status==='deceased'?'deceased':''}">${ini}</div>
+      <div class="m-info">
+        <div class="m-name">${m.name}</div>
+        <div class="m-sub">${subLine}</div>
+      </div>
+      <span class="status-badge s-${m.status}">${m.status}</span>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+window.filterMembers = function(filter, btn) {
+  document.querySelectorAll('[onclick^="filterMembers"]').forEach(b => {
+    b.style.background = 'var(--border)'; b.style.color = 'var(--ink)';
+  });
+  btn.style.background = 'var(--ink)'; btn.style.color = '#fff';
+
+  if (filter === 'all') { renderMembers(allMembersCache); return; }
+  if (filter === 'inactive') {
+    renderMembers(allMembersCache.filter(m => ['inactive','exited','deceased'].includes(m.status)));
+    return;
+  }
+  renderMembers(allMembersCache.filter(m => m.status === filter || m.tier === filter));
+};
+
+// ── INVESTMENTS ───────────────────────────────────────────────
+async function loadInvestments() {
+  const list = document.getElementById('investments-list');
+  list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+  try {
+    const snap = await getDocs(collection(db,'investments'));
+    if (snap.empty) { list.innerHTML = '<div class="empty">No investments on record</div>'; return; }
     let html = '';
     snap.forEach(d => {
-      const m = d.data();
-      const ini = (m.name || '?')[0].toUpperCase();
-      const bc  = m.status === 'active' ? 'b-active' : 'b-inactive';
-      html += `<div class="member-row">
-        <div class="m-avatar">${ini}</div>
-        <div class="m-info">
-          <div class="m-name">${m.name || 'Unknown'}</div>
-          <div class="m-sub">${m.email || ''} · ${m.memberId || d.id}</div>
+      const inv = d.data();
+      const tagClass = { active:'inv-active', closed:'inv-closed', partial:'inv-partial' }[inv.status] || 'inv-closed';
+      html += `<div class="inv-row">
+        <div class="inv-top">
+          <div>
+            <div class="inv-name">${inv.name}</div>
+            <div class="inv-type ${inv.type}">${inv.type?.replace('_',' ') || ''}</div>
+          </div>
+          <span class="inv-tag ${tagClass}">${inv.status}</span>
         </div>
-        <span class="badge ${bc}">${m.status || 'unknown'}</span>
+        <div class="amount">${fmtFull(inv.amount)}</div>
+        ${inv.returns ? `<div class="returns">Returns: +${fmtFull(inv.returns)}</div>` : ''}
+        ${inv.balance ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">Current balance: ${fmtFull(inv.balance)}</div>` : ''}
+        ${inv.note   ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">${inv.note}</div>` : ''}
+        <div style="font-size:10px;color:var(--muted);margin-top:4px">Year: ${inv.year||'—'}</div>
       </div>`;
     });
     list.innerHTML = html;
-  } catch(e) { list.innerHTML = '<div class="empty">Error loading members</div>'; }
+  } catch(e) {
+    list.innerHTML = '<div class="empty">Error loading investments</div>';
+    log('Investments: '+e.message);
+  }
 }
 
-// ─── Loans ────────────────────────────────────────────────────────────────────
-async function loadLoans() {
-  const list = document.getElementById('loans-list');
-  list.innerHTML = '<div class="empty">Loading...</div>';
+// ── NOTIFICATIONS ─────────────────────────────────────────────
+async function loadNotifications() {
   try {
-    const snap = await getDocs(collection(db, 'loans'));
-    if (snap.empty) { list.innerHTML = '<div class="empty">No loans on record</div>'; return; }
+    const snap = await getDocs(query(collection(db,'notifications'), orderBy('createdAt','desc'), limit(20)));
+    const list = document.getElementById('notif-list');
+    if (snap.empty) return;
+
     let html = '';
+    let unread = 0;
     snap.forEach(d => {
-      const l = d.data();
-      const sc = l.status === 'active' ? '#22c55e' : l.status === 'overdue' ? '#ef4444' : '#94a3b8';
-      html += `<div class="card loan-row">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="lname">${l.memberName || 'Unknown'}</div>
-          <span style="color:${sc};font-size:11px;font-weight:700;text-transform:uppercase">${l.status||''}</span>
-        </div>
-        <div class="ldet">
-          Amount: <strong style="color:var(--text)">UGX ${Number(l.amount||0).toLocaleString()}</strong> ·
-          Balance: <strong style="color:var(--text)">UGX ${Number(l.balance||0).toLocaleString()}</strong>
+      const n = d.data();
+      const date = n.eventDate || (n.createdAt?.toDate?.()?.toLocaleDateString?.() || '');
+      html += `<div class="notif-row">
+        <div class="notif-dot ${n.read?'read':''}"></div>
+        <div class="notif-body">
+          <div class="notif-title">${n.title||'Notification'}</div>
+          <div class="notif-text">${n.body||''}</div>
+          ${date ? `<div class="notif-date">${date}</div>` : ''}
         </div>
       </div>`;
+      if (!n.read) unread++;
     });
     list.innerHTML = html;
-  } catch(e) { list.innerHTML = '<div class="empty">Error loading loans</div>'; }
+
+    if (unread > 0) {
+      const badge = document.getElementById('notif-count');
+      badge.style.display = 'flex';
+      badge.textContent = unread;
+    }
+  } catch(e) { log('Notifs: '+e.message); }
 }
 
-// ─── Admin ────────────────────────────────────────────────────────────────────
+function markNotifsRead() {
+  document.getElementById('notif-count').style.display = 'none';
+}
+
+// ── ADMIN FUNCTIONS ───────────────────────────────────────────
 async function populateMemberSelect() {
   const sel = document.getElementById('c-member');
   try {
-    const snap = await getDocs(collection(db, 'members'));
+    const snap = await getDocs(collection(db,'members'));
     snap.forEach(d => {
       const m = d.data();
-      const opt = document.createElement('option');
-      opt.value = d.id;
-      opt.textContent = m.name || d.id;
-      sel.appendChild(opt);
+      if (['active','diaspora','partial'].includes(m.status)) {
+        const opt = document.createElement('option');
+        opt.value = d.id;
+        opt.textContent = m.name;
+        sel.appendChild(opt);
+      }
     });
-  } catch(e) { console.error(e); }
+  } catch(e) { log('MemberSelect: '+e.message); }
 }
 
-window.addApprovedEmail = async function() {
+window.inviteMember = async function() {
   if (!STATE.isAdmin) return;
+  const name  = document.getElementById('new-name').value.trim();
   const email = document.getElementById('new-email').value.trim();
-  const role  = document.getElementById('new-role').value;
-  if (!email) { toast('Enter a Gmail address', 'error'); return; }
+  const tier  = document.getElementById('new-tier').value;
+  const acct  = document.getElementById('new-acct-type').value;
+  const rate  = Number(document.getElementById('new-rate').value);
+
+  if (!name || !email) { toast('Enter name and email', 'error'); return; }
+
   try {
-    await setDoc(doc(db, 'approvedEmails', email), { email, role, addedAt: serverTimestamp() });
-    toast('Added: ' + email, 'success');
+    // 1. Create member doc
+    const memberId = name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-');
+    await setDoc(doc(db,'members',memberId), {
+      name, email, tier, accountType: acct, monthlyRate: rate,
+      status: 'active', joinYear: new Date().getFullYear(),
+      loanEligibility: 0,
+      createdAt: serverTimestamp(),
+    });
+
+    // 2. Add to approvedEmails
+    await setDoc(doc(db,'approvedEmails',email), {
+      email, role: 'member', memberId, name,
+      addedAt: serverTimestamp(),
+    });
+
+    // 3. Create Firebase Auth account with temp password & send reset email
+    // Note: Admin SDK needed for createUser — instead send password reset
+    // which acts as invite. Member sets their own password.
+    await sendPasswordResetEmail(auth, email);
+
+    toast(`Invitation sent to ${email}`, 'success');
+    document.getElementById('new-name').value  = '';
     document.getElementById('new-email').value = '';
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
+    allMembersCache = []; // clear cache
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    log('Invite: '+e.message);
+  }
 };
 
 window.saveFinancials = async function() {
   if (!STATE.isAdmin) return;
   const data = {
-    bankBalance:   Number(document.getElementById('f-balance').value)  || 0,
-    totalInflow:   Number(document.getElementById('f-inflow').value)   || 0,
-    totalInvested: Number(document.getElementById('f-invested').value) || 0,
-    confirmedROI:  Number(document.getElementById('f-roi').value)      || 0,
-    updatedAt: serverTimestamp()
+    bankBalance:      Number(document.getElementById('f-balance').value)  || 0,
+    totalInflow:      Number(document.getElementById('f-inflow').value)   || 0,
+    totalInvested:    Number(document.getElementById('f-invested').value) || 0,
+    confirmedROI:     Number(document.getElementById('f-roi').value)      || 0,
+    unitTrustBalance: Number(document.getElementById('f-ut').value)       || 0,
+    updatedAt: serverTimestamp(),
   };
   try {
-    await setDoc(doc(db, 'settings', 'financials'), data);
+    await setDoc(doc(db,'settings','financials'), data);
     toast('Financials saved', 'success');
     await loadDashboard();
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
+  } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
 window.recordContribution = async function() {
   if (!STATE.isAdmin) return;
   const memberId = document.getElementById('c-member').value;
   const month    = Number(document.getElementById('c-month').value);
+  const year     = Number(document.getElementById('c-year').value);
   const status   = document.getElementById('c-status').value;
-  if (!memberId) { toast('Select a member', 'error'); return; }
+  const amount   = Number(document.getElementById('c-amount').value) || 0;
+  if (!memberId) { toast('Select a member','error'); return; }
   try {
-    await addDoc(collection(db, 'contributions'), {
-      memberId, month, year: 2026, status, recordedAt: serverTimestamp()
+    await setDoc(doc(db,'contributions',`${memberId}-${year}-${month}`), {
+      memberId, month, year, status, amount, recordedAt: serverTimestamp(),
     });
-    toast('Contribution recorded', 'success');
-    await loadTracker();
-  } catch(e) { toast('Error: ' + e.message, 'error'); }
+    toast('Contribution recorded','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.postNotification = async function() {
+  if (!STATE.isAdmin) return;
+  const title = document.getElementById('notif-title').value.trim();
+  const body  = document.getElementById('notif-body').value.trim();
+  const date  = document.getElementById('notif-date').value;
+  if (!title) { toast('Enter a title','error'); return; }
+  try {
+    await addDoc(collection(db,'notifications'), {
+      title, body, eventDate: date, read: false,
+      createdAt: serverTimestamp(),
+    });
+    toast('Notification posted','success');
+    document.getElementById('notif-title').value = '';
+    document.getElementById('notif-body').value  = '';
+    document.getElementById('notif-date').value  = '';
+    await loadNotifications();
+  } catch(e) { toast('Error: '+e.message,'error'); }
 };
 </script>
 </body>
