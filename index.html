@@ -370,6 +370,9 @@
 
     <div class="login-error" id="login-error"></div>
     <p class="login-note">Access is by invitation only.<br>Contact the club admin to be registered.</p>
+    <div style="margin-top:16px;text-align:center">
+      <span onclick="openSignup()" style="color:var(--gold);font-size:12px;cursor:pointer;text-decoration:underline;">New member? Create account →</span>
+    </div>
   </div>
 </div>
 
@@ -436,6 +439,31 @@
           <div class="leg"><div class="leg-dot" style="background:#e2ddd4"></div>Future</div>
         </div>
         <div id="tracker-wrap"><div class="empty"><div class="empty-icon">📅</div>Loading tracker...</div></div>
+      </div>
+
+      <!-- Bank Balance Breakdown (admin only) -->
+      <div class="card" id="balance-breakdown" style="display:none">
+        <div class="card-title">Bank Balance Breakdown</div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--muted)">Welfare Fund</span>
+          <span id="bd-welfare" style="font-weight:500">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--muted)">Group Life Assurance (ICEA)</span>
+          <span id="bd-gla" style="font-weight:500">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--muted)">Unit Trust (ICEA)</span>
+          <span id="bd-ut" style="font-weight:500">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
+          <span style="color:var(--muted)">Let's Grow Juniors</span>
+          <span id="bd-junior" style="font-weight:500">—</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px">
+          <span style="color:var(--muted)">Available Loans Pool</span>
+          <span id="bd-loanpool" style="font-weight:600;color:var(--gold)">—</span>
+        </div>
       </div>
 
       <!-- 2025 Annual Progress -->
@@ -521,6 +549,16 @@
     <!-- ── ADMIN ── -->
     <div class="section" id="sec-admin">
       <div class="sec-hdr">Admin Panel</div>
+
+      <!-- Admin sub-tabs -->
+      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+        <button class="pill" id="atab-general" style="background:var(--ink);color:#fff;border:none;cursor:pointer;white-space:nowrap" onclick="showAdminTab('general',this)">General</button>
+        <button class="pill" id="atab-loans" style="background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap" onclick="showAdminTab('loans',this)">Loans</button>
+        <button class="pill" id="atab-committees" style="background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap" onclick="showAdminTab('committees',this)">Committees</button>
+      </div>
+
+      <!-- GENERAL TAB -->
+      <div id="admin-tab-general">
 
       <!-- Add Member -->
       <div class="card">
@@ -622,9 +660,82 @@
         </div>
         <button class="btn-primary" onclick="postNotification()">Post to All Members</button>
       </div>
-    </div>
+      </div><!-- /admin-tab-general -->
 
-  </div><!-- /main -->
+      <!-- LOANS TAB -->
+      <div id="admin-tab-loans" style="display:none">
+        <!-- Pool cards -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="stat-card bt-green"><label>Available Pool</label><div class="sv" id="la-pool">—</div><div class="ss">Ready to lend</div></div>
+          <div class="stat-card bt-gold"><label>Outstanding</label><div class="sv" id="la-out">—</div><div id="la-outcount" class="ss">0 active loans</div></div>
+          <div class="stat-card" style="border-top:3px solid #ef4444"><label>Overdue</label><div class="sv" id="la-over" style="color:#ef4444">—</div><div id="la-overcount" class="ss">0 overdue</div></div>
+          <div class="stat-card bt-blue"><label>Total Pool</label><div class="sv" id="la-total">—</div><div class="ss">Deployed + available</div></div>
+        </div>
+
+        <!-- PAR Meter -->
+        <div class="card" id="la-par-card" style="margin-bottom:12px;border-left:4px solid #22c55e">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Portfolio at Risk (PAR)</div>
+            <span id="la-par-badge" style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:#22c55e;color:#fff">HEALTHY</span>
+          </div>
+          <div style="font-size:24px;font-weight:700" id="la-par-pct">0.00%</div>
+          <div style="background:var(--border);border-radius:4px;height:6px;margin:8px 0;overflow:hidden">
+            <div id="la-par-bar" style="height:100%;border-radius:4px;background:#22c55e;width:0%;transition:width .4s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--muted)"><span>0%</span><span>10% ⚠</span><span>15% 🚨</span><span>25%</span></div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:10px;color:var(--muted)">
+            <span>Utilization: <strong id="la-util">0%</strong></span>
+            <span>Bank: <strong id="la-bank">—</strong></span>
+          </div>
+        </div>
+
+        <!-- Restrict banner -->
+        <div id="la-restrict" style="display:none;background:#fef2f2;border:1px solid #ef4444;border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#991b1b;font-weight:600">
+          🚨 Lending restricted — PAR above 15%. Resolve overdue loans before issuing new ones.
+        </div>
+
+        <!-- Issue Loan -->
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-title">Issue New Loan</div>
+          <div style="display:flex;gap:8px;margin-bottom:8px">
+            <select id="la-member" style="flex:1;padding:10px;border-radius:8px;border:1px solid var(--border);background:#fafaf8;font-size:13px">
+              <option value="">Select member…</option>
+            </select>
+            <button onclick="laCheckElig()" style="padding:10px 14px;background:var(--ink2);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Check</button>
+          </div>
+          <div id="la-elig-result" style="display:none;border-radius:8px;padding:10px;margin-bottom:8px;font-size:12px"></div>
+          <div id="la-issue-form" style="display:none">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <input id="la-amount" type="number" placeholder="Amount (UGX)" style="padding:10px;border-radius:8px;border:1px solid var(--border);font-size:13px">
+              <select id="la-duration" style="padding:10px;border-radius:8px;border:1px solid var(--border);background:#fafaf8;font-size:13px">
+                <option value="60">60-Day (5% reducing)</option>
+                <option value="30">30-Day (5% flat)</option>
+              </select>
+            </div>
+            <button onclick="laIssueLoan()" style="width:100%;padding:11px;background:var(--gold);color:var(--ink);border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer">Issue Loan</button>
+          </div>
+          <div id="la-issue-msg" style="margin-top:6px;font-size:11px"></div>
+        </div>
+
+        <!-- Active Loans List -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">Active Loans</div>
+            <div style="display:flex;gap:6px">
+              <button onclick="laFilter('all')" id="la-tab-all" style="padding:3px 10px;border-radius:6px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:var(--ink);color:#fff">All</button>
+              <button onclick="laFilter('overdue')" id="la-tab-over" style="padding:3px 10px;border-radius:6px;border:none;font-size:11px;font-weight:600;cursor:pointer;background:var(--border);color:var(--ink)">Overdue</button>
+            </div>
+          </div>
+          <div id="la-loans-list"><div class="empty" style="padding:20px">No active loans</div></div>
+        </div>
+      </div><!-- /admin-tab-loans -->
+
+      <!-- COMMITTEES TAB -->
+      <div id="admin-tab-committees" style="display:none">
+        <div id="committees-list"><div class="empty"><div class="spinner" style="margin:0 auto"></div></div></div>
+      </div><!-- /admin-tab-committees -->
+
+    </div><!-- /sec-admin -->
 
   <nav class="bottomnav">
     <button class="nav-btn active" id="nav-dashboard" onclick="showSection('dashboard',this)">
@@ -655,6 +766,59 @@
       Admin
     </button>
   </nav>
+</div>
+
+<!-- MEMBER DETAIL MODAL -->
+<div id="member-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;overflow-y:auto;padding:16px">
+  <div style="background:#fff;border-radius:16px;max-width:520px;margin:0 auto;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="background:var(--ink);padding:16px;display:flex;justify-content:space-between;align-items:flex-start">
+      <div>
+        <div id="md-name" style="font-size:18px;font-weight:700;color:var(--gold);font-family:'DM Serif Display',serif"></div>
+        <div id="md-sub" style="font-size:11px;color:var(--muted);margin-top:3px"></div>
+      </div>
+      <button onclick="closeMemberDetail()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="padding:16px;overflow-y:auto;max-height:75vh" id="md-body"></div>
+  </div>
+</div>
+
+<!-- SIGN UP MODAL -->
+<div id="signup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--ink);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+    <div style="text-align:center;margin-bottom:20px">
+      <svg width="48" height="48" viewBox="0 0 72 72" fill="none" style="margin-bottom:10px">
+        <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#c9a84c" stroke-width="1.5"/>
+        <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <circle cx="62" cy="14" r="4" fill="#c9a84c"/>
+      </svg>
+      <div style="font-size:20px;font-weight:700;color:var(--gold);font-family:'DM Serif Display',serif">Create Account</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Enter your registered name to verify</div>
+    </div>
+    <div id="su-step1">
+      <div class="inp-wrap">
+        <label>Your Full Name</label>
+        <input id="su-name" type="text" placeholder="e.g. Edson Nuwahereza" onkeydown="if(event.key==='Enter')suVerify()">
+      </div>
+      <button class="btn-login" id="su-verify-btn" onclick="suVerify()">Verify Name</button>
+      <div id="su-msg1" style="font-size:12px;margin-top:10px;min-height:16px;text-align:center"></div>
+    </div>
+    <div id="su-step2" style="display:none">
+      <div id="su-verified-badge" style="background:#1a3a1a;border:1px solid #22c55e;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:#4ade80"></div>
+      <div class="inp-wrap">
+        <label>Email Address</label>
+        <input id="su-email" type="email" placeholder="your@email.com">
+      </div>
+      <div class="inp-wrap">
+        <label>Password (min 6 chars)</label>
+        <input id="su-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')suCreate()">
+      </div>
+      <button class="btn-login" id="su-create-btn" onclick="suCreate()">Create Account</button>
+      <div id="su-msg2" style="font-size:12px;margin-top:10px;min-height:16px;text-align:center"></div>
+    </div>
+    <div style="text-align:center;margin-top:14px">
+      <span onclick="closeSignup()" style="color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline">Back to sign in</span>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -781,9 +945,33 @@ onAuthStateChanged(auth, async user => {
   }
 
   try {
-    // Check approvedEmails
-    const snap = await getDoc(doc(db, 'approvedEmails', user.email));
-    if (!snap.exists()) {
+    // First try approvedEmails (legacy), then fall back to members collection by email
+    let memberId = null;
+    let isAdmin  = false;
+
+    const approvedSnap = await getDoc(doc(db, 'approvedEmails', user.email));
+    if (approvedSnap.exists()) {
+      const data = approvedSnap.data();
+      memberId = data.memberId;
+      isAdmin  = data.role === 'admin';
+    }
+
+    // Find member by email in members collection
+    const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
+    if (!membersByEmail.empty) {
+      const mDoc = membersByEmail.docs[0];
+      if (!memberId) memberId = mDoc.id;
+      STATE.member = { id: mDoc.id, ...mDoc.data() };
+      // Admin if email matches known admin list
+      if (['pedsoule@gmail.com'].includes(user.email)) isAdmin = true;
+    }
+
+    if (!STATE.member && memberId) {
+      const mSnap = await getDoc(doc(db, 'members', memberId));
+      if (mSnap.exists()) STATE.member = { id: mSnap.id, ...mSnap.data() };
+    }
+
+    if (!STATE.member && !approvedSnap.exists()) {
       toast('Access denied — not registered.', 'error');
       await signOut(auth);
       loading.style.display = 'none';
@@ -791,25 +979,19 @@ onAuthStateChanged(auth, async user => {
       return;
     }
 
-    const data     = snap.data();
-    STATE.user     = user;
-    STATE.isAdmin  = data.role === 'admin';
-
-    // Load member profile
-    if (data.memberId) {
-      const mSnap = await getDoc(doc(db, 'members', data.memberId));
-      if (mSnap.exists()) STATE.member = { id: mSnap.id, ...mSnap.data() };
-    }
+    STATE.user    = user;
+    STATE.isAdmin = isAdmin || STATE.member?.role === 'admin';
 
     // UI setup
-    const initial = (STATE.member?.name || user.email)[0].toUpperCase();
-    document.getElementById('user-initial').textContent = initial;
+    const displayName = STATE.member?.name || STATE.member?.displayName || STATE.member?.primary?.name || user.email;
+    document.getElementById('user-initial').textContent = displayName[0].toUpperCase();
 
-    if (STATE.member?.tier) {
+    const memberTier = STATE.member?.memberType || STATE.member?.tier || '';
+    if (memberTier) {
       const pill = document.getElementById('tier-pill');
-      pill.textContent = STATE.member.tier.charAt(0).toUpperCase() + STATE.member.tier.slice(1);
+      pill.textContent = memberTier.charAt(0).toUpperCase() + memberTier.slice(1);
       pill.style.display = 'inline';
-      pill.className = `tier-badge tier-${STATE.member.tier}`;
+      pill.className = `tier-badge tier-${memberTier}`;
     }
 
     if (STATE.isAdmin) {
@@ -821,7 +1003,6 @@ onAuthStateChanged(auth, async user => {
     loginEl.classList.remove('visible');
     appEl.classList.add('visible');
 
-    // Load data
     await Promise.all([loadDashboard(), loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
 
@@ -843,77 +1024,180 @@ window.showSection = function(name, btn) {
   if (name === 'investments') loadInvestments();
   if (name === 'account')     loadMyAccount();
   if (name === 'notifications') markNotifsRead();
+  if (name === 'admin')       { showAdminTab('general'); if (STATE.isAdmin) document.getElementById('balance-breakdown').style.display='block'; }
+  if (name === 'dashboard' && STATE.isAdmin) document.getElementById('balance-breakdown').style.display='block';
 };
 
 // ── DASHBOARD ─────────────────────────────────────────────────
 async function loadDashboard() {
   try {
-    const snap = await getDoc(doc(db, 'settings', 'financials'));
-    if (snap.exists()) {
-      const d = snap.data();
-      document.getElementById('h-balance').textContent  = fmt(d.bankBalance);
-      document.getElementById('h-inflow').textContent   = fmt(d.totalInflow);
-      document.getElementById('h-invested').textContent = fmt(d.totalInvested);
-      document.getElementById('h-roi').textContent      = fmt(d.confirmedROI);
-      document.getElementById('h-ut').textContent       = fmt(d.unitTrustBalance);
-      document.getElementById('s-balance').textContent  = fmt(d.bankBalance);
-      document.getElementById('s-invested').textContent = fmt(d.totalInvested);
-      if (STATE.isAdmin) {
-        document.getElementById('f-balance').value  = d.bankBalance  || '';
-        document.getElementById('f-inflow').value   = d.totalInflow  || '';
-        document.getElementById('f-invested').value = d.totalInvested|| '';
-        document.getElementById('f-roi').value      = d.confirmedROI || '';
-        document.getElementById('f-ut').value       = d.unitTrustBalance || '';
-      }
+    // Primary source: club/bankBalance (seeded from spreadsheet)
+    const [bankSnap, finSnap] = await Promise.all([
+      getDoc(doc(db, 'club', 'bankBalance')),
+      getDoc(doc(db, 'settings', 'financials'))
+    ]);
+
+    let bal = 0, inflow = 0, invested = 0, roi = 0, ut = 0;
+
+    if (bankSnap.exists()) {
+      const b = bankSnap.data();
+      bal      = b.total        || 0;
+      inflow   = b.totalInflow  || 134393100;
+      invested = b.totalInvested|| 75460000;
+      roi      = b.returnOnInvestment || 22850000;
+      ut       = b.unitTrust    || 6990000;
+      // Update bank balance breakdown if elements exist
+      if (document.getElementById('bd-welfare'))    document.getElementById('bd-welfare').textContent    = fmtFull(b.welfare||0);
+      if (document.getElementById('bd-gla'))        document.getElementById('bd-gla').textContent        = fmtFull(b.gla||0);
+      if (document.getElementById('bd-ut'))         document.getElementById('bd-ut').textContent         = fmtFull(b.unitTrust||0);
+      if (document.getElementById('bd-junior'))     document.getElementById('bd-junior').textContent     = fmtFull(b.letsGrowJunior||0);
+      if (document.getElementById('bd-loanpool'))   document.getElementById('bd-loanpool').textContent   = fmtFull(b.loansPool||0);
+    } else if (finSnap.exists()) {
+      const d = finSnap.data();
+      bal = d.bankBalance||0; inflow = d.totalInflow||0; invested = d.totalInvested||0;
+      roi = d.confirmedROI||0; ut = d.unitTrustBalance||0;
+    }
+
+    document.getElementById('h-balance').textContent  = fmt(bal);
+    document.getElementById('h-inflow').textContent   = fmt(inflow);
+    document.getElementById('h-invested').textContent = fmt(invested);
+    document.getElementById('h-roi').textContent      = fmt(roi);
+    document.getElementById('h-ut').textContent       = fmt(ut);
+    document.getElementById('s-balance').textContent  = fmt(bal);
+    document.getElementById('s-invested').textContent = fmt(invested);
+
+    if (STATE.isAdmin) {
+      document.getElementById('f-balance').value  = bal      || '';
+      document.getElementById('f-inflow').value   = inflow   || '';
+      document.getElementById('f-invested').value = invested || '';
+      document.getElementById('f-roi').value      = roi      || '';
+      document.getElementById('f-ut').value       = ut       || '';
     }
   } catch(e) { log('Financials: '+e.message); }
 
   await loadTracker();
 }
 
+// ── TRACKER HELPER ───────────────────────────────────────────
+// Derives month-by-month status from subscriptionByYear total
+// Green = fully paid up to that month
+// Yellow = partially paid (paid something but not full month)
+// Red = nothing paid and month has passed (full quarter behind = 3+ months red)
+// Grey = future month
+function getMonthStatuses(subByYear, monthlyRate, year, currentMonth) {
+  const yearKey   = String(year);
+  const totalPaid = subByYear?.[yearKey] || 0;
+  const rate      = monthlyRate || 40000;
+  const statuses  = [];
+
+  for (let mo = 0; mo < 12; mo++) {
+    if (mo > currentMonth) {
+      statuses.push('future');
+    } else {
+      // How much should have been paid by end of this month?
+      const expectedByEOM = rate * (mo + 1);
+      // How much expected by start of this month?
+      const expectedByBOM = rate * mo;
+
+      if (totalPaid >= expectedByEOM) {
+        statuses.push('paid');
+      } else if (totalPaid > expectedByBOM) {
+        statuses.push('partial');
+      } else {
+        statuses.push('due');
+      }
+    }
+  }
+  return statuses;
+}
+
+// Overall status for a member: green/yellow/red based on how far behind
+function getMemberOverallStatus(statuses, currentMonth) {
+  const dueSoFar = statuses.slice(0, currentMonth + 1).filter(s => s === 'due').length;
+  if (dueSoFar === 0) return 'green';
+  if (dueSoFar <= 2)  return 'yellow';
+  return 'red'; // full quarter (3+) behind
+}
+
 async function loadTracker() {
-  const wrap = document.getElementById('tracker-wrap');
-  const currentMonth = new Date().getMonth();
+  const wrap         = document.getElementById('tracker-wrap');
+  const currentMonth = new Date().getMonth(); // 0-indexed
   const currentYear  = new Date().getFullYear();
 
   try {
-    const mSnap = await getDocs(collection(db, 'members'));
-    STATE.allMembers = [];
+    if (!STATE.allMembers.length) {
+      const mSnap = await getDocs(collection(db,'members'));
+      mSnap.forEach(d => STATE.allMembers.push({ id: d.id, ...d.data() }));
+    }
+
     let activeCount = 0;
-    mSnap.forEach(d => {
-      const m = { id: d.id, ...d.data() };
-      STATE.allMembers.push(m);
-      if (m.status === 'active' || m.status === 'diaspora') activeCount++;
+    STATE.allMembers.forEach(m => {
+      if (['active','diaspora'].includes(m.status)) activeCount++;
     });
     document.getElementById('s-active').textContent = activeCount;
 
-    const active = STATE.allMembers.filter(m => ['active','diaspora'].includes(m.status) && m.accountType !== 'joint' || (m.accountType === 'joint' && m.monthlyRate > 0));
+    // Only show active/diaspora members (not exited/deceased/inactive)
+    const active = STATE.allMembers.filter(m =>
+      ['active','diaspora','partial'].includes(m.status)
+    );
 
     if (!active.length) { wrap.innerHTML = '<div class="empty">No active members</div>'; return; }
 
+    // Sort: most behind first (red), then yellow, then green
+    const withStatus = active.map(m => {
+      const rate     = m.monthlySubscription || m.monthlyRate || 40000;
+      const statuses = getMonthStatuses(m.subscriptionByYear, rate, currentYear, currentMonth);
+      const overall  = getMemberOverallStatus(statuses, currentMonth);
+      return { m, statuses, overall, rate };
+    });
+    withStatus.sort((a,b) => {
+      const order = { red:0, yellow:1, green:2 };
+      return (order[a.overall]||2) - (order[b.overall]||2);
+    });
+
+    const moLabels = { 0:'J',1:'F',2:'M',3:'A',4:'M',5:'J',6:'J',7:'A',8:'S',9:'O',10:'N',11:'D' };
+
     let html = '';
-    for (const m of active) {
-      const cSnap = await getDocs(query(
-        collection(db,'contributions'),
-        where('memberId','==',m.id),
-        where('year','==',currentYear)
-      ));
-      const paid = {};
-      cSnap.forEach(d => { const c = d.data(); paid[c.month] = c.status || 'paid'; });
+    for (const { m, statuses, overall, rate } of withStatus) {
+      const displayName = m.name || m.displayName || m.primary?.name || m.id;
+      const yearTotal   = m.subscriptionByYear?.[String(currentYear)] || 0;
+      const expectedNow = rate * (currentMonth + 1);
+      const pct         = expectedNow > 0 ? Math.min(100, Math.round(yearTotal / expectedNow * 100)) : 0;
+
+      // Overall status indicator colour
+      const statusDot = overall === 'green'
+        ? 'background:#166534;color:#bbf7d0'
+        : overall === 'yellow'
+        ? 'background:#78350f;color:#fde68a'
+        : 'background:#7f1d1d;color:#fecaca';
 
       let dots = '';
       for (let mo = 0; mo < 12; mo++) {
+        const s = statuses[mo];
         let cls, lbl;
-        if      (paid[mo]==='paid')    { cls='mo-paid';    lbl='✓'; }
-        else if (paid[mo]==='partial') { cls='mo-partial'; lbl='~'; }
-        else if (mo <= currentMonth)   { cls='mo-due';     lbl='!'; }
-        else                           { cls='mo-future';  lbl=MONTHS[mo][0]; }
-        dots += `<div class="mo ${cls}" title="${MONTHS[mo]}">${lbl}</div>`;
+        if      (s==='paid')    { cls='mo-paid';    lbl='✓'; }
+        else if (s==='partial') { cls='mo-partial'; lbl='~'; }
+        else if (s==='due')     { cls='mo-due';     lbl='!'; }
+        else                    { cls='mo-future';  lbl=moLabels[mo]||'·'; }
+        dots += `<div class="mo ${cls}" title="${MONTHS[mo]} ${currentYear}">${lbl}</div>`;
       }
 
-      const displayName = m.jointLabel || m.name;
+      // Mini progress bar
+      const barColor = overall==='green' ? '#166534' : overall==='yellow' ? '#d97706' : '#991b1b';
+
       html += `<div class="tracker-row">
-        <div class="tracker-name">${displayName}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+          <div class="tracker-name" style="margin-bottom:0">${displayName}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;${statusDot}">
+              ${overall==='green'?'UP TO DATE':overall==='yellow'?'PARTIAL':'BEHIND'}
+            </span>
+            <span style="font-size:9px;color:var(--muted)">${fmt(yearTotal)}</span>
+          </div>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:4px;margin-bottom:6px;overflow:hidden">
+          <div style="height:100%;border-radius:3px;background:${barColor};width:${pct}%;transition:width .5s"></div>
+        </div>
         <div class="months-grid">${dots}</div>
       </div>`;
     }
@@ -932,54 +1216,72 @@ async function loadMyAccount() {
     return;
   }
   const m = STATE.member;
-  const currentYear = new Date().getFullYear();
+  const currentYear  = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
 
-  // Load my contributions this year
-  const cSnap = await getDocs(query(
-    collection(db,'contributions'),
-    where('memberId','==',m.id),
-    where('year','==',currentYear)
-  ));
-  const paid = {};
-  let paidTotal = 0;
-  cSnap.forEach(d => { const c = d.data(); paid[c.month] = c; paidTotal += c.amount || m.monthlyRate || 40000; });
+  // Use correct field from v3 seed
+  const sc2025      = m.totalSubscriptionUpTo2025 || m.totalSubscriptions2025 || 0;
+  const loanEligible = m.loanEligibility || Math.round(sc2025 * 0.25);
+  const subByYear    = m.subscriptionByYear || {};
+  const tierLabel    = (m.memberType || m.tier || 'member').charAt(0).toUpperCase() + (m.memberType || m.tier || 'member').slice(1);
+  const displayName  = m.name || m.displayName || m.primary?.name || '—';
+  const monthlyRate  = m.monthlySubscription || m.monthlyRate || 40000;
 
-  const monthsTarget = currentMonth + 1;
-  const paidMonths   = Object.keys(paid).length;
-  const pct          = Math.round((paidMonths / 12) * 100);
-
-  // Share capital from 2025
-  const sc2025 = m.totalSubscriptions2025 || 0;
-  const loanEligible = Math.round(sc2025 * 0.25);
+  // 2026 tracker from subscriptionByYear using shared helper
+  const sub2026    = subByYear[String(currentYear)] || 0;
+  const moStatuses = getMonthStatuses(subByYear, monthlyRate, currentYear, currentMonth);
+  const paidMonths = moStatuses.filter(s => s==='paid').length;
+  const pct        = Math.round((sub2026 / (monthlyRate * 12)) * 100);
+  const overallSt  = getMemberOverallStatus(moStatuses, currentMonth);
+  const barColor   = overallSt==='green' ? '#166534' : overallSt==='yellow' ? '#d97706' : '#991b1b';
 
   let dots = '';
   for (let mo = 0; mo < 12; mo++) {
+    const s = moStatuses[mo];
     let cls, lbl;
-    if      (paid[mo]?.status==='paid')    { cls='mo-paid';    lbl='✓'; }
-    else if (paid[mo]?.status==='partial') { cls='mo-partial'; lbl='~'; }
-    else if (mo <= currentMonth)           { cls='mo-due';     lbl='!'; }
-    else                                   { cls='mo-future';  lbl=MONTHS[mo][0]; }
+    if      (s==='paid')    { cls='mo-paid';    lbl='✓'; }
+    else if (s==='partial') { cls='mo-partial'; lbl='~'; }
+    else if (s==='due')     { cls='mo-due';     lbl='!'; }
+    else                    { cls='mo-future';  lbl=MONTHS[mo][0]; }
     dots += `<div class="mo ${cls}" title="${MONTHS[mo]}">${lbl}</div>`;
   }
 
-  const tierLabel = (m.tier||'member').charAt(0).toUpperCase()+(m.tier||'member').slice(1);
-  const jointNote = m.jointWith ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">Joint account · ${m.jointLabel||''}</div>` : '';
+  // Build year-by-year history table
+  const years = Object.keys(subByYear).sort();
+  let historyRows = '';
+  let grandTotal = 0;
+  for (const yr of years) {
+    const paid = subByYear[yr] || 0;
+    grandTotal += paid;
+    const rowStyle = paid === 0 ? 'color:var(--muted)' : '';
+    historyRows += `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;${rowStyle}">
+      <span>${yr}</span>
+      <span style="font-weight:500">${fmtFull(paid)}</span>
+    </div>`;
+  }
+  if (!historyRows) historyRows = '<div style="color:var(--muted);font-size:12px">No history available</div>';
+
+  const jointNote = m.accountType === 'joint'
+    ? `<div style="font-size:11px;color:rgba(255,255,255,.5);margin-top:4px">Joint Account · ${m.primary?.name||''} & ${m.secondary?.name||''}</div>` : '';
+
+  const welfareTotal = Object.values(m.welfareByYear||{}).reduce((a,b)=>a+b,0);
+  const glaTotal     = Object.values(m.glaByYear||{}).reduce((a,b)=>a+b,0);
+  const utTotal      = Object.values(m.unitTrustByYear||{}).reduce((a,b)=>a+b,0);
 
   wrap.innerHTML = `
     <div class="account-hero">
-      <div class="acc-name">${m.name}</div>
-      <div class="acc-id">${tierLabel} Member · ${m.accountType==='joint'?'Joint':'Single'} Account</div>
+      <div class="acc-name">${displayName}</div>
+      <div class="acc-id">${tierLabel} Member · ${m.accountType==='joint'?'Joint':'Single'} Account · Since ${m.joinYear||'—'}</div>
       ${jointNote}
       <div style="margin-top:16px">
-        <div class="acc-label">2025 Subscriptions Paid</div>
+        <div class="acc-label">Total Subscriptions (up to 2025)</div>
         <div class="acc-value">${fmtFull(sc2025)}</div>
-        <div class="acc-sub">Monthly rate: ${fmtFull(m.monthlyRate)} · Joined ${m.joinYear||'—'}</div>
+        <div class="acc-sub">Monthly rate: ${fmtFull(monthlyRate)} · Status: <span style="color:${m.status==='active'?'#4ade80':m.status==='diaspora'?'#60a5fa':'#fbbf24'}">${m.status||'—'}</span></div>
       </div>
       <div class="loan-eligibility">
         <div>
           <div class="le-label">Loan Eligibility</div>
-          <div style="font-size:10px;opacity:.7">25% of 2025 subscriptions</div>
+          <div style="font-size:10px;opacity:.7">25% of subscriptions to 2025</div>
         </div>
         <div class="le-value">${fmtFull(loanEligible)}</div>
       </div>
@@ -988,24 +1290,32 @@ async function loadMyAccount() {
     <div class="card">
       <div class="card-title">${currentYear} Contribution Tracker</div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:8px">
-        <span>${paidMonths} of 12 months paid</span>
-        <span>${pct}%</span>
+        <span>UGX ${sub2026.toLocaleString()} paid · ~${paidMonths} months</span>
+        <span style="font-weight:700;color:${barColor}">${overallSt==='green'?'Up to date':overallSt==='yellow'?'Partial':'Behind'}</span>
       </div>
       <div class="progress-bar" style="margin-bottom:12px">
-        <div class="progress-fill ${pct===100?'green':pct>=50?'':'danger'}" style="width:${pct}%"></div>
+        <div class="progress-fill" style="width:${Math.min(pct,100)}%;background:${barColor}"></div>
       </div>
       <div class="months-grid">${dots}</div>
     </div>
 
     <div class="card">
-      <div class="card-title">Share Capital History</div>
-      ${Object.entries(m.shareCapital||{}).map(([yr,amt]) =>
-        `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-          <span style="color:var(--muted)">${yr}</span>
-          <span style="font-weight:500">${fmtFull(amt)}</span>
-        </div>`
-      ).join('') || '<div style="color:var(--muted);font-size:12px">No history available</div>'}
+      <div class="card-title">Subscription History (All Years)</div>
+      ${historyRows}
+      <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--gold)">
+        <span>Grand Total</span><span>${fmtFull(grandTotal)}</span>
+      </div>
     </div>
+
+    ${welfareTotal > 0 || glaTotal > 0 || utTotal > 0 ? `
+    <div class="card">
+      <div class="card-title">Other Contributions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        ${welfareTotal > 0 ? `<div style="background:#f8f4ec;border-radius:8px;padding:10px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Welfare</div><div style="font-size:13px;font-weight:700;color:var(--ink);margin-top:4px">${fmt(welfareTotal)}</div></div>` : ''}
+        ${glaTotal > 0 ? `<div style="background:#f0f4ff;border-radius:8px;padding:10px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">GLA</div><div style="font-size:13px;font-weight:700;color:var(--ink);margin-top:4px">${fmt(glaTotal)}</div></div>` : ''}
+        ${utTotal > 0 ? `<div style="background:#f0fff4;border-radius:8px;padding:10px"><div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Unit Trust</div><div style="font-size:13px;font-weight:700;color:var(--ink);margin-top:4px">${fmt(utTotal)}</div></div>` : ''}
+      </div>
+    </div>` : ''}
 
     <div class="card">
       <div class="card-title">Membership Status</div>
@@ -1015,13 +1325,17 @@ async function loadMyAccount() {
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
         <span style="color:var(--muted);font-size:12px">Tier</span>
-        <span class="tier-badge tier-${m.tier}">${tierLabel}</span>
+        <span class="tier-badge tier-${m.memberType||m.tier||'gold'}">${tierLabel}</span>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
         <span style="color:var(--muted);font-size:12px">Member Since</span>
         <span style="font-size:12px;font-weight:500">${m.joinYear||'—'}</span>
       </div>
-      ${m.note ? `<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${m.note}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--border)">
+        <span style="color:var(--muted);font-size:12px">Total Dividends</span>
+        <span style="font-size:12px;font-weight:500;color:var(--gold)">${fmtFull(m.dividendsTotal||0)}</span>
+      </div>
+      ${m.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${m.notes}</div>` : ''}
     </div>
   `;
 }
@@ -1085,16 +1399,18 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = '<div class="empty">No members found</div>'; return; }
   let html = '';
   members.forEach(m => {
-    const ini = (m.name||'?')[0].toUpperCase();
+    const displayName = m.name || m.displayName || m.primary?.name || '?';
+    const ini = displayName[0].toUpperCase();
+    const tier = m.memberType || m.tier || '';
     const subLine = [
-      m.tier ? (m.tier.charAt(0).toUpperCase()+m.tier.slice(1)) : '',
-      m.accountType==='joint' ? `Joint · ${m.jointLabel||''}` : 'Individual',
+      tier ? (tier.charAt(0).toUpperCase()+tier.slice(1)) : '',
+      m.accountType==='joint' ? 'Joint' : 'Individual',
       m.joinYear ? `Since ${m.joinYear}` : ''
     ].filter(Boolean).join(' · ');
-    html += `<div class="member-row">
+    html += `<div class="member-row" onclick="openMemberDetail('${m.id}')" style="cursor:pointer">
       <div class="m-avatar ${m.status==='deceased'?'deceased':''}">${ini}</div>
       <div class="m-info">
-        <div class="m-name">${m.name}</div>
+        <div class="m-name">${displayName}</div>
         <div class="m-sub">${subLine}</div>
       </div>
       <span class="status-badge s-${m.status}">${m.status}</span>
@@ -1294,6 +1610,395 @@ window.postNotification = async function() {
     document.getElementById('notif-date').value  = '';
     await loadNotifications();
   } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── ADMIN TABS ────────────────────────────────────────────────
+window.showAdminTab = function(tab, btn) {
+  ['general','loans','committees'].forEach(t => {
+    const el = document.getElementById('admin-tab-'+t);
+    const b  = document.getElementById('atab-'+t);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+    if (b)  { b.style.background = t === tab ? 'var(--ink)' : 'var(--border)'; b.style.color = t === tab ? '#fff' : 'var(--ink)'; }
+  });
+  if (tab === 'loans') loadLoansAdmin();
+  if (tab === 'committees') loadCommittees();
+};
+
+// ── LOANS ADMIN ───────────────────────────────────────────────
+const FUNCTIONS_BASE = 'https://us-central1-letsgrowinvestmentclub-26878.cloudfunctions.net';
+let laAllLoans = [], laFilter_current = 'all';
+
+async function loadLoansAdmin() {
+  try {
+    const [bankSnap, loansSnap, membersSnap] = await Promise.all([
+      getDoc(doc(db,'club','bankBalance')),
+      getDocs(query(collection(db,'loans'), where('status','in',['active','overdue']))),
+      getDocs(query(collection(db,'members'), where('isActive','==',true)))
+    ]);
+    const bank = bankSnap.exists() ? bankSnap.data() : {};
+    const now = Date.now(), DAY = 86400000;
+    laAllLoans = [];
+    let totalOut = 0, totalOver = 0, overCount = 0;
+
+    loansSnap.forEach(d => {
+      const loan = { id: d.id, ...d.data() };
+      let out = 0, over = 0;
+      (loan.schedule||[]).forEach(inst => {
+        if (!inst.paid) {
+          out += inst.amount||0; totalOut += inst.amount||0;
+          if ((now - inst.dueDate) / DAY > 7) { over += inst.amount||0; totalOver += inst.amount||0; }
+        }
+      });
+      loan._out = out; loan._over = over; loan._isOver = over > 0;
+      if (over > 0) overCount++;
+      laAllLoans.push(loan);
+    });
+
+    const avail = bank.loansPool || 0;
+    const totalPool = avail + totalOut;
+    const par  = totalOut > 0 ? (totalOver / totalOut) * 100 : 0;
+    const util = totalPool > 0 ? (totalOut / totalPool) * 100 : 0;
+
+    document.getElementById('la-pool').textContent     = fmt(avail);
+    document.getElementById('la-out').textContent      = fmt(totalOut);
+    document.getElementById('la-outcount').textContent = laAllLoans.length + ' active';
+    document.getElementById('la-over').textContent     = fmt(totalOver);
+    document.getElementById('la-overcount').textContent= overCount + ' overdue';
+    document.getElementById('la-total').textContent    = fmt(totalPool);
+    document.getElementById('la-par-pct').textContent  = par.toFixed(2) + '%';
+    document.getElementById('la-util').textContent     = util.toFixed(1) + '%';
+    document.getElementById('la-bank').textContent     = fmt(bank.total||0);
+
+    const bar = document.getElementById('la-par-bar');
+    const badge = document.getElementById('la-par-badge');
+    const card = document.getElementById('la-par-card');
+    bar.style.width = Math.min(par,25)/25*100+'%';
+    if (par > 15) { bar.style.background='#ef4444'; badge.textContent='RESTRICT'; badge.style.background='#ef4444'; card.style.borderLeftColor='#ef4444'; document.getElementById('la-restrict').style.display='block'; }
+    else if (par > 10) { bar.style.background='#f59e0b'; badge.textContent='CAUTION'; badge.style.background='#f59e0b'; card.style.borderLeftColor='#f59e0b'; }
+    else { bar.style.background='#22c55e'; badge.textContent='HEALTHY'; badge.style.background='#22c55e'; card.style.borderLeftColor='#22c55e'; }
+
+    // Populate member dropdown
+    const sel = document.getElementById('la-member');
+    sel.innerHTML = '<option value="">Select member…</option>';
+    const mArr = [];
+    membersSnap.forEach(d => mArr.push({ id: d.id, ...d.data() }));
+    mArr.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+    mArr.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = (m.name||m.displayName||m.id) + (m.status==='diaspora'?' (diaspora)':'');
+      sel.appendChild(opt);
+    });
+    laRenderLoans();
+  } catch(e) { log('LoansAdmin: '+e.message); }
+}
+
+function laRenderLoans() {
+  const el = document.getElementById('la-loans-list');
+  const loans = laFilter_current === 'overdue' ? laAllLoans.filter(l => l._isOver) : laAllLoans;
+  if (!loans.length) { el.innerHTML = '<div class="empty" style="padding:20px">No '+laFilter_current+' loans</div>'; return; }
+  const DAY = 86400000;
+  el.innerHTML = loans.map(l => {
+    const next = (l.schedule||[]).find(s => !s.paid);
+    const daysLeft = next ? Math.round((next.dueDate - Date.now()) / DAY) : null;
+    const dueStr = daysLeft !== null ? (daysLeft < 0 ? `<span style="color:#ef4444;font-weight:700">${Math.abs(daysLeft)}d overdue</span>` : daysLeft <= 7 ? `<span style="color:#f59e0b;font-weight:700">${daysLeft}d left</span>` : `<span style="color:var(--muted)">${daysLeft}d left</span>`) : '';
+    return `<div style="border-bottom:1px solid var(--border);padding:10px 0">
+      <div style="display:flex;justify-content:space-between">
+        <div style="font-weight:600;font-size:13px">${l.memberName||l.memberId}</div>
+        <div style="font-weight:700;font-size:13px">UGX ${(l.amount||0).toLocaleString()}</div>
+      </div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:11px;color:var(--muted)">
+        <span>Outstanding: <strong style="color:#e67e22">UGX ${l._out.toLocaleString()}</strong></span>
+        <span>${dueStr}</span>
+      </div>
+      ${l._over > 0 ? `<div style="font-size:11px;color:#ef4444;margin-top:2px">⚠️ Overdue: UGX ${l._over.toLocaleString()}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+window.laFilter = function(f) {
+  laFilter_current = f;
+  document.getElementById('la-tab-all').style.background  = f==='all'     ? 'var(--ink)' : 'var(--border)';
+  document.getElementById('la-tab-all').style.color       = f==='all'     ? '#fff' : 'var(--ink)';
+  document.getElementById('la-tab-over').style.background = f==='overdue' ? 'var(--ink)' : 'var(--border)';
+  document.getElementById('la-tab-over').style.color      = f==='overdue' ? '#fff' : 'var(--ink)';
+  laRenderLoans();
+};
+
+window.laCheckElig = async function() {
+  const memberId = document.getElementById('la-member').value;
+  if (!memberId) return;
+  const el = document.getElementById('la-elig-result');
+  const form = document.getElementById('la-issue-form');
+  el.style.display = 'block'; el.innerHTML = 'Checking…'; form.style.display = 'none';
+  try {
+    const resp = await fetch(FUNCTIONS_BASE + '/checkEligibility?memberId=' + memberId);
+    const data = await resp.json();
+    if (data.eligible) {
+      el.style.background = '#f0fdf4'; el.style.border = '1px solid #22c55e';
+      el.innerHTML = `<div style="color:#166534;font-weight:700;margin-bottom:4px">✅ Eligible</div>
+        <div style="font-size:11px">Savings: <strong>UGX ${(data.savings||0).toLocaleString()}</strong></div>
+        <div style="font-size:11px">Max (25%): <strong>UGX ${(data.maxLoanBase||0).toLocaleString()}</strong></div>
+        <div style="font-size:11px">Cycle ${data.currentCycle} limit (${data.cyclePercent}%): <strong>UGX ${(data.cycleLimit||0).toLocaleString()}</strong></div>`;
+      document.getElementById('la-amount').max = data.cycleLimit;
+      form.style.display = 'block';
+    } else {
+      el.style.background = '#fef2f2'; el.style.border = '1px solid #ef4444';
+      el.innerHTML = `<div style="color:#991b1b;font-weight:700">❌ ${data.reason}</div>`;
+    }
+  } catch(e) { el.innerHTML = '<span style="color:red">Error: '+e.message+'</span>'; }
+};
+
+window.laIssueLoan = async function() {
+  const memberId = document.getElementById('la-member').value;
+  const amount   = Number(document.getElementById('la-amount').value);
+  const duration = Number(document.getElementById('la-duration').value);
+  const msgEl    = document.getElementById('la-issue-msg');
+  if (!memberId || !amount) return;
+  msgEl.style.color = 'var(--muted)'; msgEl.textContent = 'Issuing…';
+  try {
+    const resp = await fetch(FUNCTIONS_BASE + '/createLoan', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ memberId, amount, duration })
+    });
+    const text = await resp.text();
+    let data; try { data = JSON.parse(text); } catch { data = { error: text }; }
+    if (data.success || data.loanId) {
+      msgEl.style.color = '#166534'; msgEl.textContent = '✅ Loan issued! ID: '+(data.loanId||'');
+      document.getElementById('la-issue-form').style.display = 'none';
+      document.getElementById('la-elig-result').style.display = 'none';
+      document.getElementById('la-member').value = '';
+      loadLoansAdmin();
+    } else {
+      msgEl.style.color = '#991b1b'; msgEl.textContent = '❌ '+(data.error||data.message||text);
+    }
+  } catch(e) { msgEl.style.color='#991b1b'; msgEl.textContent='❌ '+e.message; }
+};
+
+// ── COMMITTEES ────────────────────────────────────────────────
+async function loadCommittees() {
+  const el = document.getElementById('committees-list');
+  try {
+    const snap = await getDocs(collection(db,'committees'));
+    if (snap.empty) { el.innerHTML = '<div class="empty">No committee data</div>'; return; }
+    let html = '';
+    snap.forEach(d => {
+      const c = d.data();
+      html += `<div class="card" style="margin-bottom:12px">
+        <div class="card-title">${c.name}</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:10px">${c.term||''}</div>
+        ${(c.members||[]).map(m => `
+          <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+            <span style="font-weight:500">${m.role}</span>
+            <span style="color:var(--muted)">${m.memberId?.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase())||'—'}</span>
+          </div>`).join('')}
+      </div>`;
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = '<div class="empty">Error loading committees</div>'; log('Committees: '+e.message); }
+}
+
+// ── MEMBER DETAIL MODAL ───────────────────────────────────────
+window.openMemberDetail = async function(memberId) {
+  const modal = document.getElementById('member-detail-modal');
+  const body  = document.getElementById('md-body');
+  modal.style.display = 'block';
+  document.getElementById('md-name').textContent = 'Loading…';
+  document.getElementById('md-sub').textContent  = '';
+  body.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
+
+  try {
+    const [mSnap, loansSnap] = await Promise.all([
+      getDoc(doc(db,'members',memberId)),
+      getDocs(query(collection(db,'loans'), where('memberId','==',memberId), orderBy('createdAt','desc'), limit(10)))
+    ]);
+    if (!mSnap.exists()) { document.getElementById('md-name').textContent = 'Not found'; body.innerHTML=''; return; }
+    const m = mSnap.data();
+    const loans = [];
+    loansSnap.forEach(d => loans.push({ id: d.id, ...d.data() }));
+
+    const displayName = m.name || m.displayName || m.primary?.name || memberId;
+    const tier = m.memberType || m.tier || '';
+    document.getElementById('md-name').textContent = displayName;
+    document.getElementById('md-sub').textContent  = (tier?tier.charAt(0).toUpperCase()+tier.slice(1)+' · ':'') + (m.accountType==='joint'?'Joint · ':'') + 'Since '+(m.joinYear||'—');
+
+    const sc2025     = m.totalSubscriptionUpTo2025 || 0;
+    const loanElig   = m.loanEligibility || Math.round(sc2025*0.25);
+    const subByYear  = m.subscriptionByYear || {};
+    const years      = Object.keys(subByYear).sort();
+    const wTotal     = Object.values(m.welfareByYear||{}).reduce((a,b)=>a+b,0);
+    const glaTotal   = Object.values(m.glaByYear||{}).reduce((a,b)=>a+b,0);
+    const utTotal    = Object.values(m.unitTrustByYear||{}).reduce((a,b)=>a+b,0);
+    const grandTotal = years.reduce((a,yr) => a+(subByYear[yr]||0), 0);
+
+    // Status chips
+    const statusColors = { active:'#166534', diaspora:'#1e40af', partial:'#854d0e', inactive:'#64748b', exited:'#991b1b', deceased:'#64748b' };
+    const chips = [`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusColors[m.status]||'#888'};color:#fff">${(m.status||'').toUpperCase()}</span>`];
+    if (m.contributionsUpToDate) chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#166534;color:#fff">✓ UP TO DATE</span>`);
+    else chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#854d0e;color:#fff">⚠ NOT CURRENT</span>`);
+
+    // Year history table
+    let histRows = years.map((yr,i) => {
+      const paid = subByYear[yr]||0;
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px${paid===0?';color:var(--muted)':''}">
+        <span>${yr}</span><span style="font-weight:500">${fmtFull(paid)}</span>
+      </div>`;
+    }).join('');
+
+    // Loan history
+    let loanRows = loans.length ? loans.map(l => {
+      const statusColor = l.status==='active'?'#166534':l.status==='overdue'?'#991b1b':'#64748b';
+      const dateStr = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleDateString('en-GB') : '—';
+      return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:600;font-size:13px">UGX ${(l.amount||0).toLocaleString()} · ${l.duration||60}d</div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${statusColor};color:#fff">${l.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px">Issued: ${dateStr} · Total repayable: UGX ${(l.totalRepayable||0).toLocaleString()}</div>
+      </div>`;
+    }).join('') : '<div style="font-size:12px;color:var(--muted)">No loan history</div>';
+
+    body.innerHTML = `
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips.join('')}</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#f8f4ec;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total Subs (to 2025)</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmt(sc2025)}</div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Loan Eligibility</div>
+          <div style="font-size:15px;font-weight:700;color:var(--gold);margin-top:3px">${fmt(loanElig)}</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Dividends</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmt(m.dividendsTotal||0)}</div>
+        </div>
+        <div style="background:#fafaf8;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Monthly Rate</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmt(m.monthlySubscription||m.monthlyRate||0)}</div>
+        </div>
+      </div>
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Subscription History</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 10px;margin-bottom:14px">
+        ${histRows}
+        <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;font-weight:700;color:var(--gold)">
+          <span>Grand Total</span><span>${fmtFull(grandTotal)}</span>
+        </div>
+      </div>
+
+      ${wTotal > 0 || glaTotal > 0 || utTotal > 0 ? `
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Other Contributions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+        ${wTotal>0?`<div style="background:#f8f4ec;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--muted)">Welfare</div><div style="font-size:12px;font-weight:700">${fmt(wTotal)}</div></div>`:''}
+        ${glaTotal>0?`<div style="background:#f0f4ff;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--muted)">GLA</div><div style="font-size:12px;font-weight:700">${fmt(glaTotal)}</div></div>`:''}
+        ${utTotal>0?`<div style="background:#f0fff4;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--muted)">Unit Trust</div><div style="font-size:12px;font-weight:700">${fmt(utTotal)}</div></div>`:''}
+      </div>` : ''}
+
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Loan History</div>
+      ${loanRows}
+
+      ${m.notes ? `<div style="font-size:11px;color:var(--muted);background:var(--border);border-radius:8px;padding:8px;margin-top:10px">${m.notes}</div>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById('md-name').textContent = 'Error';
+    body.innerHTML = '<div class="empty">'+e.message+'</div>';
+    log('MemberDetail: '+e.message);
+  }
+};
+
+window.closeMemberDetail = function() {
+  document.getElementById('member-detail-modal').style.display = 'none';
+};
+
+// ── SIGN UP ───────────────────────────────────────────────────
+let suVerifiedId = null;
+
+window.openSignup = function() {
+  const m = document.getElementById('signup-modal');
+  m.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:20px';
+  document.getElementById('su-step1').style.display = 'block';
+  document.getElementById('su-step2').style.display = 'none';
+  document.getElementById('su-name').value = '';
+  document.getElementById('su-email').value = '';
+  document.getElementById('su-pass').value = '';
+  document.getElementById('su-msg1').textContent = '';
+  document.getElementById('su-msg2').textContent = '';
+  suVerifiedId = null;
+  setTimeout(() => document.getElementById('su-name').focus(), 100);
+};
+
+window.closeSignup = function() {
+  document.getElementById('signup-modal').style.display = 'none';
+};
+
+window.suVerify = async function() {
+  const nameInput = document.getElementById('su-name').value.trim();
+  const msg = document.getElementById('su-msg1');
+  const btn = document.getElementById('su-verify-btn');
+  if (!nameInput || nameInput.length < 3) { msg.style.color='#ef4444'; msg.textContent='Enter your full name.'; return; }
+
+  btn.textContent = 'Checking…'; btn.disabled = true; msg.textContent = '';
+  try {
+    const snap = await getDocs(collection(db,'members'));
+    const norm = s => (s||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
+    const inp  = norm(nameInput);
+    let match  = null;
+
+    snap.forEach(d => {
+      const m = d.data();
+      const candidates = [m.name, m.displayName, m.primary?.name,
+        m.firstName && m.lastName ? m.firstName+' '+m.lastName : null,
+        m.secondary?.name
+      ].filter(Boolean).map(norm);
+
+      if (candidates.some(c => c === inp || c.includes(inp) || inp.includes(c.split(' ')[0]))) {
+        match = { id: d.id, ...m };
+      }
+    });
+
+    if (!match) {
+      msg.style.color='#ef4444'; msg.textContent='❌ Name not found. Check spelling or contact admin.';
+    } else if (match.email) {
+      msg.style.color='#ef4444'; msg.textContent='❌ This member already has an account. Use Forgot Password.';
+    } else if (['exited','deceased'].includes(match.status)) {
+      msg.style.color='#ef4444'; msg.textContent='❌ This account is no longer active.';
+    } else {
+      suVerifiedId = match.id;
+      document.getElementById('su-step1').style.display = 'none';
+      document.getElementById('su-step2').style.display = 'block';
+      document.getElementById('su-verified-badge').innerHTML =
+        '✅ Verified: <strong>'+(match.name||match.displayName||nameInput)+'</strong><br>' +
+        '<span style="font-size:10px;color:rgba(255,255,255,.5)">'+(match.status||'active')+' · '+(match.memberType||match.tier||'member')+' member</span>';
+      setTimeout(() => document.getElementById('su-email').focus(), 100);
+    }
+  } catch(e) { msg.style.color='#ef4444'; msg.textContent='Error: '+e.message; }
+  btn.textContent = 'Verify Name'; btn.disabled = false;
+};
+
+window.suCreate = async function() {
+  const email = document.getElementById('su-email').value.trim();
+  const pass  = document.getElementById('su-pass').value;
+  const msg   = document.getElementById('su-msg2');
+  const btn   = document.getElementById('su-create-btn');
+  if (!email || !pass) { msg.style.color='#ef4444'; msg.textContent='Fill in email and password.'; return; }
+  if (pass.length < 6)  { msg.style.color='#ef4444'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if (!suVerifiedId)    { msg.style.color='#ef4444'; msg.textContent='Name verification required. Start over.'; return; }
+
+  btn.textContent = 'Creating…'; btn.disabled = true; msg.textContent = '';
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await setDoc(doc(db,'members',suVerifiedId), { email, uid: cred.user.uid }, { merge: true });
+    msg.style.color='#4ade80'; msg.textContent='✅ Account created! Signing you in…';
+    setTimeout(() => closeSignup(), 1500);
+  } catch(e) {
+    btn.textContent = 'Create Account'; btn.disabled = false;
+    msg.style.color = '#ef4444';
+    if (e.code==='auth/email-already-in-use') msg.textContent='❌ That email already has an account.';
+    else if (e.code==='auth/invalid-email') msg.textContent='❌ Invalid email address.';
+    else msg.textContent = '❌ '+e.message;
+  }
 };
 </script>
 </body>
