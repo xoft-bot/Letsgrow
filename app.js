@@ -66,6 +66,20 @@ function toast(msg, type='') {
   setTimeout(() => t.className = '', 3000);
 }
 
+// ── PASSWORD SHOW/HIDE TOGGLE ─────────────────────────────────
+window.togglePwd = function(inputId, btn) {
+  const inp  = document.getElementById(inputId);
+  const icon = btn.querySelector('svg');
+  if (!inp) return;
+  const isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  // Eye-off icon when showing, eye icon when hiding
+  icon.innerHTML = isHidden
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+  btn.style.color = isHidden ? '#c9a84c' : '#ffffff50';
+};
+
 // ── EXPOSE SHARED OBJECTS FOR loans.js ───────────────────────
 // loans.js reads window.__lg to access db, STATE, helpers.
 // This is set after Firebase is initialised (right here).
@@ -137,6 +151,7 @@ onAuthStateChanged(auth, async user => {
     let memberId = null;
     let isAdmin  = false;
 
+    // Step 1: Check approvedEmails (most authoritative source)
     const approvedSnap = await getDoc(doc(db, 'approvedEmails', user.email));
     if (approvedSnap.exists()) {
       const data = approvedSnap.data();
@@ -144,17 +159,46 @@ onAuthStateChanged(auth, async user => {
       isAdmin  = data.role === 'admin';
     }
 
-    const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
-    if (!membersByEmail.empty) {
-      const mDoc = membersByEmail.docs[0];
-      if (!memberId) memberId = mDoc.id;
-      STATE.member = { id: mDoc.id, ...mDoc.data() };
-      if (['pedsoule@gmail.com'].includes(user.email)) isAdmin = true;
+    // Step 2: Admin email override
+    if (['pedsoule@gmail.com'].includes(user.email)) isAdmin = true;
+
+    // Step 3: Only use email query to find memberId if approvedEmails didn't give us one
+    if (!memberId) {
+      const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
+      if (!membersByEmail.empty) {
+        memberId = membersByEmail.docs[0].id;
+      }
     }
 
-    if (!STATE.member && memberId) {
+    // Step 4: Load member doc by ID (never let a stale email in another member's doc win)
+    if (memberId) {
       const mSnap = await getDoc(doc(db, 'members', memberId));
       if (mSnap.exists()) STATE.member = { id: mSnap.id, ...mSnap.data() };
+    }
+
+    // ── CRITICAL: Verify the loaded member's email matches the logged-in user ──
+    // If approvedEmails pointed to a wrong memberId (stale data), the loaded
+    // member doc email won't match. Detect and correct this now.
+    if (STATE.member && STATE.member.email &&
+        STATE.member.email.toLowerCase() !== user.email.toLowerCase()) {
+      log(`Auth mismatch: memberId ${STATE.member.id} has email ${STATE.member.email} but user is ${user.email}. Searching for correct member.`);
+      STATE.member = null; // discard the wrong one
+      // Search directly by the logged-in user's email
+      const correctSnap = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
+      if (!correctSnap.empty) {
+        const mDoc = correctSnap.docs[0];
+        STATE.member = { id: mDoc.id, ...mDoc.data() };
+        log(`Corrected: loaded ${mDoc.data().name} (${mDoc.id})`);
+      }
+    }
+
+    // Step 5: Last resort — search by email directly in members
+    if (!STATE.member) {
+      const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
+      if (!membersByEmail.empty) {
+        const mDoc = membersByEmail.docs[0];
+        STATE.member = { id: mDoc.id, ...mDoc.data() };
+      }
     }
 
     if (!STATE.member && !approvedSnap.exists()) {
@@ -207,6 +251,7 @@ window.showSection = function(name, btn) {
   btn?.classList.add('active');
   if (name === 'members')       loadMembers();
   if (name === 'investments')   loadInvestments();
+  if (name === 'loans')         loadLoansSection();
   if (name === 'account')       { loadMyAccount(); setTimeout(() => window.loadLoanStatus?.(), 400); }
   if (name === 'notifications') markNotifsRead();
   if (name === 'admin') {
@@ -610,24 +655,76 @@ async function loadInvestments() {
   list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
   try {
     const snap = await getDocs(collection(db,'investments'));
-    if (snap.empty) { list.innerHTML = '<div class="empty">No investments on record</div>'; return; }
-    let html = '';
-    snap.forEach(d => {
-      const inv = d.data();
+
+    // Admin "Add Investment" button at the top
+    const addBtn = STATE.isAdmin
+      ? `<div class="card" style="margin-bottom:12px">
+          <div class="card-title">Add / Update Investment</div>
+          <div class="form-group"><label>Investment Name</label><input type="text" id="inv-name" placeholder="e.g. Elders Meat Parlour"></div>
+          <div class="form-group"><label>Type</label>
+            <select id="inv-type">
+              <option value="real_estate">Real Estate</option>
+              <option value="receivable">Receivable</option>
+              <option value="equity">Equity</option>
+              <option value="fixed_deposit">Fixed Deposit</option>
+              <option value="unit_trust">Unit Trust</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="form-group"><label>Amount Invested (UGX)</label><input type="number" id="inv-amount" placeholder="0"></div>
+            <div class="form-group"><label>Current Value (UGX)</label><input type="number" id="inv-current" placeholder="0"></div>
+          </div>
+          <div class="form-group"><label>Status</label>
+            <select id="inv-status">
+              <option value="active">Active</option>
+              <option value="partial">Partial</option>
+              <option value="closed">Closed</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Year</label><input type="number" id="inv-year" value="${new Date().getFullYear()}"></div>
+          <div class="form-group"><label>Description / Notes</label><textarea id="inv-note" rows="2" placeholder="Details about this investment…" style="resize:vertical"></textarea></div>
+          <button class="btn-primary btn-gold" onclick="saveInvestment()">Save Investment</button>
+          <div id="inv-msg" style="font-size:11px;margin-top:8px;min-height:16px"></div>
+        </div>`
+      : '';
+
+    if (snap.empty) {
+      list.innerHTML = addBtn + '<div class="empty">No investments on record</div>';
+      return;
+    }
+
+    // Portfolio summary
+    let totalInvested = 0, totalCurrent = 0;
+    const invArr = [];
+    snap.forEach(d => { const inv = { id: d.id, ...d.data() }; invArr.push(inv); totalInvested += inv.amount||0; totalCurrent += inv.balance||inv.amount||0; });
+    const roi = totalInvested > 0 ? ((totalCurrent - totalInvested)/totalInvested*100).toFixed(1) : '0.0';
+
+    let html = addBtn;
+    invArr.forEach(inv => {
       const tagClass = { active:'inv-active', closed:'inv-closed', partial:'inv-partial' }[inv.status] || 'inv-closed';
-      html += `<div class="inv-row">
-        <div class="inv-top">
+      const gain = (inv.balance||inv.amount||0) - (inv.amount||0);
+      const gainColor = gain >= 0 ? '#166534' : '#991b1b';
+      const updateBtn = STATE.isAdmin
+        ? `<button onclick="openInvUpdate('${inv.id}')" style="margin-top:10px;width:100%;padding:8px;background:#f8f4ec;border:1px solid var(--border);border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;color:var(--ink)">✏️ Record Update</button>`
+        : '';
+      html += `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
           <div>
             <div class="inv-name">${inv.name}</div>
-            <div class="inv-type ${inv.type}">${inv.type?.replace('_',' ') || ''}</div>
+            <div class="inv-type">${(inv.type||'').replace('_',' ')}</div>
           </div>
           <span class="inv-tag ${tagClass}">${inv.status}</span>
         </div>
-        <div class="amount">${fmtFull(inv.amount)}</div>
-        ${inv.returns ? `<div class="returns">Returns: +${fmtFull(inv.returns)}</div>` : ''}
-        ${inv.balance ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">Current balance: ${fmtFull(inv.balance)}</div>` : ''}
-        ${inv.note   ? `<div style="font-size:11px;color:var(--muted);margin-top:6px;border-top:1px solid var(--border);padding-top:6px">${inv.note}</div>` : ''}
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px">
+          <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Invested</div><div style="font-size:13px;font-weight:700">${fmt(inv.amount)}</div></div>
+          <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Current</div><div style="font-size:13px;font-weight:700;color:var(--gold)">${fmt(inv.balance||inv.amount)}</div></div>
+          <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Gain/Loss</div><div style="font-size:13px;font-weight:700;color:${gainColor}">${gain>=0?'+':''}${fmt(gain)}</div></div>
+        </div>
+        ${inv.returns ? `<div style="font-size:11px;color:#166534;margin-top:4px">✓ Returns received: ${fmtFull(inv.returns)}</div>` : ''}
+        ${inv.note ? `<div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border);line-height:1.5">${inv.note}</div>` : ''}
         <div style="font-size:10px;color:var(--muted);margin-top:4px">Year: ${inv.year||'—'}</div>
+        ${updateBtn}
       </div>`;
     });
     list.innerHTML = html;
@@ -635,6 +732,105 @@ async function loadInvestments() {
     list.innerHTML = '<div class="empty">Error loading investments</div>';
     log('Investments: '+e.message);
   }
+}
+
+window.saveInvestment = async function() {
+  if (!STATE.isAdmin) return;
+  const name    = document.getElementById('inv-name').value.trim();
+  const type    = document.getElementById('inv-type').value;
+  const amount  = Number(document.getElementById('inv-amount').value) || 0;
+  const current = Number(document.getElementById('inv-current').value) || amount;
+  const status  = document.getElementById('inv-status').value;
+  const year    = Number(document.getElementById('inv-year').value) || new Date().getFullYear();
+  const note    = document.getElementById('inv-note').value.trim();
+  const msgEl   = document.getElementById('inv-msg');
+  if (!name) { msgEl.style.color='#991b1b'; msgEl.textContent='Enter investment name.'; return; }
+  msgEl.style.color='var(--muted)'; msgEl.textContent='Saving…';
+  try {
+    const invId = name.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-') + '-' + year;
+    await setDoc(doc(db,'investments',invId), { name, type, amount, balance:current, status, year, note, updatedAt: serverTimestamp() }, { merge:true });
+    msgEl.style.color='#166534'; msgEl.textContent='✅ Investment saved!';
+    document.getElementById('inv-name').value = '';
+    document.getElementById('inv-amount').value = '';
+    document.getElementById('inv-current').value = '';
+    document.getElementById('inv-note').value = '';
+    setTimeout(loadInvestments, 800);
+  } catch(e) { msgEl.style.color='#991b1b'; msgEl.textContent='Error: '+e.message; }
+};
+
+// Quick update modal for existing investment value
+window.openInvUpdate = async function(invId) {
+  const newVal = prompt('Enter updated current value (UGX):');
+  if (!newVal) return;
+  const val = Number(newVal.replace(/,/g,''));
+  if (isNaN(val) || val < 0) { toast('Invalid amount','error'); return; }
+  try {
+    await setDoc(doc(db,'investments',invId), { balance: val, updatedAt: serverTimestamp() }, { merge:true });
+    toast('Investment updated','success');
+    loadInvestments();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+// ── LOANS SECTION (dedicated nav tab) ────────────────────────
+function loadLoansSection() {
+  const wrap = document.getElementById('loans-section-content');
+  if (!wrap) return;
+  if (STATE.isAdmin) {
+    // Admin sees full loan management
+    wrap.innerHTML = `
+      <div style="display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px">
+        <button class="pill" id="ltab-active" style="background:var(--ink);color:#fff;border:none;cursor:pointer;white-space:nowrap" onclick="switchLoanTab('active',this)">Active</button>
+        <button class="pill" id="ltab-pending" style="background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap" onclick="switchLoanTab('pending',this)">Pending</button>
+        <button class="pill" id="ltab-history" style="background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap" onclick="switchLoanTab('history',this)">History</button>
+      </div>
+      <div id="loan-tab-active"></div>
+      <div id="loan-tab-pending" style="display:none"></div>
+      <div id="loan-tab-history" style="display:none"></div>`;
+    window.loadLoansAdmin?.();
+    window.loadPendingLoans?.();
+    loadLoanHistory();
+  } else {
+    // Member sees their own loan status
+    wrap.innerHTML = `<div id="loan-status-wrap-main"></div>`;
+    setTimeout(() => window.loadLoanStatusInto?.('loan-status-wrap-main'), 100);
+  }
+}
+
+window.switchLoanTab = function(tab, btn) {
+  ['active','pending','history'].forEach(t => {
+    const el = document.getElementById('loan-tab-'+t);
+    const b  = document.getElementById('ltab-'+t);
+    if (el) el.style.display = t===tab ? 'block' : 'none';
+    if (b) { b.style.background = t===tab ? 'var(--ink)' : 'var(--border)'; b.style.color = t===tab ? '#fff' : 'var(--ink)'; }
+  });
+};
+
+async function loadLoanHistory() {
+  const el = document.getElementById('loan-tab-history');
+  if (!el) return;
+  try {
+    const snap = await getDocs(query(collection(db,'loans'), where('status','in',['closed','rejected']), limit(40)))
+      .catch(()=>({docs:[],forEach:()=>{}}));
+    const loans = [];
+    snap.forEach(d => loans.push({ id:d.id, ...d.data() }));
+    loans.sort((a,b)=>((b.requestedAt||b.approvedAt)?.toMillis?.()|| 0)-((a.requestedAt||a.approvedAt)?.toMillis?.()||0));
+    if (!loans.length) { el.innerHTML='<div class="empty">No closed or rejected loans</div>'; return; }
+    el.innerHTML = loans.map(l => {
+      const ts = l.requestedAt||l.approvedAt||l.createdAt;
+      const date = ts?.toDate ? ts.toDate().toLocaleDateString('en-GB') : '—';
+      const sc = l.status==='closed' ? '#166534' : '#991b1b';
+      return `<div class="card" style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:600;font-size:13px">${l.memberName||l.memberId}</div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${sc};color:#fff">${l.status}</span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px">UGX ${(l.amount||0).toLocaleString()} · ${date}</div>
+        ${l.purpose?`<div style="font-size:11px;color:var(--muted)">Purpose: ${l.purpose}</div>`:''}
+        ${l.totalRepaid?`<div style="font-size:11px;color:#166534">Repaid: UGX ${l.totalRepaid.toLocaleString()}</div>`:''}
+        ${l.rejectionReason?`<div style="font-size:11px;color:#991b1b">Reason: ${l.rejectionReason}</div>`:''}
+      </div>`;
+    }).join('');
+  } catch(e) { log('LoanHistory: '+e.message); }
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────
@@ -821,63 +1017,148 @@ window.openMemberDetail = async function(memberId) {
   body.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
 
   try {
+    // Fetch member + loans in parallel. Loans query uses NO orderBy to avoid
+    // composite index requirement — sorts client-side instead.
     const [mSnap, loansSnap] = await Promise.all([
       getDoc(doc(db,'members',memberId)),
-      getDocs(query(collection(db,'loans'), where('memberId','==',memberId), orderBy('createdAt','desc'), limit(10)))
+      getDocs(query(collection(db,'loans'), where('memberId','==',memberId), limit(30)))
+        .catch(() => ({ docs:[], forEach:()=>{} }))
     ]);
     if (!mSnap.exists()) { document.getElementById('md-name').textContent = 'Not found'; body.innerHTML=''; return; }
     const m = mSnap.data();
     const loans = [];
     loansSnap.forEach(d => loans.push({ id: d.id, ...d.data() }));
+    // Sort loans newest first client-side
+    loans.sort((a,b) => {
+      const ta = (a.requestedAt || a.createdAt || a.approvedAt)?.toMillis?.() || 0;
+      const tb = (b.requestedAt || b.createdAt || b.approvedAt)?.toMillis?.() || 0;
+      return tb - ta;
+    });
 
     const displayName = m.name || m.displayName || m.primary?.name || memberId;
     const tier = m.memberType || m.tier || '';
     document.getElementById('md-name').textContent = displayName;
-    document.getElementById('md-sub').textContent  = (tier?tier.charAt(0).toUpperCase()+tier.slice(1)+' · ':'') + (m.accountType==='joint'?'Joint · ':'') + 'Since '+(m.joinYear||'—');
+    document.getElementById('md-sub').textContent  =
+      (tier ? tier.charAt(0).toUpperCase()+tier.slice(1)+' · ' : '') +
+      (m.accountType==='joint' ? 'Joint · ' : '') +
+      'Since '+(m.joinYear||'—');
 
-    const sc2025     = m.totalSubscriptionUpTo2025 || 0;
-    const loanElig   = m.loanEligibility || Math.round(sc2025*0.25);
-    const subByYear  = m.subscriptionByYear || {};
-    const years      = Object.keys(subByYear).sort();
-    const wTotal     = Object.values(m.welfareByYear||{}).reduce((a,b)=>a+b,0);
-    const glaTotal   = Object.values(m.glaByYear||{}).reduce((a,b)=>a+b,0);
-    const utTotal    = Object.values(m.unitTrustByYear||{}).reduce((a,b)=>a+b,0);
-    const grandTotal = years.reduce((a,yr) => a+(subByYear[yr]||0), 0);
+    // ── Computed values ──────────────────────────────────────
+    const sc2025      = m.totalSubscriptionUpTo2025 || 0;
+    const loanElig    = m.loanEligibility || Math.round(sc2025*0.25);
+    const subByYear   = m.subscriptionByYear || {};
+    const monthlyRate = m.monthlySubscription || m.monthlyRate || 40000;
+    const years       = Object.keys(subByYear).sort();
+    const wTotal      = Object.values(m.welfareByYear||{}).reduce((a,b)=>a+b,0);
+    const glaTotal    = Object.values(m.glaByYear||{}).reduce((a,b)=>a+b,0);
+    const utTotal     = Object.values(m.unitTrustByYear||{}).reduce((a,b)=>a+b,0);
+    const grandTotal  = years.reduce((a,yr) => a+(subByYear[yr]||0), 0);
+    const currentYear = new Date().getFullYear();
+    const currentMonth= new Date().getMonth();
 
+    // ── Month tracker for current year ───────────────────────
+    const yearTotal    = subByYear[String(currentYear)] || 0;
+    const moLabels     = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+    let trackerDots    = '';
+    for (let mo = 0; mo < 12; mo++) {
+      const expectedByEOM = monthlyRate * (mo + 1);
+      const expectedByBOM = monthlyRate * mo;
+      let cls, lbl;
+      if (mo > currentMonth)              { cls='mo-future';  lbl=moLabels[mo]; }
+      else if (yearTotal >= expectedByEOM){ cls='mo-paid';    lbl='✓'; }
+      else if (yearTotal > expectedByBOM) { cls='mo-partial'; lbl='~'; }
+      else                                { cls='mo-due';     lbl='!'; }
+      trackerDots += `<div class="mo ${cls}" title="${MONTHS[mo]} ${currentYear}">${lbl}</div>`;
+    }
+    const paidMonths   = Math.min(Math.floor(yearTotal / monthlyRate), currentMonth+1);
+    const dueSoFar     = Array.from({length: currentMonth+1}, (_,mo) => {
+      const eom = monthlyRate*(mo+1);
+      const bom = monthlyRate*mo;
+      return yearTotal >= eom ? 'paid' : yearTotal > bom ? 'partial' : 'due';
+    }).filter(s=>s==='due').length;
+    const barColor = dueSoFar===0 ? '#166534' : dueSoFar<=2 ? '#d97706' : '#991b1b';
+    const pct = Math.min(Math.round(yearTotal/(monthlyRate*12)*100), 100);
+    const statusText = dueSoFar===0 ? 'Up to date' : dueSoFar<=2 ? 'Partial' : 'Behind';
+
+    // ── Status chips ─────────────────────────────────────────
     const statusColors = { active:'#166534', diaspora:'#1e40af', partial:'#854d0e', inactive:'#64748b', exited:'#991b1b', deceased:'#64748b' };
-    const chips = [`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusColors[m.status]||'#888'};color:#fff">${(m.status||'').toUpperCase()}</span>`];
-    if (m.contributionsUpToDate) chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#166534;color:#fff">✓ UP TO DATE</span>`);
-    else chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#854d0e;color:#fff">⚠ NOT CURRENT</span>`);
+    const chips = [
+      `<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${statusColors[m.status]||'#888'};color:#fff">${(m.status||'—').toUpperCase()}</span>`
+    ];
+    if (m.contributionsUpToDate)
+      chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#166534;color:#fff">✓ UP TO DATE</span>`);
+    else
+      chips.push(`<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:#854d0e;color:#fff">⚠ NOT CURRENT</span>`);
 
-    let histRows = years.map(yr => {
+    // ── Subscription history rows ────────────────────────────
+    const histRows = years.length ? years.map(yr => {
       const paid = subByYear[yr]||0;
       return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px${paid===0?';color:var(--muted)':''}">
         <span>${yr}</span><span style="font-weight:500">${fmtFull(paid)}</span>
       </div>`;
-    }).join('');
+    }).join('') : '<div style="color:var(--muted);font-size:12px;padding:8px 0">No history on record</div>';
 
-    let loanRows = loans.length ? loans.map(l => {
-      const statusColor = l.status==='active'?'#166534':l.status==='overdue'?'#991b1b':'#64748b';
-      const dateStr = l.createdAt?.toDate ? l.createdAt.toDate().toLocaleDateString('en-GB') : '—';
+    // ── Loan history rows (all statuses) ─────────────────────
+    const loanStatusColors = { active:'#166534', overdue:'#991b1b', closed:'#475569', pending:'#92400e', rejected:'#991b1b' };
+    const loanRows = loans.length ? loans.map(l => {
+      const ts = l.requestedAt || l.createdAt || l.approvedAt;
+      const dateStr = ts?.toDate ? ts.toDate().toLocaleDateString('en-GB') : '—';
+      const sc = loanStatusColors[l.status] || '#64748b';
+      const paidAmt = l.totalRepaid || 0;
+      const outstanding = Math.max(0,(l.totalRepayable||0) - paidAmt);
       return `<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:6px">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div style="font-weight:600;font-size:13px">UGX ${(l.amount||0).toLocaleString()} · ${l.duration||60}d</div>
-          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${statusColor};color:#fff">${l.status}</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div style="font-weight:700;font-size:13px">UGX ${(l.amount||0).toLocaleString()} · ${l.duration||60}d</div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${sc};color:#fff">${l.status}</span>
         </div>
-        <div style="font-size:11px;color:var(--muted);margin-top:3px">Issued: ${dateStr} · Total repayable: UGX ${(l.totalRepayable||0).toLocaleString()}</div>
+        <div style="font-size:11px;color:var(--muted)">Requested: ${dateStr}</div>
+        <div style="font-size:11px;color:var(--muted)">Repayable: UGX ${(l.totalRepayable||0).toLocaleString()}${paidAmt>0?' · Paid: UGX '+paidAmt.toLocaleString():''}</div>
+        ${outstanding > 0 && l.status !== 'closed' && l.status !== 'rejected' && l.status !== 'pending' ?
+          `<div style="font-size:11px;color:#e67e22;font-weight:600">Outstanding: UGX ${outstanding.toLocaleString()}</div>` : ''}
+        ${l.purpose ? `<div style="font-size:10px;color:var(--muted);margin-top:3px;font-style:italic">Purpose: ${l.purpose}</div>` : ''}
+        ${l.rejectionReason ? `<div style="font-size:10px;color:#991b1b;margin-top:3px">Reason: ${l.rejectionReason}</div>` : ''}
+        ${STATE.isAdmin && ['active','overdue'].includes(l.status) ? `
+          <div style="margin-top:8px;display:flex;gap:6px">
+            ${(l.schedule||[]).map((inst,i) => !inst.paid ?
+              `<button onclick="closeMemberDetail();setTimeout(()=>adminRecordRepayment('${l.id}',${i}),200)"
+                style="flex:1;padding:6px;background:var(--ink);color:var(--gold);border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer">
+                Record Inst.${inst.installment} (UGX ${inst.amount.toLocaleString()})
+              </button>` : '').filter(Boolean).join('')}
+          </div>` : ''}
       </div>`;
-    }).join('') : '<div style="font-size:12px;color:var(--muted)">No loan history</div>';
+    }).join('') : '<div style="font-size:12px;color:var(--muted);padding:8px 0">No loan history</div>';
+
+    // ── Admin-only eligibility toggle ────────────────────────
+    const adminControls = STATE.isAdmin ? `
+      <div style="background:#f8f4ec;border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Admin Controls</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="toggleMemberEligibility('${memberId}', ${!!m.contributionsUpToDate})"
+            style="flex:1;min-width:120px;padding:8px;border-radius:7px;border:none;font-size:11px;font-weight:600;cursor:pointer;
+            background:${m.contributionsUpToDate?'#fef2f2':'#f0fdf4'};color:${m.contributionsUpToDate?'#991b1b':'#166534'}">
+            ${m.contributionsUpToDate ? '⚠ Mark NOT Current' : '✓ Mark Up To Date'}
+          </button>
+          <button onclick="toggleMemberActive('${memberId}', ${!!m.isActive})"
+            style="flex:1;min-width:120px;padding:8px;border-radius:7px;border:none;font-size:11px;font-weight:600;cursor:pointer;
+            background:${m.isActive?'#fef2f2':'#f0fdf4'};color:${m.isActive?'#991b1b':'#166534'}">
+            ${m.isActive ? '⚠ Mark Inactive' : '✓ Mark Active'}
+          </button>
+        </div>
+      </div>` : '';
 
     body.innerHTML = `
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">${chips.join('')}</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${chips.join('')}</div>
 
+      ${adminControls}
+
+      <!-- Stats grid -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
         <div style="background:#f8f4ec;border-radius:8px;padding:10px">
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total Subs (to 2025)</div>
           <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmt(sc2025)}</div>
         </div>
         <div style="background:#f0f9ff;border-radius:8px;padding:10px">
-          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Loan Eligibility</div>
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Loan Eligibility (25%)</div>
           <div style="font-size:15px;font-weight:700;color:var(--gold);margin-top:3px">${fmt(loanElig)}</div>
         </div>
         <div style="background:#f0fdf4;border-radius:8px;padding:10px">
@@ -886,11 +1167,25 @@ window.openMemberDetail = async function(memberId) {
         </div>
         <div style="background:#fafaf8;border-radius:8px;padding:10px">
           <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Monthly Rate</div>
-          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmt(m.monthlySubscription||m.monthlyRate||0)}</div>
+          <div style="font-size:15px;font-weight:700;color:var(--ink);margin-top:3px">${fmtFull(monthlyRate)}</div>
         </div>
       </div>
 
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Subscription History</div>
+      <!-- Current year tracker -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">${currentYear} Contributions</div>
+      <div style="background:#f8f8f6;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px">
+          <span>UGX ${yearTotal.toLocaleString()} paid · ~${paidMonths} months</span>
+          <span style="font-weight:700;color:${barColor}">${statusText}</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:4px;margin-bottom:8px;overflow:hidden">
+          <div style="height:100%;border-radius:3px;background:${barColor};width:${pct}%"></div>
+        </div>
+        <div class="months-grid">${trackerDots}</div>
+      </div>
+
+      <!-- Subscription history all years -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Subscription History (All Years)</div>
       <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 10px;margin-bottom:14px">
         ${histRows}
         <div style="display:flex;justify-content:space-between;padding:7px 0;font-size:13px;font-weight:700;color:var(--gold)">
@@ -906,16 +1201,40 @@ window.openMemberDetail = async function(memberId) {
         ${utTotal>0?`<div style="background:#f0fff4;border-radius:8px;padding:8px;text-align:center"><div style="font-size:9px;color:var(--muted)">Unit Trust</div><div style="font-size:12px;font-weight:700">${fmt(utTotal)}</div></div>`:''}
       </div>` : ''}
 
-      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Loan History</div>
+      <!-- Full loan history (all statuses) -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">
+        Loan History (${loans.length} record${loans.length!==1?'s':''})
+      </div>
       ${loanRows}
 
       ${m.notes ? `<div style="font-size:11px;color:var(--muted);background:var(--border);border-radius:8px;padding:8px;margin-top:10px">${m.notes}</div>` : ''}
     `;
   } catch(e) {
-    document.getElementById('md-name').textContent = 'Error';
-    body.innerHTML = '<div class="empty">'+e.message+'</div>';
+    document.getElementById('md-name').textContent = 'Error loading member';
+    body.innerHTML = `<div class="empty" style="color:#991b1b">${e.message}<br><br><span style="font-size:11px;color:var(--muted)">Check the error overlay for details</span></div>`;
     log('MemberDetail: '+e.message);
   }
+};
+
+// ── ADMIN: TOGGLE MEMBER ELIGIBILITY FLAGS ────────────────────
+window.toggleMemberEligibility = async function(memberId, currentVal) {
+  if (!STATE.isAdmin) return;
+  const newVal = !currentVal;
+  try {
+    await setDoc(doc(db,'members',memberId), { contributionsUpToDate: newVal }, { merge:true });
+    toast(newVal ? '✓ Member marked up to date' : '⚠ Member marked not current', newVal?'success':'');
+    openMemberDetail(memberId); // reload modal
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
+
+window.toggleMemberActive = async function(memberId, currentVal) {
+  if (!STATE.isAdmin) return;
+  const newVal = !currentVal;
+  try {
+    await setDoc(doc(db,'members',memberId), { isActive: newVal }, { merge:true });
+    toast(newVal ? '✓ Member marked active' : '⚠ Member marked inactive', newVal?'success':'');
+    openMemberDetail(memberId);
+  } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
 window.closeMemberDetail = function() {
@@ -947,13 +1266,14 @@ window.suVerify = async function() {
   const nameInput = document.getElementById('su-name').value.trim();
   const msg = document.getElementById('su-msg1');
   const btn = document.getElementById('su-verify-btn');
-  if (!nameInput || nameInput.length < 3) { msg.style.color='#ef4444'; msg.textContent='Enter your full name.'; return; }
+  if (!nameInput || nameInput.length < 2) { msg.style.color='#ef4444'; msg.textContent='Enter at least your first name.'; return; }
 
   btn.textContent = 'Checking…'; btn.disabled = true; msg.textContent = '';
   try {
     const snap = await getDocs(collection(db,'members'));
     const norm = s => (s||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
     const inp  = norm(nameInput);
+    const inpParts = inp.split(' ').filter(Boolean);
     let match  = null;
 
     snap.forEach(d => {
@@ -963,15 +1283,25 @@ window.suVerify = async function() {
         m.secondary?.name
       ].filter(Boolean).map(norm);
 
-      if (candidates.some(c => c === inp || c.includes(inp) || inp.includes(c.split(' ')[0]))) {
-        match = { id: d.id, ...m };
-      }
+      const isMatch = candidates.some(c => {
+        const cParts = c.split(' ').filter(Boolean);
+        // Exact full match
+        if (c === inp) return true;
+        // Input is contained in candidate name
+        if (c.includes(inp)) return true;
+        // Any word in input matches any word in candidate (single name support)
+        return inpParts.some(p => p.length >= 2 && cParts.some(cp => cp === p || cp.startsWith(p)));
+      });
+
+      if (isMatch) match = { id: d.id, ...m };
     });
 
     if (!match) {
-      msg.style.color='#ef4444'; msg.textContent='❌ Name not found. Check spelling or contact admin.';
+      msg.style.color='#ef4444';
+      msg.textContent='❌ Name not found in our records. Try your full name or contact admin.';
     } else if (match.email) {
-      msg.style.color='#ef4444'; msg.textContent='❌ This member already has an account. Use Forgot Password.';
+      msg.style.color='#f59e0b';
+      msg.textContent='⚠️ This member already has an account. Please use "Forgot Password" on the sign-in page instead.';
     } else if (['exited','deceased'].includes(match.status)) {
       msg.style.color='#ef4444'; msg.textContent='❌ This account is no longer active.';
     } else {
@@ -983,7 +1313,11 @@ window.suVerify = async function() {
         '<span style="font-size:10px;color:rgba(255,255,255,.5)">'+(match.status||'active')+' · '+(match.memberType||match.tier||'member')+' member</span>';
       setTimeout(() => document.getElementById('su-email').focus(), 100);
     }
-  } catch(e) { msg.style.color='#ef4444'; msg.textContent='Error: '+e.message; }
+  } catch(e) {
+    msg.style.color='#ef4444';
+    msg.textContent='Error verifying name — please try again or contact admin.';
+    console.error('suVerify error:', e.code, e.message);
+  }
   btn.textContent = 'Verify Name'; btn.disabled = false;
 };
 
@@ -994,6 +1328,11 @@ window.suCreate = async function() {
   const btn   = document.getElementById('su-create-btn');
   if (!email || !pass) { msg.style.color='#ef4444'; msg.textContent='Fill in email and password.'; return; }
   if (pass.length < 6)  { msg.style.color='#ef4444'; msg.textContent='Password must be at least 6 characters.'; return; }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) {
+    msg.style.color='#ef4444';
+    msg.textContent='Password must include at least one special character (e.g. @, #, !, $, %).';
+    return;
+  }
   if (!suVerifiedId)    { msg.style.color='#ef4444'; msg.textContent='Name verification required. Start over.'; return; }
 
   btn.textContent = 'Creating…'; btn.disabled = true; msg.textContent = '';
