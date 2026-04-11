@@ -148,61 +148,48 @@ onAuthStateChanged(auth, async user => {
   }
 
   try {
-    let memberId = null;
-    let isAdmin  = false;
+    let isAdmin = false;
 
-    // Step 1: Check approvedEmails (most authoritative source)
+    // ── STEP 1: approvedEmails is the authoritative source ───────
+    // Screenshot confirms: pedsoule@gmail.com → memberId:"nuwahereza-edson", role:"admin"
+    // This is CORRECT. We use memberId from here to load the right member doc.
     const approvedSnap = await getDoc(doc(db, 'approvedEmails', user.email));
     if (approvedSnap.exists()) {
-      const data = approvedSnap.data();
-      memberId = data.memberId;
-      isAdmin  = data.role === 'admin';
+      isAdmin = approvedSnap.data().role === 'admin';
+      const memberId = approvedSnap.data().memberId;
+      if (memberId) {
+        const mSnap = await getDoc(doc(db, 'members', memberId));
+        if (mSnap.exists()) {
+          STATE.member = { id: mSnap.id, ...mSnap.data() };
+        }
+      }
     }
 
-    // Step 2: Admin email override
+    // Hard-coded admin override
     if (['pedsoule@gmail.com'].includes(user.email)) isAdmin = true;
 
-    // Step 3: Only use email query to find memberId if approvedEmails didn't give us one
-    if (!memberId) {
-      const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
-      if (!membersByEmail.empty) {
-        memberId = membersByEmail.docs[0].id;
+    // ── STEP 2: Fallback — search by uid (handles new signups) ───
+    if (!STATE.member && user.uid) {
+      const byUid = await getDocs(query(collection(db,'members'), where('uid','==', user.uid)));
+      if (!byUid.empty) {
+        STATE.member = { id: byUid.docs[0].id, ...byUid.docs[0].data() };
       }
     }
 
-    // Step 4: Load member doc by ID (never let a stale email in another member's doc win)
-    if (memberId) {
-      const mSnap = await getDoc(doc(db, 'members', memberId));
-      if (mSnap.exists()) STATE.member = { id: mSnap.id, ...mSnap.data() };
-    }
-
-    // ── CRITICAL: Verify the loaded member's email matches the logged-in user ──
-    // If approvedEmails pointed to a wrong memberId (stale data), the loaded
-    // member doc email won't match. Detect and correct this now.
-    if (STATE.member && STATE.member.email &&
-        STATE.member.email.toLowerCase() !== user.email.toLowerCase()) {
-      log(`Auth mismatch: memberId ${STATE.member.id} has email ${STATE.member.email} but user is ${user.email}. Searching for correct member.`);
-      STATE.member = null; // discard the wrong one
-      // Search directly by the logged-in user's email
-      const correctSnap = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
-      if (!correctSnap.empty) {
-        const mDoc = correctSnap.docs[0];
-        STATE.member = { id: mDoc.id, ...mDoc.data() };
-        log(`Corrected: loaded ${mDoc.data().name} (${mDoc.id})`);
-      }
-    }
-
-    // Step 5: Last resort — search by email directly in members
+    // ── STEP 3: Last resort — email query ─────────────────────────
+    // NOTE: This will incorrectly find Kigonya if his doc still has
+    // pedsoule@gmail.com stored. Fix by going to Firestore console →
+    // members → mr-and-mrs-antonio-kigonya (or similar) → delete the
+    // email field or set it to his correct email.
     if (!STATE.member) {
-      const membersByEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
-      if (!membersByEmail.empty) {
-        const mDoc = membersByEmail.docs[0];
-        STATE.member = { id: mDoc.id, ...mDoc.data() };
+      const byEmail = await getDocs(query(collection(db,'members'), where('email','==', user.email)));
+      if (!byEmail.empty) {
+        STATE.member = { id: byEmail.docs[0].id, ...byEmail.docs[0].data() };
       }
     }
 
-    if (!STATE.member && !approvedSnap.exists()) {
-      toast('Access denied — not registered.', 'error');
+    if (!STATE.member) {
+      toast('Access denied — your email is not linked to any member record. Contact admin.', 'error');
       await signOut(auth);
       loading.style.display = 'none';
       loginEl.classList.add('visible');
@@ -1296,10 +1283,12 @@ window.suVerify = async function() {
       if (isMatch) match = { id: d.id, ...m };
     });
 
+    const isPlaceholder = e => !e || e.endsWith('@letsgrowinvestmentclub.com') || e.endsWith('@letsgrow.com') || e.includes('placeholder');
+
     if (!match) {
       msg.style.color='#ef4444';
       msg.textContent='❌ Name not found in our records. Try your full name or contact admin.';
-    } else if (match.email) {
+    } else if (match.email && !isPlaceholder(match.email)) {
       msg.style.color='#f59e0b';
       msg.textContent='⚠️ This member already has an account. Please use "Forgot Password" on the sign-in page instead.';
     } else if (['exited','deceased'].includes(match.status)) {
@@ -1338,7 +1327,13 @@ window.suCreate = async function() {
   btn.textContent = 'Creating…'; btn.disabled = true; msg.textContent = '';
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    // Write real email + uid — overwrites any @letsgrow.com placeholder
     await setDoc(doc(db,'members',suVerifiedId), { email, uid: cred.user.uid }, { merge: true });
+    // Write correct approvedEmails entry so auth always finds this member
+    await setDoc(doc(db,'approvedEmails',email), {
+      email, role: 'member', memberId: suVerifiedId,
+      addedAt: serverTimestamp(),
+    });
     msg.style.color='#4ade80'; msg.textContent='✅ Account created! Signing you in…';
     setTimeout(() => closeSignup(), 1500);
   } catch(e) {
