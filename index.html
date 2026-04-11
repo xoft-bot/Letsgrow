@@ -43,7 +43,13 @@
       </div>
       <div class="inp-wrap">
         <label>Password</label>
-        <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+        <div style="position:relative">
+          <input type="password" id="login-pass" placeholder="••••••••" autocomplete="current-password" style="padding-right:42px">
+          <button type="button" onclick="togglePwd('login-pass',this)" title="Show/hide password"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ffffff50;padding:0;line-height:0">
+            <svg id="login-pass-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <button class="btn-login" onclick="doEmailLogin()">Sign In</button>
       <button class="btn-forgot" onclick="showForgot()">Forgot password?</button>
@@ -237,6 +243,14 @@
       </div>
     </div>
 
+    <!-- ── LOANS (dedicated tab) ── -->
+    <div class="section" id="sec-loans">
+      <div class="sec-hdr">Loans</div>
+      <div id="loans-section-content">
+        <div class="empty"><div class="spinner" style="margin:0 auto"></div></div>
+      </div>
+    </div>
+
     <!-- ── ADMIN ── -->
     <div class="section" id="sec-admin">
       <div class="sec-hdr">Admin Panel</div>
@@ -426,6 +440,12 @@
           </div>
           <div id="la-loans-list"><div class="empty" style="padding:20px">No active loans</div></div>
         </div>
+
+        <!-- Closed / Rejected Loan History -->
+        <div class="card">
+          <div class="card-title" style="margin-bottom:10px">Closed & Rejected History</div>
+          <div id="la-history-list"><div style="color:var(--muted);font-size:12px">Loading…</div></div>
+        </div>
       </div><!-- /admin-tab-loans -->
 
       <!-- COMMITTEES TAB -->
@@ -449,6 +469,10 @@
     <button class="nav-btn" id="nav-members" onclick="showSection('members',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="19" cy="7" r="2"/><path d="M23 21v-1a3 3 0 0 0-2-2.83"/></svg>
       Members
+    </button>
+    <button class="nav-btn" id="nav-loans" onclick="showSection('loans',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+      Loans
     </button>
     <button class="nav-btn" id="nav-investments" onclick="showSection('investments',this)">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
@@ -509,8 +533,14 @@
         <input id="su-email" type="email" placeholder="your@email.com">
       </div>
       <div class="inp-wrap">
-        <label>Password (min 6 chars)</label>
-        <input id="su-pass" type="password" placeholder="••••••••" onkeydown="if(event.key==='Enter')suCreate()">
+        <label>Password (min 6 chars + one special character)</label>
+        <div style="position:relative">
+          <input id="su-pass" type="password" placeholder="e.g. MyPass@2026" onkeydown="if(event.key==='Enter')suCreate()" style="padding-right:42px">
+          <button type="button" onclick="togglePwd('su-pass',this)" title="Show/hide password"
+            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ffffff50;padding:0;line-height:0">
+            <svg id="su-pass-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
       </div>
       <button class="btn-login" id="su-create-btn" onclick="suCreate()">Create Account</button>
       <div id="su-msg2" style="font-size:12px;margin-top:10px;min-height:16px;text-align:center"></div>

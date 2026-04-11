@@ -37,15 +37,24 @@ const DAY = 86400000;
 let laAllLoans = [];
 let laFilter_current = 'all';
 
-// ── MEMBER: LOAD LOAN STATUS ──────────────────────────────────
-// Called from app.js via window.loadLoanStatus?.()
-// Renders the loan card in My Account section.
+// ── MEMBER: LOAD LOAN STATUS (into any element by ID) ─────────
+// Used in both My Account card and the dedicated Loans tab
+window.loadLoanStatusInto = async function(targetId) {
+  const wrap = document.getElementById(targetId);
+  const member = STATE()?.member;
+  if (!wrap || !member) return;
+  await _renderLoanStatus(wrap, member);
+};
+
 window.loadLoanStatus = async function() {
   const wrap = document.getElementById('loan-status-wrap');
   const member = STATE()?.member;
   if (!wrap || !member) return;
-  const memberId = member.id;
+  await _renderLoanStatus(wrap, member);
+};
 
+async function _renderLoanStatus(wrap, member) {
+  const memberId = member.id;
   try {
     const [activeSnap, pendingSnap, profileSnap] = await Promise.all([
       getDocs(query(collection(db(),'loans'), where('memberId','==',memberId), where('status','in',['active','overdue']))),
@@ -54,12 +63,19 @@ window.loadLoanStatus = async function() {
     ]);
 
     const profile  = profileSnap.exists() ? profileSnap.data() : {};
-    const sc2025   = member.totalSubscriptionUpTo2025 || 0;
+    // Eligibility = 25% of subscriptions to 2025 ONLY (no GLA, welfare, UT)
+    const sc2025   = member.totalSubscriptionUpTo2025 || member.totalSubscriptions2025 || 0;
     const eligible = member.loanEligibility || Math.round(sc2025 * 0.25);
     const cycle    = profile.currentCycle || 1;
     const cycleMult= cycle<=1?0.60:cycle<=2?0.80:1.00;
     const maxLoan  = Math.floor(eligible * cycleMult);
     const cycleColors = {1:'#1e40af',2:'#6d28d9',3:'#166534'};
+
+    // ── Cool-off period check (48-72hrs after loan closed) ──────
+    const lastClosed = profile.lastClosedAt;
+    const COOLOFF_MS = 48 * 60 * 60 * 1000; // 48 hours minimum
+    const inCoolOff  = lastClosed && (Date.now() - lastClosed) < COOLOFF_MS;
+    const coolOffHrsLeft = inCoolOff ? Math.ceil((COOLOFF_MS - (Date.now() - lastClosed)) / 3600000) : 0;
 
     // ── Has active loan ──────────────────────────────────────
     if (!activeSnap.empty) {
@@ -115,15 +131,40 @@ window.loadLoanStatus = async function() {
     }
 
     // ── Eligible — show request form ─────────────────────────
-    if (member.isActive && member.contributionsUpToDate && maxLoan > 0) {
-      wrap.innerHTML = `
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-          <div style="font-size:12px;color:var(--muted)">Max loan</div>
-          <div style="font-weight:700;color:var(--gold);font-size:14px">${fmtFull(maxLoan)}</div>
+    // Eligibility: use explicit flags if set, otherwise fall back to member.status
+    const memberIsActive  = member.isActive === true  || ['active','diaspora'].includes(member.status);
+    const memberIsCurrent = member.contributionsUpToDate === true || member.status === 'active';
+
+    // ── Eligibility summary card (always shown) ──────────────
+    const eligCard = `
+      <div style="background:#f8f4ec;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">Your Loan Eligibility</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div style="font-size:9px;color:var(--muted)">Subscriptions to 2025</div><div style="font-weight:700">${fmtFull(sc2025)}</div></div>
+          <div><div style="font-size:9px;color:var(--muted)">Base Limit (25%)</div><div style="font-weight:700;color:var(--gold)">${fmtFull(eligible)}</div></div>
+          <div><div style="font-size:9px;color:var(--muted)">Credit Cycle</div><div style="font-weight:700;color:${cycleColors[cycle]||'#888'}">Cycle ${cycle} · ${Math.round(cycleMult*100)}%</div></div>
+          <div><div style="font-size:9px;color:var(--muted)">Max Loan</div><div style="font-weight:700;color:var(--ink)">${fmtFull(maxLoan)}</div></div>
         </div>
+        <div style="font-size:10px;color:var(--muted);margin-top:6px">Eligibility is 25% of subscription payments only — GLA, welfare and unit trust fees are excluded.</div>
+      </div>`;
+
+    // Cool-off active — show countdown
+    if (inCoolOff) {
+      wrap.innerHTML = eligCard + `
+        <div style="background:#fff7ed;border:1px solid #f59e0b;border-radius:10px;padding:14px;text-align:center">
+          <div style="font-size:20px;margin-bottom:6px">⏳</div>
+          <div style="font-size:13px;font-weight:700;color:#92400e">Cool-off Period</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Your last loan was recently settled. You can apply again in approximately <strong>${coolOffHrsLeft} hour${coolOffHrsLeft!==1?'s':''}</strong>.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">This 48–72hr window allows the Treasurer to process and confirm the settlement before new lending.</div>
+        </div>`;
+      return;
+    }
+
+    if (memberIsActive && memberIsCurrent && maxLoan > 0) {
+      wrap.innerHTML = eligCard + `
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:12px">
-          <span>Credit cycle: <span style="color:${cycleColors[cycle]||'#888'};font-weight:700">Cycle ${cycle} (${Math.round(cycleMult*100)}%)</span></span>
-          <span>Rate: 5%</span>
+          <span>Rate: <strong>5% per instalment period</strong></span>
+          <span>Interest not compounded</span>
         </div>
         <div style="margin-bottom:8px">
           <label style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--muted);display:block;margin-bottom:5px">Amount (UGX)</label>
@@ -149,10 +190,10 @@ window.loadLoanStatus = async function() {
     } else {
       // Not eligible
       let reason = '';
-      if (!member.isActive) reason = 'Your account is not currently active.';
-      else if (!member.contributionsUpToDate) reason = 'You must be fully up to date on contributions to apply.';
-      else if (maxLoan <= 0) reason = 'No eligible savings on record yet.';
-      wrap.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:12px;padding:8px 0">
+      if (!memberIsActive)  reason = 'Your account is not currently active.';
+      else if (!memberIsCurrent) reason = 'Contributions must be up to date to apply. Contact admin to update your status.';
+      else if (maxLoan <= 0) reason = 'No eligible subscription savings on record yet.';
+      wrap.innerHTML = eligCard + `<div style="text-align:center;color:var(--muted);font-size:12px;padding:8px 0">
         <div style="font-size:18px;margin-bottom:6px">🔒</div>
         <div>Not currently eligible</div>
         <div style="font-size:11px;margin-top:4px;color:#991b1b">${reason}</div>
@@ -242,6 +283,12 @@ window.memberPayLoan = async function(loanId, instIdx) {
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
+// ── SAFE ELEMENT SETTER (works whether element exists or not) ──
+function setEl(id, val, prop='textContent') {
+  const el = document.getElementById(id);
+  if (el) el[prop] = val;
+}
+
 // ── ADMIN: LOAD LOANS DASHBOARD ───────────────────────────────
 window.loadLoansAdmin = async function() {
   try {
@@ -249,6 +296,7 @@ window.loadLoansAdmin = async function() {
       getDoc(doc(db(),'club','bankBalance')),
       getDocs(query(collection(db(),'loans'), where('status','in',['active','overdue']))),
       getDocs(query(collection(db(),'members'), where('isActive','==',true)))
+        .catch(() => ({ docs:[], forEach:()=>{} }))
     ]);
     const bank = bankSnap.exists() ? bankSnap.data() : {};
     const now = Date.now();
@@ -274,52 +322,109 @@ window.loadLoansAdmin = async function() {
     const par  = totalOut > 0 ? (totalOver / totalOut) * 100 : 0;
     const util = totalPool > 0 ? (totalOut / totalPool) * 100 : 0;
 
-    document.getElementById('la-pool').textContent      = fmt(avail);
-    document.getElementById('la-out').textContent       = fmt(totalOut);
-    document.getElementById('la-outcount').textContent  = laAllLoans.length + ' active';
-    document.getElementById('la-over').textContent      = fmt(totalOver);
-    document.getElementById('la-overcount').textContent = overCount + ' overdue';
-    document.getElementById('la-total').textContent     = fmt(totalPool);
-    document.getElementById('la-par-pct').textContent   = par.toFixed(2) + '%';
-    document.getElementById('la-util').textContent      = util.toFixed(1) + '%';
-    document.getElementById('la-bank').textContent      = fmt(bank.total||0);
+    // Write stats — safe for both Admin tab and dedicated Loans section
+    setEl('la-pool',      fmt(avail));
+    setEl('la-out',       fmt(totalOut));
+    setEl('la-outcount',  laAllLoans.length + ' active');
+    setEl('la-over',      fmt(totalOver));
+    setEl('la-overcount', overCount + ' overdue');
+    setEl('la-total',     fmt(totalPool));
+    setEl('la-par-pct',   par.toFixed(2) + '%');
+    setEl('la-util',      util.toFixed(1) + '%');
+    setEl('la-bank',      fmt(bank.total||0));
 
     const bar   = document.getElementById('la-par-bar');
     const badge = document.getElementById('la-par-badge');
     const card  = document.getElementById('la-par-card');
-    bar.style.width = Math.min(par,25)/25*100+'%';
-    if (par > 15) {
-      bar.style.background='#ef4444'; badge.textContent='RESTRICT'; badge.style.background='#ef4444';
-      card.style.borderLeftColor='#ef4444';
-      document.getElementById('la-restrict').style.display='block';
-    } else if (par > 10) {
-      bar.style.background='#f59e0b'; badge.textContent='CAUTION'; badge.style.background='#f59e0b';
-      card.style.borderLeftColor='#f59e0b';
-    } else {
-      bar.style.background='#22c55e'; badge.textContent='HEALTHY'; badge.style.background='#22c55e';
-      card.style.borderLeftColor='#22c55e';
+    if (bar && badge && card) {
+      bar.style.width = Math.min(par,25)/25*100+'%';
+      if (par > 15) {
+        bar.style.background='#ef4444'; badge.textContent='RESTRICT'; badge.style.background='#ef4444';
+        card.style.borderLeftColor='#ef4444';
+        setEl('la-restrict', '', 'style');
+        const ri = document.getElementById('la-restrict'); if (ri) ri.style.display='block';
+      } else if (par > 10) {
+        bar.style.background='#f59e0b'; badge.textContent='CAUTION'; badge.style.background='#f59e0b';
+        card.style.borderLeftColor='#f59e0b';
+      } else {
+        bar.style.background='#22c55e'; badge.textContent='HEALTHY'; badge.style.background='#22c55e';
+        card.style.borderLeftColor='#22c55e';
+      }
     }
 
-    // Populate member dropdown in Issue Loan form
-    const sel = document.getElementById('la-member');
-    sel.innerHTML = '<option value="">Select member…</option>';
-    const mArr = [];
-    membersSnap.forEach(d => mArr.push({ id: d.id, ...d.data() }));
-    mArr.sort((a,b) => (a.name||'').localeCompare(b.name||''));
-    mArr.forEach(m => {
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = (m.name||m.displayName||m.id) + (m.status==='diaspora'?' (diaspora)':'');
-      sel.appendChild(opt);
-    });
+    // If we're in the dedicated Loans section, also write a summary card there
+    const loanTabActive = document.getElementById('loan-tab-active');
+    if (loanTabActive) {
+      loanTabActive.innerHTML = `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div class="stat-card bt-green"><label>Pool Available</label><div class="sv" style="font-size:18px">${fmt(avail)}</div><div class="ss">Ready to lend</div></div>
+          <div class="stat-card bt-gold"><label>Outstanding</label><div class="sv" style="font-size:18px">${fmt(totalOut)}</div><div class="ss">${laAllLoans.length} active loans</div></div>
+          <div class="stat-card" style="border-top:3px solid #ef4444"><label>Overdue</label><div class="sv" style="font-size:18px;color:#ef4444">${fmt(totalOver)}</div><div class="ss">${overCount} loans overdue</div></div>
+          <div class="stat-card bt-blue"><label>PAR</label><div class="sv" style="font-size:18px;color:${par>15?'#ef4444':par>10?'#f59e0b':'#22c55e'}">${par.toFixed(1)}%</div><div class="ss">${par>15?'🚨 RESTRICT':par>10?'⚠ CAUTION':'✓ HEALTHY'}</div></div>
+        </div>
+        ${par>15?`<div style="background:#fef2f2;border:1px solid #ef4444;border-radius:8px;padding:10px;margin-bottom:12px;font-size:12px;color:#991b1b;font-weight:600">🚨 PAR above 15% — lending restricted until overdue loans are resolved.</div>`:''}
+        <div class="card" style="margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:10px">Active Loans</div>
+          <div id="loan-tab-active-list"><div class="empty" style="padding:14px">No active loans</div></div>
+        </div>`;
+      laRenderLoansInto('loan-tab-active-list');
+    }
 
-    laRenderLoans();
+    // Populate member dropdown in Admin tab Issue Loan form
+    const sel = document.getElementById('la-member');
+    if (sel) {
+      sel.innerHTML = '<option value="">Select member…</option>';
+      const mArr = [];
+      membersSnap.forEach(d => mArr.push({ id: d.id, ...d.data() }));
+      mArr.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      mArr.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = (m.name||m.displayName||m.id) + (m.status==='diaspora'?' (diaspora)':'');
+        sel.appendChild(opt);
+      });
+    }
+
+    laRenderLoans(); // write to Admin tab la-loans-list if it exists
+
+    // ── Closed & rejected loan history ────────────────────────
+    const histSnap = await getDocs(query(
+      collection(db(),'loans'),
+      where('status','in',['closed','rejected']),
+      limit(30)
+    )).catch(()=>({ docs:[], forEach:()=>{} }));
+
+    const histEl = document.getElementById('la-history-list');
+    if (!histEl) return;
+    const histLoans = [];
+    histSnap.forEach(d => histLoans.push({ id:d.id, ...d.data() }));
+    histLoans.sort((a,b) => {
+      const ta = (a.requestedAt||a.approvedAt)?.toMillis?.() || 0;
+      const tb = (b.requestedAt||b.approvedAt)?.toMillis?.() || 0;
+      return tb - ta;
+    });
+    if (!histLoans.length) { histEl.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No closed or rejected loans</div>'; return; }
+    histEl.innerHTML = histLoans.map(l => {
+      const ts = l.requestedAt || l.approvedAt || l.createdAt;
+      const date = ts?.toDate ? ts.toDate().toLocaleDateString('en-GB') : '—';
+      const sc = l.status==='closed' ? '#166534' : '#991b1b';
+      return `<div style="border-bottom:1px solid var(--border);padding:9px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div style="font-weight:600;font-size:12px">${l.memberName||l.memberId}</div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:10px;background:${sc};color:#fff">${l.status}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:2px">UGX ${(l.amount||0).toLocaleString()} · ${date}${l.purpose?' · '+l.purpose:''}</div>
+        ${l.rejectionReason ? `<div style="font-size:10px;color:#991b1b;margin-top:2px">Rejected: ${l.rejectionReason}</div>` : ''}
+      </div>`;
+    }).join('');
   } catch(e) { log('LoansAdmin: '+e.message); }
 };
 
 // ── ADMIN: RENDER ACTIVE LOANS LIST ──────────────────────────
-function laRenderLoans() {
-  const el    = document.getElementById('la-loans-list');
+// Writes to a given element ID (defaults to Admin tab list)
+function laRenderLoansInto(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
   const loans = laFilter_current === 'overdue' ? laAllLoans.filter(l => l._isOver) : laAllLoans;
   if (!loans.length) {
     el.innerHTML = `<div class="empty" style="padding:20px">No ${laFilter_current} loans</div>`;
@@ -340,7 +445,6 @@ function laRenderLoans() {
         ? `<button onclick="adminRecordRepayment('${l.id}',${i})" style="flex:1;padding:7px;background:var(--ink);color:var(--gold);border:none;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer">Record Inst.${inst.installment}</button>`
         : '')
       .filter(Boolean).join('');
-
     return `<div style="border-bottom:1px solid var(--border);padding:10px 0">
       <div style="display:flex;justify-content:space-between">
         <div style="font-weight:600;font-size:13px">${l.memberName||l.memberId}</div>
@@ -354,6 +458,14 @@ function laRenderLoans() {
       <div style="margin-top:8px;display:flex;gap:6px">${repayBtns}</div>
     </div>`;
   }).join('');
+}
+
+function laRenderLoans() {
+  laRenderLoansInto('la-loans-list');
+  // Also refresh dedicated section if it's showing
+  if (document.getElementById('loan-tab-active-list')) {
+    laRenderLoansInto('loan-tab-active-list');
+  }
 }
 
 // ── ADMIN: FILTER ACTIVE LOANS ────────────────────────────────
@@ -420,18 +532,20 @@ window.laIssueLoan = async function() {
 
 // ── ADMIN: LOAD PENDING LOAN REQUESTS ─────────────────────────
 window.loadPendingLoans = async function() {
-  const el = document.getElementById('la-pending-list');
-  if (!el) return;
+  // Writes to whichever pending list elements exist
+  const targets = ['la-pending-list','loan-tab-pending'].map(id => document.getElementById(id)).filter(Boolean);
+  if (!targets.length) return;
+  targets.forEach(el => el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading…</div>');
   try {
     const snap = await getDocs(query(
       collection(db(),'loans'),
       where('status','==','pending'),
       orderBy('requestedAt','desc')
-    ));
-    if (snap.empty) {
-      el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No pending requests</div>';
-      return;
-    }
+    )).catch(()=>({ docs:[], forEach:()=>{} }));
+
+    const emptyHtml = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No pending requests</div>';
+    if (!snap.docs?.length) { targets.forEach(el => el.innerHTML = emptyHtml); return; }
+
     let html = '';
     snap.forEach(d => {
       const l    = { id: d.id, ...d.data() };
@@ -451,9 +565,9 @@ window.loadPendingLoans = async function() {
         </div>
       </div>`;
     });
-    el.innerHTML = html;
+    targets.forEach(el => el.innerHTML = html);
   } catch(e) {
-    el.innerHTML = '<div style="color:var(--muted);font-size:12px">Error loading requests</div>';
+    targets.forEach(el => el.innerHTML = '<div style="color:var(--muted);font-size:12px">Error loading requests</div>');
     log('PendingLoans: '+e.message);
   }
 };
@@ -577,6 +691,7 @@ window.adminRecordRepayment = async function(loanId, instIdx) {
         await setDoc(doc(db(),'memberLoanProfiles',loan.memberId), {
           ...prof, activeLoanId:null, isEligible:true,
           currentCycle: newCycle,
+          lastClosedAt: Date.now(), // starts 48-72hr cool-off window
           consecutiveOnTimeRepayments: wasOnTime ? (prof.consecutiveOnTimeRepayments||0)+1 : 0,
         });
       }
