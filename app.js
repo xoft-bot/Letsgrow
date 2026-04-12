@@ -15,7 +15,7 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import {
   getFirestore, doc, getDoc, setDoc, collection, getDocs,
-  addDoc, serverTimestamp, query, where, orderBy, limit
+  addDoc, serverTimestamp, query, where, orderBy, limit, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ── FIREBASE INIT ─────────────────────────────────────────────
@@ -84,7 +84,7 @@ window.togglePwd = function(inputId, btn) {
 // loans.js reads window.__lg to access db, STATE, helpers.
 // This is set after Firebase is initialised (right here).
 window.__lg = { db, auth, STATE, fmt, fmtFull, toast, MONTHS, serverTimestamp, log,
-                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit };
+                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit, deleteDoc };
 
 // ── LOGIN UI ──────────────────────────────────────────────────
 window.showForgot = () => {
@@ -251,50 +251,339 @@ window.showSection = function(name, btn) {
 // ── DASHBOARD ─────────────────────────────────────────────────
 async function loadDashboard() {
   try {
-    const [bankSnap, finSnap] = await Promise.all([
+    const [bankSnap, finSnap, membersSnap] = await Promise.all([
       getDoc(doc(db, 'club', 'bankBalance')),
-      getDoc(doc(db, 'settings', 'financials'))
+      getDoc(doc(db, 'settings', 'financials')),
+      getDocs(collection(db, 'members')),
     ]);
 
-    let bal = 0, inflow = 0, invested = 0, roi = 0, ut = 0;
+    let bal=0, inflow=0, invested=0, roi=0, ut=0, loanPool=0;
 
     if (bankSnap.exists()) {
       const b = bankSnap.data();
-      bal      = b.total        || 0;
-      inflow   = b.totalInflow  || 134393100;
-      invested = b.totalInvested|| 75460000;
-      roi      = b.returnOnInvestment || 22850000;
-      ut       = b.unitTrust    || 6990000;
+      bal      = b.total || 0;
+      inflow   = b.totalInflow || 0;
+      invested = b.totalInvested || 0;
+      roi      = b.returnOnInvestment || 0;
+      ut       = b.unitTrust || 0;
+      loanPool = b.loansPool || 0;
+      const updated = b.updatedAt?.toDate ? b.updatedAt.toDate().toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
+      if (updated) document.getElementById('h-balance-date').textContent = `Uganda Shillings · Updated ${updated}`;
       if (document.getElementById('bd-welfare'))  document.getElementById('bd-welfare').textContent  = fmtFull(b.welfare||0);
       if (document.getElementById('bd-gla'))      document.getElementById('bd-gla').textContent      = fmtFull(b.gla||0);
       if (document.getElementById('bd-ut'))       document.getElementById('bd-ut').textContent       = fmtFull(b.unitTrust||0);
       if (document.getElementById('bd-junior'))   document.getElementById('bd-junior').textContent   = fmtFull(b.letsGrowJunior||0);
-      if (document.getElementById('bd-loanpool')) document.getElementById('bd-loanpool').textContent = fmtFull(b.loansPool||0);
+      if (document.getElementById('bd-loanpool')) document.getElementById('bd-loanpool').textContent = fmtFull(loanPool);
     } else if (finSnap.exists()) {
       const d = finSnap.data();
-      bal = d.bankBalance||0; inflow = d.totalInflow||0; invested = d.totalInvested||0;
-      roi = d.confirmedROI||0; ut = d.unitTrustBalance||0;
+      bal=d.bankBalance||0; inflow=d.totalInflow||0; invested=d.totalInvested||0;
+      roi=d.confirmedROI||0; ut=d.unitTrustBalance||0;
     }
 
+    // Hero
     document.getElementById('h-balance').textContent  = fmt(bal);
     document.getElementById('h-inflow').textContent   = fmt(inflow);
     document.getElementById('h-invested').textContent = fmt(invested);
     document.getElementById('h-roi').textContent      = fmt(roi);
     document.getElementById('h-ut').textContent       = fmt(ut);
-    document.getElementById('s-balance').textContent  = fmt(bal);
     document.getElementById('s-invested').textContent = fmt(invested);
+    document.getElementById('s-loanpool').textContent = fmt(loanPool);
+
+    // Active member count + FY2026 progress
+    const currentYear = new Date().getFullYear();
+    let activeCount = 0, upToDateCount = 0, totalSub2026 = 0, totalTarget2026 = 0;
+    membersSnap.forEach(d => {
+      const m = d.data();
+      if (['active','diaspora'].includes(m.status)) {
+        activeCount++;
+        const rate    = m.monthlySubscription || m.monthlyRate || 40000;
+        const paid    = m.subscriptionByYear?.[String(currentYear)] || 0;
+        const target  = rate * 12;
+        totalSub2026 += paid;
+        totalTarget2026 += target;
+        const curMonth = new Date().getMonth();
+        const expectedNow = rate * (curMonth + 1);
+        if (paid >= expectedNow) upToDateCount++;
+      }
+    });
+    document.getElementById('s-active').textContent = activeCount;
+
+    const subPct     = totalTarget2026 > 0 ? Math.round(totalSub2026/totalTarget2026*100) : 0;
+    const memberPct  = activeCount > 0 ? Math.round(upToDateCount/activeCount*100) : 0;
+    const loanUtil   = (loanPool + 1) > 0 ? 0 : 0; // placeholder — real calc in loans tab
+
+    document.getElementById('fy-year-badge').textContent = `Jan–Dec ${currentYear}`;
+    document.getElementById('fy-sub-label').textContent  = `${fmt(totalSub2026)} / ${fmt(totalTarget2026)}`;
+    document.getElementById('fy-sub-bar').style.width    = subPct + '%';
+    document.getElementById('fy-sub-bar').style.background = subPct >= 80 ? '#166534' : subPct >= 50 ? '#d97706' : '#991b1b';
+    document.getElementById('fy-members-label').textContent = `${upToDateCount} of ${activeCount} up to date`;
+    document.getElementById('fy-members-bar').style.width   = memberPct + '%';
 
     if (STATE.isAdmin) {
-      document.getElementById('f-balance').value  = bal      || '';
-      document.getElementById('f-inflow').value   = inflow   || '';
-      document.getElementById('f-invested').value = invested || '';
-      document.getElementById('f-roi').value      = roi      || '';
-      document.getElementById('f-ut').value       = ut       || '';
+      document.getElementById('f-balance')?.setAttribute('value', bal||'');
+      document.getElementById('f-inflow')?.setAttribute('value', inflow||'');
+      document.getElementById('f-invested')?.setAttribute('value', invested||'');
+      document.getElementById('f-roi')?.setAttribute('value', roi||'');
+      document.getElementById('f-ut')?.setAttribute('value', ut||'');
+      document.getElementById('balance-breakdown').style.display = 'block';
+      const addEvtBtn = document.getElementById('add-event-btn');
+      if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
     }
-  } catch(e) { log('Financials: '+e.message); }
+  } catch(e) { log('Dashboard: '+e.message); }
 
-  await loadTracker();
+  // Load finances summary + events in parallel
+  await Promise.all([loadFinancesSummary(), loadEvents()]);
 }
+
+// ── FINANCES: INCOME & EXPENDITURE ───────────────────────────
+let _financesData = null; // cached after first load
+
+async function loadFinancesSummary() {
+  try {
+    const [incomeSnap, expSnap] = await Promise.all([
+      getDocs(collection(db, 'clubIncome')),
+      getDocs(collection(db, 'clubExpenses')),
+    ]);
+
+    const incomeByYear = {};
+    incomeSnap.forEach(d => { incomeByYear[d.id] = d.data(); });
+
+    const expByYear = {};
+    let totalExpenses = 0;
+    expSnap.forEach(d => {
+      const e = d.data();
+      const yr = e.year || (e.date ? new Date(e.date).getFullYear() : 'Unknown');
+      if (!expByYear[yr]) expByYear[yr] = [];
+      expByYear[yr].push({ id: d.id, ...e });
+      totalExpenses += e.amount || 0;
+    });
+
+    const totalIncome = Object.values(incomeByYear).reduce((s, y) => s + (y.total || 0), 0);
+    document.getElementById('fin-total-income').textContent   = fmtFull(totalIncome);
+    document.getElementById('fin-total-expenses').textContent = fmtFull(totalExpenses);
+
+    _financesData = { incomeByYear, expByYear };
+
+    // Build year tabs
+    const years = [...new Set([
+      ...Object.keys(incomeByYear),
+      ...Object.keys(expByYear)
+    ])].filter(y => y !== 'Unknown').sort().reverse();
+
+    const tabsEl = document.getElementById('fin-year-tabs');
+    if (tabsEl && years.length) {
+      tabsEl.innerHTML = years.map((y, i) =>
+        `<button onclick="showFinancesYear('${y}',this)"
+          style="padding:4px 12px;border-radius:20px;border:none;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;
+          background:${i===0?'var(--ink)':'var(--border)'};color:${i===0?'#fff':'var(--ink)'}">${y}</button>`
+      ).join('');
+      if (years.length) showFinancesYear(years[0], tabsEl.firstChild);
+    } else if (tabsEl) {
+      tabsEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">No data yet — admin can add entries below</div>';
+    }
+
+    // Show admin add form
+    if (STATE.isAdmin) {
+      const addEl = document.getElementById('fin-admin-add');
+      if (addEl) addEl.style.display = 'block';
+    }
+  } catch(e) { log('Finances: '+e.message); }
+}
+
+window.showFinancesYear = function(year, btn) {
+  // Update tab styles
+  document.querySelectorAll('#fin-year-tabs button').forEach(b => {
+    b.style.background = 'var(--border)'; b.style.color = 'var(--ink)';
+  });
+  if (btn) { btn.style.background = 'var(--ink)'; btn.style.color = '#fff'; }
+
+  if (!_financesData) return;
+  const income  = _financesData.incomeByYear[year] || {};
+  const expenses = _financesData.expByYear[year] || [];
+
+  // Income rows
+  const incomeFields = [
+    ['subscriptions', 'Member Subscriptions'],
+    ['welfare', 'Welfare Fees'],
+    ['gla', 'Group Life Assurance'],
+    ['unitTrust', 'Unit Trust'],
+    ['registration', 'Registration Fees'],
+    ['fines', 'Fines & Penalties'],
+    ['diaspora', 'Diaspora Fees'],
+    ['juniorSub', "Juniors' Subscriptions"],
+    ['juniorWelfare', "Juniors' Welfare"],
+    ['other', 'Other Income'],
+  ];
+  const incomeEl = document.getElementById('fin-income-rows');
+  let totalInc = 0;
+  incomeEl.innerHTML = incomeFields
+    .filter(([k]) => income[k] > 0)
+    .map(([k, label]) => {
+      totalInc += income[k] || 0;
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span style="color:var(--muted)">${label}</span>
+        <span style="font-weight:500;color:#166534">${fmtFull(income[k])}</span>
+      </div>`;
+    }).join('') || '<div style="font-size:12px;color:var(--muted);padding:6px 0">No income data for this year</div>';
+
+  if (totalInc > 0) {
+    incomeEl.innerHTML += `<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:700">
+      <span>Total Income</span><span style="color:#166534">${fmtFull(totalInc)}</span>
+    </div>`;
+  }
+
+  // Expense rows
+  const expEl = document.getElementById('fin-expense-rows');
+  let totalExp = 0;
+  expEl.innerHTML = expenses.length ? expenses.map(e => {
+    totalExp += e.amount || 0;
+    const dateStr = e.date ? new Date(e.date).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
+    return `<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <div>
+        <div>${e.particular || e.description || '—'}</div>
+        <div style="font-size:10px;color:var(--muted)">${dateStr} · ${e.category||'other'}</div>
+      </div>
+      <span style="font-weight:500;color:#991b1b;flex-shrink:0;margin-left:8px">${fmtFull(e.amount)}</span>
+    </div>`;
+  }).join('') : '<div style="font-size:12px;color:var(--muted);padding:6px 0">No expenses recorded for this year</div>';
+
+  if (totalExp > 0) {
+    expEl.innerHTML += `<div style="display:flex;justify-content:space-between;padding:7px 0;font-size:12px;font-weight:700">
+      <span>Total Expenses</span><span style="color:#991b1b">${fmtFull(totalExp)}</span>
+    </div>`;
+  }
+
+  // Net
+  const net = totalInc - totalExp;
+  const netEl = document.getElementById('fin-net-val');
+  if (netEl) {
+    netEl.textContent = fmtFull(Math.abs(net));
+    netEl.style.color = net >= 0 ? '#166534' : '#991b1b';
+    document.getElementById('fin-net-row').querySelector('span').textContent =
+      net >= 0 ? 'Net Surplus' : 'Net Deficit';
+  }
+};
+
+window.toggleFinances = function(card) {
+  const detail   = document.getElementById('finances-detail');
+  const chevron  = document.getElementById('finances-chevron');
+  const isOpen   = detail.style.display !== 'none';
+  detail.style.display = isOpen ? 'none' : 'block';
+  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+};
+
+window.saveExpense = async function() {
+  if (!STATE.isAdmin) return;
+  const date   = document.getElementById('exp-date').value;
+  const amount = Number(document.getElementById('exp-amount').value) || 0;
+  const desc   = document.getElementById('exp-desc').value.trim();
+  const cat    = document.getElementById('exp-cat').value;
+  const msgEl  = document.getElementById('exp-msg');
+  if (!desc || !amount || !date) { msgEl.style.color='#991b1b'; msgEl.textContent='Fill in all fields.'; return; }
+  msgEl.style.color='var(--muted)'; msgEl.textContent='Saving…';
+  try {
+    const year = new Date(date).getFullYear();
+    await addDoc(collection(db, 'clubExpenses'), {
+      date, amount, particular: desc, category: cat, year,
+      addedBy: STATE.user?.email, addedAt: serverTimestamp(),
+    });
+    msgEl.style.color='#166534'; msgEl.textContent='✅ Expense added';
+    document.getElementById('exp-date').value = '';
+    document.getElementById('exp-amount').value = '';
+    document.getElementById('exp-desc').value = '';
+    _financesData = null; // clear cache to force reload
+    await loadFinancesSummary();
+  } catch(e) { msgEl.style.color='#991b1b'; msgEl.textContent='Error: '+e.message; }
+};
+
+// ── EVENTS / CALENDAR ─────────────────────────────────────────
+async function loadEvents() {
+  const el = document.getElementById('events-list');
+  if (!el) return;
+  try {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const snap  = await getDocs(collection(db, 'events'));
+    const events = [];
+    snap.forEach(d => events.push({ id: d.id, ...d.data() }));
+
+    // Only show upcoming + last 3 days
+    const relevant = events
+      .filter(e => e.date && new Date(e.date) >= new Date(today.getTime() - 3*86400000))
+      .sort((a,b) => new Date(a.date) - new Date(b.date))
+      .slice(0, 5);
+
+    if (!relevant.length) {
+      el.innerHTML = '<div class="empty" style="padding:10px 0"><div class="empty-icon">📅</div>No upcoming events</div>';
+      return;
+    }
+
+    const typeColors = {
+      meeting:'#1e40af', agm:'#166534', social:'#6d28d9',
+      deadline:'#991b1b', other:'#64748b'
+    };
+    const typeLabels = {
+      meeting:'Meeting', agm:'AGM', social:'Social',
+      deadline:'Deadline', other:'Event'
+    };
+
+    el.innerHTML = relevant.map(e => {
+      const d      = new Date(e.date);
+      const isPast = d < today;
+      const isToday= d.toDateString() === today.toDateString();
+      const dayStr = isToday ? 'TODAY' : d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      const color  = typeColors[e.type] || '#64748b';
+      return `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);${isPast?'opacity:.5':''}">
+        <div style="background:${color}15;border:1px solid ${color}40;border-radius:8px;padding:8px;text-align:center;min-width:52px;flex-shrink:0">
+          <div style="font-size:9px;font-weight:700;color:${color};text-transform:uppercase">${typeLabels[e.type]||'Event'}</div>
+          <div style="font-size:11px;font-weight:700;color:var(--ink);margin-top:2px">${dayStr}</div>
+        </div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:600;font-size:13px">${e.title||'Event'}</div>
+          ${e.venue ? `<div style="font-size:11px;color:var(--muted);margin-top:2px">📍 ${e.venue}</div>` : ''}
+          ${isToday ? `<div style="font-size:10px;color:${color};font-weight:700;margin-top:2px">TODAY</div>` : ''}
+        </div>
+        ${STATE.isAdmin ? `<button onclick="deleteEvent('${e.id}')" style="background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;padding:0;line-height:1;flex-shrink:0">×</button>` : ''}
+      </div>`;
+    }).join('');
+
+  } catch(e) { log('Events: '+e.message); }
+}
+
+window.toggleAddEvent = function() {
+  const form = document.getElementById('add-event-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+};
+
+window.saveEvent = async function() {
+  if (!STATE.isAdmin) return;
+  const date  = document.getElementById('ev-date').value;
+  const type  = document.getElementById('ev-type').value;
+  const title = document.getElementById('ev-title').value.trim();
+  const venue = document.getElementById('ev-venue').value.trim();
+  const msgEl = document.getElementById('ev-msg');
+  if (!date || !title) { msgEl.style.color='#991b1b'; msgEl.textContent='Date and title are required.'; return; }
+  msgEl.style.color='var(--muted)'; msgEl.textContent='Saving…';
+  try {
+    await addDoc(collection(db,'events'), {
+      date, type, title, venue, createdBy: STATE.user?.email, createdAt: serverTimestamp()
+    });
+    msgEl.style.color='#166534'; msgEl.textContent='✅ Event saved';
+    document.getElementById('ev-date').value = '';
+    document.getElementById('ev-title').value = '';
+    document.getElementById('ev-venue').value = '';
+    await loadEvents();
+  } catch(e) { msgEl.style.color='#991b1b'; msgEl.textContent='Error: '+e.message; }
+};
+
+window.deleteEvent = async function(eventId) {
+  if (!STATE.isAdmin || !confirm('Delete this event?')) return;
+  try {
+    const { deleteDoc } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js');
+    await deleteDoc(doc(db,'events',eventId));
+    toast('Event removed','success');
+    await loadEvents();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+};
 
 // ── TRACKER HELPERS ───────────────────────────────────────────
 // Derives month-by-month status from subscriptionByYear total.
@@ -581,13 +870,14 @@ async function loadMembers() {
       let jHtml = '';
       jSnap.forEach(d => {
         const j = d.data();
-        jHtml += `<div class="member-row">
-          <div class="m-avatar" style="background:#f5f0e8;color:var(--ink);font-size:12px">JR</div>
+        const ini = (j.name||'?')[0].toUpperCase();
+        jHtml += `<div class="member-row" onclick="openJuniorDetail('${d.id}')" style="cursor:pointer">
+          <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700">${ini}</div>
           <div class="m-info">
             <div class="m-name">${j.name}</div>
-            <div class="m-sub">Junior · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
+            <div class="m-sub">Junior · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo · Parent: ${j.parentName||'—'}</div>
           </div>
-          <span class="status-badge s-${j.status}">${j.status}</span>
+          <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
         </div>`;
       });
       document.getElementById('juniors-list').innerHTML = jHtml;
@@ -1228,122 +1518,311 @@ window.closeMemberDetail = function() {
   document.getElementById('member-detail-modal').style.display = 'none';
 };
 
-// ── SIGN UP ───────────────────────────────────────────────────
-let suVerifiedId = null;
+// ── JUNIOR DETAIL MODAL ───────────────────────────────────────
+window.openJuniorDetail = async function(juniorId) {
+  const modal = document.getElementById('member-detail-modal');
+  const body  = document.getElementById('md-body');
+  modal.style.display = 'block';
+  document.getElementById('md-name').textContent = 'Loading…';
+  document.getElementById('md-sub').textContent  = '';
+  body.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
 
+  try {
+    const snap = await getDoc(doc(db, 'juniors', juniorId));
+    if (!snap.exists()) {
+      document.getElementById('md-name').textContent = 'Not found';
+      body.innerHTML = '';
+      return;
+    }
+    const j = snap.data();
+
+    document.getElementById('md-name').textContent = j.name || '—';
+    document.getElementById('md-sub').textContent  =
+      `Let's Grow Junior · Parent: ${j.parentName||'—'} · Since ${j.joinYear||'—'}`;
+
+    // Contribution history
+    const subByYear  = j.subscriptionByYear || {};
+    const welfByYear = j.welfareByYear || {};
+    const years      = [...new Set([...Object.keys(subByYear), ...Object.keys(welfByYear)])].sort();
+    const currentYear = new Date().getFullYear();
+    const rate        = j.monthlyRate || 20000;
+    const yearTotal   = subByYear[String(currentYear)] || 0;
+    const pct         = Math.min(Math.round(yearTotal / (rate * 12) * 100), 100);
+
+    // Month tracker dots for current year
+    const moLabels = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+    const curMonth = new Date().getMonth();
+    let dots = '';
+    for (let mo = 0; mo < 12; mo++) {
+      const eom = rate * (mo + 1);
+      const bom = rate * mo;
+      let cls, lbl;
+      if (mo > curMonth)          { cls = 'mo-future';  lbl = moLabels[mo]; }
+      else if (yearTotal >= eom)  { cls = 'mo-paid';    lbl = '✓'; }
+      else if (yearTotal > bom)   { cls = 'mo-partial'; lbl = '~'; }
+      else                        { cls = 'mo-due';     lbl = '!'; }
+      dots += `<div class="mo ${cls}" title="${MONTHS[mo]} ${currentYear}">${lbl}</div>`;
+    }
+    const barColor = pct >= 100 ? '#166534' : pct > 50 ? '#d97706' : '#991b1b';
+
+    let histRows = years.map(yr => {
+      const sub  = subByYear[yr] || 0;
+      const welf = welfByYear[yr] || 0;
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px${sub===0&&welf===0?';color:var(--muted)':''}">
+        <span>${yr}</span>
+        <span>Sub: ${fmtFull(sub)} · Welfare: ${fmtFull(welf)}</span>
+      </div>`;
+    }).join('') || '<div style="color:var(--muted);font-size:12px;padding:6px 0">No history on record</div>';
+
+    // Admin edit controls
+    const adminSection = STATE.isAdmin ? `
+      <div style="background:#f8f4ec;border-radius:10px;padding:12px;margin-bottom:14px;border:1px solid var(--border)">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:10px">Admin — Record Contribution</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Year</label>
+            <input id="jr-year" type="number" value="${currentYear}" min="2020" max="2030"
+              style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Sub Amount (UGX)</label>
+            <input id="jr-sub-amt" type="number" placeholder="${rate * 12}"
+              style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:13px">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Welfare Amount (UGX)</label>
+            <input id="jr-welf-amt" type="number" placeholder="0"
+              style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:13px">
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:4px">Status</label>
+            <select id="jr-status" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:13px;background:#fafaf8">
+              <option value="active" ${j.status==='active'?'selected':''}>Active</option>
+              <option value="inactive" ${j.status==='inactive'?'selected':''}>Inactive</option>
+            </select>
+          </div>
+        </div>
+        <button onclick="saveJuniorRecord('${juniorId}')"
+          style="width:100%;padding:9px;background:var(--gold);color:var(--ink);border:none;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer">
+          Save Changes
+        </button>
+        <div id="jr-save-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:14px"></div>
+      </div>` : '';
+
+    body.innerHTML = `
+      <!-- Info chips -->
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:${j.status==='active'?'#166534':'#64748b'};color:#fff">${(j.status||'active').toUpperCase()}</span>
+        <span style="font-size:10px;padding:3px 10px;border-radius:20px;background:#f5f0e8;color:var(--ink);font-weight:600">Junior Member</span>
+      </div>
+
+      <!-- Stats -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+        <div style="background:#f8f4ec;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Monthly Rate</div>
+          <div style="font-size:15px;font-weight:700;margin-top:3px">${fmtFull(rate)}</div>
+        </div>
+        <div style="background:#f0f9ff;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">${currentYear} Paid</div>
+          <div style="font-size:15px;font-weight:700;color:var(--gold);margin-top:3px">${fmtFull(yearTotal)}</div>
+        </div>
+        <div style="background:#fafaf8;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Parent / Guardian</div>
+          <div style="font-size:13px;font-weight:600;margin-top:3px">${j.parentName||'—'}</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:8px;padding:10px">
+          <div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Member Since</div>
+          <div style="font-size:15px;font-weight:700;margin-top:3px">${j.joinYear||'—'}</div>
+        </div>
+      </div>
+
+      <!-- Current year tracker -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">${currentYear} Tracker</div>
+      <div style="background:#f8f8f6;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:6px">
+          <span>${pct}% of annual target</span>
+          <span style="font-weight:700;color:${barColor}">${pct>=100?'Complete':pct>50?'Partial':'Behind'}</span>
+        </div>
+        <div style="background:var(--border);border-radius:3px;height:4px;margin-bottom:8px;overflow:hidden">
+          <div style="height:100%;border-radius:3px;background:${barColor};width:${pct}%"></div>
+        </div>
+        <div class="months-grid">${dots}</div>
+      </div>
+
+      ${adminSection}
+
+      <!-- History -->
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--ink);margin-bottom:8px">Contribution History</div>
+      <div style="background:#fff;border:1px solid var(--border);border-radius:8px;padding:4px 10px;margin-bottom:14px">
+        ${histRows}
+      </div>
+
+      ${j.notes ? `<div style="font-size:11px;color:var(--muted);background:var(--border);border-radius:8px;padding:8px">${j.notes}</div>` : ''}
+    `;
+
+  } catch(e) {
+    document.getElementById('md-name').textContent = 'Error';
+    body.innerHTML = `<div class="empty">${e.message}</div>`;
+    log('JuniorDetail: ' + e.message);
+  }
+};
+
+// ── ADMIN: SAVE JUNIOR RECORD ─────────────────────────────────
+window.saveJuniorRecord = async function(juniorId) {
+  if (!STATE.isAdmin) return;
+  const year    = document.getElementById('jr-year').value;
+  const subAmt  = Number(document.getElementById('jr-sub-amt').value) || 0;
+  const welfAmt = Number(document.getElementById('jr-welf-amt').value) || 0;
+  const status  = document.getElementById('jr-status').value;
+  const msgEl   = document.getElementById('jr-save-msg');
+
+  msgEl.style.color = 'var(--muted)'; msgEl.textContent = 'Saving…';
+  try {
+    const update = { status, updatedAt: serverTimestamp() };
+    if (subAmt > 0)  update[`subscriptionByYear.${year}`] = subAmt;
+    if (welfAmt > 0) update[`welfareByYear.${year}`] = welfAmt;
+
+    await setDoc(doc(db, 'juniors', juniorId), update, { merge: true });
+    msgEl.style.color = '#166534';
+    msgEl.textContent = '✅ Saved successfully';
+    setTimeout(() => openJuniorDetail(juniorId), 800); // reload modal
+  } catch(e) {
+    msgEl.style.color = '#991b1b';
+    msgEl.textContent = 'Error: ' + e.message;
+  }
+};
+
+
+// ── SIGN UP ───────────────────────────────────────────────────
 window.openSignup = function() {
   const m = document.getElementById('signup-modal');
-  m.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:20px';
-  document.getElementById('su-step1').style.display = 'block';
-  document.getElementById('su-step2').style.display = 'none';
-  document.getElementById('su-name').value  = '';
-  document.getElementById('su-email').value = '';
-  document.getElementById('su-pass').value  = '';
-  document.getElementById('su-msg1').textContent = '';
-  document.getElementById('su-msg2').textContent = '';
-  suVerifiedId = null;
-  setTimeout(() => document.getElementById('su-name').focus(), 100);
+  m.style.cssText = 'display:flex;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:16px;overflow-y:auto';
+  ['su-name','su-email','su-pass','su-pass2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const msg = document.getElementById('su-msg');
+  if (msg) msg.textContent = '';
+  const btn = document.getElementById('su-create-btn');
+  if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+  setTimeout(() => document.getElementById('su-name')?.focus(), 100);
 };
 
 window.closeSignup = function() {
   document.getElementById('signup-modal').style.display = 'none';
 };
 
-window.suVerify = async function() {
-  const nameInput = document.getElementById('su-name').value.trim();
-  const msg = document.getElementById('su-msg1');
-  const btn = document.getElementById('su-verify-btn');
-  if (!nameInput || nameInput.length < 2) { msg.style.color='#ef4444'; msg.textContent='Enter at least your first name.'; return; }
-
-  btn.textContent = 'Checking…'; btn.disabled = true; msg.textContent = '';
-  try {
-    const snap = await getDocs(collection(db,'members'));
-    const norm = s => (s||'').toLowerCase().replace(/[^a-z ]/g,'').trim();
-    const inp  = norm(nameInput);
-    const inpParts = inp.split(' ').filter(Boolean);
-    let match  = null;
-
-    snap.forEach(d => {
-      const m = d.data();
-      const candidates = [m.name, m.displayName, m.primary?.name,
-        m.firstName && m.lastName ? m.firstName+' '+m.lastName : null,
-        m.secondary?.name
-      ].filter(Boolean).map(norm);
-
-      const isMatch = candidates.some(c => {
-        const cParts = c.split(' ').filter(Boolean);
-        // Exact full match
-        if (c === inp) return true;
-        // Input is contained in candidate name
-        if (c.includes(inp)) return true;
-        // Any word in input matches any word in candidate (single name support)
-        return inpParts.some(p => p.length >= 2 && cParts.some(cp => cp === p || cp.startsWith(p)));
-      });
-
-      if (isMatch) match = { id: d.id, ...m };
-    });
-
-    const isPlaceholder = e => !e || e.endsWith('@letsgrowinvestmentclub.com') || e.endsWith('@letsgrow.com') || e.includes('placeholder');
-
-    if (!match) {
-      msg.style.color='#ef4444';
-      msg.textContent='❌ Name not found in our records. Try your full name or contact admin.';
-    } else if (match.email && !isPlaceholder(match.email)) {
-      msg.style.color='#f59e0b';
-      msg.textContent='⚠️ This member already has an account. Please use "Forgot Password" on the sign-in page instead.';
-    } else if (['exited','deceased'].includes(match.status)) {
-      msg.style.color='#ef4444'; msg.textContent='❌ This account is no longer active.';
-    } else {
-      suVerifiedId = match.id;
-      document.getElementById('su-step1').style.display = 'none';
-      document.getElementById('su-step2').style.display = 'block';
-      document.getElementById('su-verified-badge').innerHTML =
-        '✅ Verified: <strong>'+(match.name||match.displayName||nameInput)+'</strong><br>' +
-        '<span style="font-size:10px;color:rgba(255,255,255,.5)">'+(match.status||'active')+' · '+(match.memberType||match.tier||'member')+' member</span>';
-      setTimeout(() => document.getElementById('su-email').focus(), 100);
-    }
-  } catch(e) {
-    msg.style.color='#ef4444';
-    msg.textContent='Error verifying name — please try again or contact admin.';
-    console.error('suVerify error:', e.code, e.message);
-  }
-  btn.textContent = 'Verify Name'; btn.disabled = false;
-};
-
+// Single-step: validate all fields, search DB silently, create account
 window.suCreate = async function() {
-  const email = document.getElementById('su-email').value.trim();
-  const pass  = document.getElementById('su-pass').value;
-  const msg   = document.getElementById('su-msg2');
-  const btn   = document.getElementById('su-create-btn');
-  if (!email || !pass) { msg.style.color='#ef4444'; msg.textContent='Fill in email and password.'; return; }
-  if (pass.length < 6)  { msg.style.color='#ef4444'; msg.textContent='Password must be at least 6 characters.'; return; }
+  const nameInput = document.getElementById('su-name').value.trim();
+  const email     = document.getElementById('su-email').value.trim();
+  const pass      = document.getElementById('su-pass').value;
+  const pass2     = document.getElementById('su-pass2').value;
+  const msg       = document.getElementById('su-msg');
+  const btn       = document.getElementById('su-create-btn');
+
+  const setMsg = (text, color='#ef4444') => { msg.style.color = color; msg.textContent = text; };
+
+  // ── Client-side validation ───────────────────────────────────
+  if (!nameInput || nameInput.length < 2) { setMsg('Enter your registered full name.'); return; }
+  if (!email || !email.includes('@'))      { setMsg('Enter a valid email address.'); return; }
+  if (!pass)                               { setMsg('Create a password.'); return; }
+  if (pass.length < 6)                     { setMsg('Password must be at least 6 characters.'); return; }
   if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) {
-    msg.style.color='#ef4444';
-    msg.textContent='Password must include at least one special character (e.g. @, #, !, $, %).';
+    setMsg('Password must include at least one special character (e.g. @, #, !, $).');
     return;
   }
-  if (!suVerifiedId)    { msg.style.color='#ef4444'; msg.textContent='Name verification required. Start over.'; return; }
+  if (pass !== pass2) { setMsg('Passwords do not match — please re-enter.'); return; }
 
-  btn.textContent = 'Creating…'; btn.disabled = true; msg.textContent = '';
+  // ── Search members collection ────────────────────────────────
+  btn.disabled = true; btn.textContent = 'Checking…';
+  setMsg('Verifying your name against club records…', 'rgba(255,255,255,0.5)');
+
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    // Write real email + uid — overwrites any @letsgrow.com placeholder
-    await setDoc(doc(db,'members',suVerifiedId), { email, uid: cred.user.uid }, { merge: true });
-    // Write correct approvedEmails entry so auth always finds this member
-    await setDoc(doc(db,'approvedEmails',email), {
-      email, role: 'member', memberId: suVerifiedId,
-      addedAt: serverTimestamp(),
+    const snap = await getDocs(collection(db, 'members'));
+    const norm  = s => (s || '').toLowerCase().replace(/[^a-z ]/g, '').trim();
+    const inp   = norm(nameInput);
+    const words = inp.split(' ').filter(w => w.length >= 2);
+
+    const isPlaceholder = e => !e || e.endsWith('@letsgrowinvestmentclub.com') || e.endsWith('@letsgrow.com');
+
+    let match = null;
+    snap.forEach(d => {
+      if (match) return;
+      const m = d.data();
+      // Check all name fields including both partners of a joint account
+      const candidates = [
+        m.name, m.displayName,
+        m.primary?.name, m.secondary?.name,
+        m.firstName && m.lastName ? `${m.firstName} ${m.lastName}` : null,
+      ].filter(Boolean).map(norm);
+
+      const found = candidates.some(c => {
+        const cw = c.split(' ').filter(Boolean);
+        if (c === inp || c.includes(inp) || inp.includes(c)) return true;
+        // Match if at least 2 words overlap (or 1 if single-word input)
+        const hits = words.filter(w => cw.some(cw2 => cw2 === w || cw2.startsWith(w)));
+        return hits.length >= Math.min(2, words.length);
+      });
+
+      if (found) match = { id: d.id, ...m };
     });
-    msg.style.color='#4ade80'; msg.textContent='✅ Account created! Signing you in…';
+
+    // ── Handle match results ─────────────────────────────────
+    if (!match) {
+      setMsg('❌ Name not found in club records. Check spelling, try surname first, or contact admin.');
+      btn.disabled = false; btn.textContent = 'Create Account';
+      return;
+    }
+    if (match.email && !isPlaceholder(match.email)) {
+      setMsg('⚠️ This member already has an account. Use "Forgot Password" on the sign-in page.');
+      btn.disabled = false; btn.textContent = 'Create Account';
+      return;
+    }
+    if (['exited', 'deceased'].includes(match.status)) {
+      setMsg('❌ This membership is no longer active. Contact admin.');
+      btn.disabled = false; btn.textContent = 'Create Account';
+      return;
+    }
+
+    // Show matched name as confirmation
+    const matchedName = match.name || match.displayName || match.primary?.name || nameInput;
+    const isJoint     = match.accountType === 'joint';
+    setMsg(`✅ Matched: ${matchedName}${isJoint ? ' (Joint Account)' : ''} — creating account…`, '#4ade80');
+    btn.textContent = 'Creating…';
+
+    // ── Create Firebase Auth account ─────────────────────────
+    const cred = await createUserWithEmailAndPassword(auth, email, pass);
+
+    // Write real email + uid to member doc (overwrites placeholder)
+    await setDoc(doc(db, 'members', match.id), { email, uid: cred.user.uid }, { merge: true });
+
+    // Write correct approvedEmails — prevents future auth mismatches
+    await setDoc(doc(db, 'approvedEmails', email), {
+      email, role: 'member', memberId: match.id,
+      name: matchedName, addedAt: serverTimestamp(),
+    });
+
+    setMsg('✅ Account created! Signing you in…', '#4ade80');
     setTimeout(() => closeSignup(), 1500);
+
   } catch(e) {
-    btn.textContent = 'Create Account'; btn.disabled = false;
-    msg.style.color = '#ef4444';
-    if (e.code==='auth/email-already-in-use') msg.textContent='❌ That email already has an account.';
-    else if (e.code==='auth/invalid-email') msg.textContent='❌ Invalid email address.';
-    else msg.textContent = '❌ '+e.message;
+    btn.disabled = false; btn.textContent = 'Create Account';
+    if (e.code === 'auth/email-already-in-use') {
+      setMsg('⚠️ That email already has an account. Use "Forgot Password" to sign in.');
+    } else if (e.code === 'auth/invalid-email') {
+      setMsg('❌ Invalid email address format.');
+    } else if (e.message?.includes('permission') || e.code === 'permission-denied') {
+      setMsg('❌ Permission error — admin needs to deploy Firestore rules. Contact admin.');
+    } else {
+      setMsg('❌ ' + (e.message || 'Unknown error. Try again.'));
+      log('suCreate: ' + e.code + ' — ' + e.message);
+    }
   }
 };
+
 
 // ── LOAD LOANS MODULE ─────────────────────────────────────────
 // loans.js is a separate file for all loan logic.

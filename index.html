@@ -92,10 +92,11 @@
 
     <!-- ── DASHBOARD ── -->
     <div class="section active" id="sec-dashboard">
+      <!-- ── HERO: Bank Balance ── -->
       <div class="hero-card">
         <div class="hero-label">Club Bank Balance</div>
         <div class="hero-value" id="h-balance">—</div>
-        <div class="hero-sub">Uganda Shillings · As of Feb 2026</div>
+        <div class="hero-sub" id="h-balance-date">Uganda Shillings</div>
         <div class="hero-grid">
           <div class="hero-stat"><label>Total Inflow</label><div class="hv" id="h-inflow">—</div></div>
           <div class="hero-stat"><label>Total Invested</label><div class="hv" id="h-invested">—</div></div>
@@ -104,79 +105,165 @@
         </div>
       </div>
 
+      <!-- ── Key stats ── -->
       <div class="stat-grid">
         <div class="stat-card bt-gold">
-          <label>Bank Balance</label>
-          <div class="sv" id="s-balance">—</div>
-          <div class="ss">UGX</div>
-        </div>
-        <div class="stat-card bt-green">
           <label>Active Members</label>
           <div class="sv" id="s-active">—</div>
-          <div class="ss">Fully paid 2025</div>
+          <div class="ss">Paid up</div>
+        </div>
+        <div class="stat-card bt-green">
+          <label>Loans Pool</label>
+          <div class="sv" id="s-loanpool">—</div>
+          <div class="ss">Available</div>
         </div>
         <div class="stat-card bt-blue">
           <label>Total Invested</label>
           <div class="sv" id="s-invested">—</div>
-          <div class="ss">2020–2025</div>
+          <div class="ss">2020–2026</div>
         </div>
         <div class="stat-card bt-purple">
           <label>Overall ROI</label>
-          <div class="sv">23.7%</div>
+          <div class="sv" id="s-roi">23.7%</div>
           <div class="ss">Cumulative</div>
         </div>
       </div>
 
+      <!-- ── FY2026 Progress (compact) ── -->
       <div class="card">
-        <div class="card-title">2026 Contribution Tracker</div>
-        <div class="legend">
-          <div class="leg"><div class="leg-dot" style="background:#166534"></div>Paid</div>
-          <div class="leg"><div class="leg-dot" style="background:#78350f"></div>Partial</div>
-          <div class="leg"><div class="leg-dot" style="background:#7f1d1d"></div>Due</div>
-          <div class="leg"><div class="leg-dot" style="background:#e2ddd4"></div>Future</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+          <div class="card-title" style="margin-bottom:0">FY2026 vs Target</div>
+          <span id="fy-year-badge" style="font-size:10px;color:var(--muted)"></span>
         </div>
-        <div id="tracker-wrap"><div class="empty"><div class="empty-icon">📅</div>Loading tracker...</div></div>
+        <div id="fy-progress-wrap">
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Subscriptions collected</span><span id="fy-sub-label">—</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="fy-sub-bar" style="width:0%"></div></div>
+          </div>
+          <div class="progress-wrap">
+            <div class="progress-label"><span>Members up to date</span><span id="fy-members-label">—</span></div>
+            <div class="progress-bar"><div class="progress-fill green" id="fy-members-bar" style="width:0%"></div></div>
+          </div>
+          <div class="progress-wrap" id="fy-loan-wrap">
+            <div class="progress-label"><span>Loans pool utilisation</span><span id="fy-loan-label">—</span></div>
+            <div class="progress-bar"><div class="progress-fill" id="fy-loan-bar" style="width:0%"></div></div>
+          </div>
+        </div>
       </div>
 
-      <!-- Bank Balance Breakdown (admin only) -->
+      <!-- ── Club Finances — Income & Expenditure (accordion) ── -->
+      <div class="card" style="cursor:pointer" onclick="toggleFinances(this)">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div class="card-title" style="margin-bottom:0">Club Income & Expenditure</div>
+          <span id="finances-chevron" style="color:var(--muted);font-size:18px;transition:transform .2s">▾</span>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:8px">
+          <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total Income (all years)</div><div style="font-size:16px;font-weight:700;color:var(--ink);margin-top:2px" id="fin-total-income">—</div></div>
+          <div><div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--muted)">Total Expenses</div><div style="font-size:16px;font-weight:700;color:#991b1b;margin-top:2px" id="fin-total-expenses">—</div></div>
+        </div>
+        <!-- Expandable detail -->
+        <div id="finances-detail" style="display:none;margin-top:14px">
+          <!-- Year selector -->
+          <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px" id="fin-year-tabs"></div>
+          <!-- Income breakdown -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px">INCOME</div>
+          <div id="fin-income-rows"></div>
+          <!-- Expense breakdown -->
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:12px;margin-bottom:6px">EXPENSES</div>
+          <div id="fin-expense-rows"></div>
+          <!-- Net -->
+          <div id="fin-net-row" style="display:flex;justify-content:space-between;padding:10px 0;font-size:13px;font-weight:700;border-top:1px solid var(--border);margin-top:8px">
+            <span>Net Balance</span><span id="fin-net-val">—</span>
+          </div>
+          <!-- Admin: add expense -->
+          <div id="fin-admin-add" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Add Expense Entry</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Date</label>
+                <input type="date" id="exp-date" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+              </div>
+              <div>
+                <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Amount (UGX)</label>
+                <input type="number" id="exp-amount" placeholder="0" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+              </div>
+            </div>
+            <div style="margin-bottom:8px">
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Description</label>
+              <input type="text" id="exp-desc" placeholder="e.g. Hired venue for AGM" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+            </div>
+            <div style="margin-bottom:10px">
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Category</label>
+              <select id="exp-cat" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px;background:#fafaf8">
+                <option value="meetings">Meetings & Events</option>
+                <option value="admin">Admin & Registration</option>
+                <option value="banking">Banking Fees</option>
+                <option value="welfare">Member Welfare</option>
+                <option value="stationery">Stationery & Supplies</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <button onclick="saveExpense()" style="width:100%;padding:9px;background:var(--ink);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add Expense</button>
+            <div id="exp-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:14px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Upcoming Events / Calendar ── -->
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div class="card-title" style="margin-bottom:0">Upcoming Events</div>
+          <button id="add-event-btn" style="display:none;font-size:11px;padding:4px 10px;border-radius:6px;background:var(--gold);color:var(--ink);border:none;cursor:pointer;font-weight:600" onclick="toggleAddEvent()">+ Add</button>
+        </div>
+        <div id="events-list"><div class="empty" style="padding:10px 0"><div class="empty-icon">📅</div>No upcoming events</div></div>
+        <!-- Admin: add event form (hidden by default) -->
+        <div id="add-event-form" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div>
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Event Date</label>
+              <input type="date" id="ev-date" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+            </div>
+            <div>
+              <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Type</label>
+              <select id="ev-type" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px;background:#fafaf8">
+                <option value="meeting">Monthly Meeting</option>
+                <option value="agm">AGM</option>
+                <option value="social">Social Event</option>
+                <option value="deadline">Payment Deadline</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div style="margin-bottom:8px">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Title</label>
+            <input type="text" id="ev-title" placeholder="e.g. January Monthly Meeting" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+          </div>
+          <div style="margin-bottom:10px">
+            <label style="font-size:10px;color:var(--muted);display:block;margin-bottom:3px">Venue / Details (optional)</label>
+            <input type="text" id="ev-venue" placeholder="e.g. Agenda Hotel, Namugongo" style="width:100%;padding:8px;border-radius:7px;border:1px solid var(--border);font-size:12px">
+          </div>
+          <button onclick="saveEvent()" style="width:100%;padding:9px;background:var(--gold);color:var(--ink);border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Save Event</button>
+          <div id="ev-msg" style="font-size:11px;margin-top:6px;text-align:center;min-height:14px"></div>
+        </div>
+      </div>
+
+      <!-- ── Admin-only: Balance Breakdown ── -->
       <div class="card" id="balance-breakdown" style="display:none">
         <div class="card-title">Bank Balance Breakdown</div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-          <span style="color:var(--muted)">Welfare Fund</span>
-          <span id="bd-welfare" style="font-weight:500">—</span>
+          <span style="color:var(--muted)">Welfare Fund</span><span id="bd-welfare" style="font-weight:500">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-          <span style="color:var(--muted)">Group Life Assurance (ICEA)</span>
-          <span id="bd-gla" style="font-weight:500">—</span>
+          <span style="color:var(--muted)">Group Life Assurance (ICEA)</span><span id="bd-gla" style="font-weight:500">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-          <span style="color:var(--muted)">Unit Trust (ICEA)</span>
-          <span id="bd-ut" style="font-weight:500">—</span>
+          <span style="color:var(--muted)">Unit Trust (ICEA)</span><span id="bd-ut" style="font-weight:500">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:12px">
-          <span style="color:var(--muted)">Let's Grow Juniors</span>
-          <span id="bd-junior" style="font-weight:500">—</span>
+          <span style="color:var(--muted)">Let's Grow Juniors</span><span id="bd-junior" style="font-weight:500">—</span>
         </div>
         <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px">
-          <span style="color:var(--muted)">Available Loans Pool</span>
-          <span id="bd-loanpool" style="font-weight:600;color:var(--gold)">—</span>
-        </div>
-      </div>
-
-      <!-- 2025 Annual Progress -->
-      <div class="card">
-        <div class="card-title">FY2025 vs Target</div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Subscriptions</span><span>UGX 12.0M / 17.5M</span></div>
-          <div class="progress-bar"><div class="progress-fill" style="width:68%"></div></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Investment Returns</span><span>UGX 0 / target</span></div>
-          <div class="progress-bar"><div class="progress-fill danger" style="width:0%"></div></div>
-        </div>
-        <div class="progress-wrap">
-          <div class="progress-label"><span>Unit Trust Growth</span><span>UGX 8.3M</span></div>
-          <div class="progress-bar"><div class="progress-fill green" style="width:83%"></div></div>
+          <span style="color:var(--muted)">Available Loans Pool</span><span id="bd-loanpool" style="font-weight:600;color:var(--gold)">—</span>
         </div>
       </div>
     </div>
@@ -507,45 +594,64 @@
 </div>
 
 <!-- SIGN UP MODAL -->
-<div id="signup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--ink);border-radius:20px;padding:28px 24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+<div id="signup-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:600;align-items:center;justify-content:center;padding:16px;overflow-y:auto">
+  <div style="background:var(--ink);border-radius:20px;padding:28px 24px;width:100%;max-width:380px;box-shadow:0 20px 60px rgba(0,0,0,.5);margin:auto">
     <div style="text-align:center;margin-bottom:20px">
-      <svg width="48" height="48" viewBox="0 0 72 72" fill="none" style="margin-bottom:10px">
+      <svg width="44" height="44" viewBox="0 0 72 72" fill="none" style="margin-bottom:10px">
         <circle cx="36" cy="36" r="34" fill="#1a3a6b" stroke="#c9a84c" stroke-width="1.5"/>
         <polyline points="10,56 22,38 33,46 48,24 62,14" stroke="#c9a84c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
         <circle cx="62" cy="14" r="4" fill="#c9a84c"/>
       </svg>
       <div style="font-size:20px;font-weight:700;color:var(--gold);font-family:'DM Serif Display',serif">Create Account</div>
-      <div style="font-size:11px;color:var(--muted);margin-top:4px">Enter your registered name to verify</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">Your name must match club records exactly</div>
     </div>
-    <div id="su-step1">
-      <div class="inp-wrap">
-        <label>Your Full Name</label>
-        <input id="su-name" type="text" placeholder="e.g. Edson Nuwahereza" onkeydown="if(event.key==='Enter')suVerify()">
-      </div>
-      <button class="btn-login" id="su-verify-btn" onclick="suVerify()">Verify Name</button>
-      <div id="su-msg1" style="font-size:12px;margin-top:10px;min-height:16px;text-align:center"></div>
+
+    <!-- Single form — all fields visible at once -->
+    <div class="inp-wrap">
+      <label>Your Registered Name</label>
+      <input id="su-name" type="text" placeholder="e.g. Nagawa Ruth Luutu"
+        style="font-size:14px" onkeydown="if(event.key==='Enter')document.getElementById('su-email').focus()">
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">For joint accounts, enter either partner's name</div>
     </div>
-    <div id="su-step2" style="display:none">
-      <div id="su-verified-badge" style="background:#1a3a1a;border:1px solid #22c55e;border-radius:8px;padding:8px 12px;margin-bottom:14px;font-size:12px;color:#4ade80"></div>
-      <div class="inp-wrap">
-        <label>Email Address</label>
-        <input id="su-email" type="email" placeholder="your@email.com">
-      </div>
-      <div class="inp-wrap">
-        <label>Password (min 6 chars + one special character)</label>
-        <div style="position:relative">
-          <input id="su-pass" type="password" placeholder="e.g. MyPass@2026" onkeydown="if(event.key==='Enter')suCreate()" style="padding-right:42px">
-          <button type="button" onclick="togglePwd('su-pass',this)" title="Show/hide password"
-            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ffffff50;padding:0;line-height:0">
-            <svg id="su-pass-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </div>
-      </div>
-      <button class="btn-login" id="su-create-btn" onclick="suCreate()">Create Account</button>
-      <div id="su-msg2" style="font-size:12px;margin-top:10px;min-height:16px;text-align:center"></div>
+
+    <div class="inp-wrap">
+      <label>Email Address</label>
+      <input id="su-email" type="email" placeholder="your@gmail.com"
+        onkeydown="if(event.key==='Enter')document.getElementById('su-pass').focus()">
     </div>
-    <div style="text-align:center;margin-top:14px">
+
+    <div class="inp-wrap">
+      <label>Password</label>
+      <div style="position:relative">
+        <input id="su-pass" type="password" placeholder="Min 6 chars + one special (!@#$%)"
+          style="padding-right:42px"
+          onkeydown="if(event.key==='Enter')document.getElementById('su-pass2').focus()">
+        <button type="button" onclick="togglePwd('su-pass',this)"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ffffff50;padding:0;line-height:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="inp-wrap">
+      <label>Confirm Password</label>
+      <div style="position:relative">
+        <input id="su-pass2" type="password" placeholder="Repeat your password"
+          style="padding-right:42px"
+          onkeydown="if(event.key==='Enter')suCreate()">
+        <button type="button" onclick="togglePwd('su-pass2',this)"
+          style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#ffffff50;padding:0;line-height:0">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Status message (validation + matching feedback) -->
+    <div id="su-msg" style="font-size:12px;margin-bottom:12px;min-height:16px;text-align:center;line-height:1.5"></div>
+
+    <button class="btn-login" id="su-create-btn" onclick="suCreate()">Create Account</button>
+
+    <div style="text-align:center;margin-top:16px">
       <span onclick="closeSignup()" style="color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline">Back to sign in</span>
     </div>
   </div>
