@@ -317,8 +317,9 @@ window.loadLoansAdmin = async function() {
       laAllLoans.push(loan);
     });
 
-    const avail     = bank.loansPool || 0;
-    const totalPool = avail + totalOut;
+    // FIX: always 30% of live bank balance — never a hardcoded stored value
+    const totalPool = Math.round((bank.total || 0) * 0.30);
+    const avail     = Math.max(0, totalPool - totalOut);
     const par  = totalOut > 0 ? (totalOver / totalOut) * 100 : 0;
     const util = totalPool > 0 ? (totalOut / totalPool) * 100 : 0;
 
@@ -537,11 +538,16 @@ window.loadPendingLoans = async function() {
   if (!targets.length) return;
   targets.forEach(el => el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading…</div>');
   try {
-    const snap = await getDocs(query(
+    // FIX: no orderBy — avoids composite index requirement. Sort client-side instead.
+    const _rawSnap = await getDocs(query(
       collection(db(),'loans'),
-      where('status','==','pending'),
-      orderBy('requestedAt','desc')
+      where('status','==','pending')
     )).catch(()=>({ docs:[], forEach:()=>{} }));
+    const snap = { docs: (_rawSnap.docs||[]).slice().sort((a,b)=>{
+      const ta = a.data().requestedAt?.toMillis?.() || 0;
+      const tb = b.data().requestedAt?.toMillis?.() || 0;
+      return tb - ta;
+    }) };
 
     const emptyHtml = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No pending requests</div>';
     if (!snap.docs?.length) { targets.forEach(el => el.innerHTML = emptyHtml); return; }
