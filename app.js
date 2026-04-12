@@ -84,10 +84,7 @@ window.togglePwd = function(inputId, btn) {
 // loans.js reads window.__lg to access db, STATE, helpers.
 // This is set after Firebase is initialised (right here).
 window.__lg = { db, auth, STATE, fmt, fmtFull, toast, MONTHS, serverTimestamp, log,
-                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit, deleteDoc,
-                // bankBalance and loanPool are set dynamically after loadDashboard() resolves.
-                // loans.js should read window.__lg.bankBalance at call-time, not at import-time.
-                bankBalance: 0, loanPool: 0 };
+                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit, deleteDoc };
 
 // ── LOGIN UI ──────────────────────────────────────────────────
 window.showForgot = () => {
@@ -278,8 +275,7 @@ async function loadDashboard() {
       invested = b.totalInvested || 0;
       roi      = b.returnOnInvestment || 0;
       ut       = b.unitTrust || 0;
-      loanPool = b.loansPool || Math.round((b.total || 0) * 0.30);
-      // Expose live bank balance + pool to loans.js via window.__lg
+      loanPool = Math.round((b.total || 0) * 0.30); // always 30% of live balance — ignore any stored loansPool field
       window.__lg.bankBalance = b.total || 0;
       window.__lg.loanPool    = loanPool;
       const updated = b.updatedAt?.toDate ? b.updatedAt.toDate().toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
@@ -1131,9 +1127,8 @@ let _inboxFilter = 'inbox';
 let _inboxReplyTo = null;
 
 async function loadNotifications() {
-  // Called on login — load inbox badge count.
-  // FIX: Use single-where query only (no compound where+where or where+orderBy).
-  // Composite indexes are NOT auto-created; filtering is done client-side instead.
+  // FIX: single where only — no compound clause — no composite index needed
+  // unread count filtered client-side
   try {
     if (!STATE.user) return;
     const q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
@@ -1142,33 +1137,29 @@ async function loadNotifications() {
     const badge = document.getElementById('notif-count');
     if (unread > 0) { badge.style.display='flex'; badge.textContent=unread; }
     else badge.style.display='none';
-  } catch(e) { /* silent — badge is cosmetic */ }
+  } catch(e) { /* silent */ }
 }
 
 function markNotifsRead() { /* handled by loadInbox */ }
 
 async function loadInbox() {
-  // FIX: All queries use at most ONE where clause with NO orderBy.
-  // Firestore does NOT auto-create composite indexes.
-  // Sorting and unread-filtering are done client-side to avoid index errors.
+  // FIX: no orderBy + no compound where — zero composite indexes needed
+  // Results sorted client-side after fetch
   const list = document.getElementById('inbox-list');
   if (!list) return;
   list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px 0">Loading…</div>';
   try {
     let q;
     if (STATE.isAdmin && _inboxFilter === 'all') {
-      // No where clause — simple collection scan, no index needed
       q = query(collection(db,'messages'), limit(100));
     } else if (_inboxFilter === 'sent') {
-      // Single where clause only — no orderBy — no composite index needed
       q = query(collection(db,'messages'), where('fromUid','==',STATE.user.uid), limit(50));
     } else {
-      // Single where clause only — no orderBy — no composite index needed
       q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
     }
     const snap = await getDocs(q);
 
-    // Sort client-side by createdAt descending (avoids needing orderBy index)
+    // Sort client-side newest-first — avoids orderBy index requirement
     const docs = snap.docs.slice().sort((a, b) => {
       const ta = a.data().createdAt?.toMillis?.() || 0;
       const tb = b.data().createdAt?.toMillis?.() || 0;
@@ -1197,11 +1188,10 @@ async function loadInbox() {
     const badge=document.getElementById('notif-count');
     if (unread>0){badge.style.display='flex';badge.textContent=unread;}else badge.style.display='none';
   } catch(e) {
-    list.innerHTML=`<div class="empty" style="font-size:12px;color:#991b1b;padding:12px">❌ ${e.message}</div>`;
+    list.innerHTML=`<div class="empty" style="color:#991b1b;font-size:12px;padding:12px">❌ ${e.message}</div>`;
     log('Inbox: '+e.message);
   }
 }
-
 window.inboxFilter = function(filter, btn) {
   _inboxFilter = filter;
   document.querySelectorAll('#sec-notifications .pill').forEach(b=>{b.style.background='var(--border)';b.style.color='var(--ink)';});
