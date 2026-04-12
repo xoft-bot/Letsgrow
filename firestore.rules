@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── MEMBERS ────────────────────────────────────────────────
+    // Allow reading member names publicly so the signup name-verify
+    // flow works without requiring prior authentication.
+    // All writes require a signed-in user.
+    match /members/{memberId} {
+      allow read:  if true;
+      allow write: if request.auth != null;
+    }
+
+    // ── APPROVED EMAILS ────────────────────────────────────────
+    match /approvedEmails/{email} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── CLUB FINANCIALS & SETTINGS ─────────────────────────────
+    match /club/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /settings/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── CONTRIBUTIONS ──────────────────────────────────────────
+    match /contributions/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── INVESTMENTS ────────────────────────────────────────────
+    match /investments/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── NOTIFICATIONS ──────────────────────────────────────────
+    match /notifications/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── LOANS ──────────────────────────────────────────────────
+    match /loans/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /memberLoanProfiles/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── COMMITTEES ─────────────────────────────────────────────
+    match /committees/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── ESTATES & JUNIORS ──────────────────────────────────────
+    match /estates/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /juniors/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── EVENTS / CALENDAR ──────────────────────────────────────
+    match /events/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+
+    // ── CLUB INCOME & EXPENSES ────────────────────────────────
+    match /clubIncome/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /clubExpenses/{document} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null;
+    }
+  }
+}
