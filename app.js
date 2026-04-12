@@ -84,7 +84,10 @@ window.togglePwd = function(inputId, btn) {
 // loans.js reads window.__lg to access db, STATE, helpers.
 // This is set after Firebase is initialised (right here).
 window.__lg = { db, auth, STATE, fmt, fmtFull, toast, MONTHS, serverTimestamp, log,
-                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit, deleteDoc };
+                getDoc, setDoc, addDoc, collection, getDocs, doc, query, where, orderBy, limit, deleteDoc,
+                // bankBalance and loanPool are set dynamically after loadDashboard() resolves.
+                // loans.js should read window.__lg.bankBalance at call-time, not at import-time.
+                bankBalance: 0, loanPool: 0 };
 
 // ── LOGIN UI ──────────────────────────────────────────────────
 window.showForgot = () => {
@@ -276,6 +279,9 @@ async function loadDashboard() {
       roi      = b.returnOnInvestment || 0;
       ut       = b.unitTrust || 0;
       loanPool = b.loansPool || Math.round((b.total || 0) * 0.30);
+      // Expose live bank balance + pool to loans.js via window.__lg
+      window.__lg.bankBalance = b.total || 0;
+      window.__lg.loanPool    = loanPool;
       const updated = b.updatedAt?.toDate ? b.updatedAt.toDate().toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
       if (updated) document.getElementById('h-balance-date').textContent = `Uganda Shillings · Updated ${updated}`;
       if (document.getElementById('bd-welfare'))  document.getElementById('bd-welfare').textContent  = fmtFull(b.welfare||0);
@@ -1125,36 +1131,53 @@ let _inboxFilter = 'inbox';
 let _inboxReplyTo = null;
 
 async function loadNotifications() {
-  // Called on login — load inbox badge count
+  // Called on login — load inbox badge count.
+  // FIX: Use single-where query only (no compound where+where or where+orderBy).
+  // Composite indexes are NOT auto-created; filtering is done client-side instead.
   try {
     if (!STATE.user) return;
-    const q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), where('read','==',false), limit(20));
+    const q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
     const snap = await getDocs(q);
+    const unread = snap.docs.filter(d => !d.data().read).length;
     const badge = document.getElementById('notif-count');
-    if (!snap.empty) { badge.style.display='flex'; badge.textContent=snap.size; }
+    if (unread > 0) { badge.style.display='flex'; badge.textContent=unread; }
     else badge.style.display='none';
-  } catch(e) { /* index may not exist yet — silent */ }
+  } catch(e) { /* silent — badge is cosmetic */ }
 }
 
 function markNotifsRead() { /* handled by loadInbox */ }
 
 async function loadInbox() {
+  // FIX: All queries use at most ONE where clause with NO orderBy.
+  // Firestore does NOT auto-create composite indexes.
+  // Sorting and unread-filtering are done client-side to avoid index errors.
   const list = document.getElementById('inbox-list');
   if (!list) return;
   list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px 0">Loading…</div>';
   try {
     let q;
     if (STATE.isAdmin && _inboxFilter === 'all') {
-      q = query(collection(db,'messages'), orderBy('createdAt','desc'), limit(50));
+      // No where clause — simple collection scan, no index needed
+      q = query(collection(db,'messages'), limit(100));
     } else if (_inboxFilter === 'sent') {
-      q = query(collection(db,'messages'), where('fromUid','==',STATE.user.uid), orderBy('createdAt','desc'), limit(30));
+      // Single where clause only — no orderBy — no composite index needed
+      q = query(collection(db,'messages'), where('fromUid','==',STATE.user.uid), limit(50));
     } else {
-      q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), orderBy('createdAt','desc'), limit(30));
+      // Single where clause only — no orderBy — no composite index needed
+      q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
     }
     const snap = await getDocs(q);
-    if (snap.empty) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
+
+    // Sort client-side by createdAt descending (avoids needing orderBy index)
+    const docs = snap.docs.slice().sort((a, b) => {
+      const ta = a.data().createdAt?.toMillis?.() || 0;
+      const tb = b.data().createdAt?.toMillis?.() || 0;
+      return tb - ta;
+    }).slice(0, 30);
+
+    if (!docs.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
     let unread=0, html='';
-    snap.forEach(d => {
+    docs.forEach(d => {
       const m=d.data();
       const isUnread = !m.read && (m.toUid===STATE.user.uid || m.toUid==='all');
       if (isUnread && _inboxFilter!=='sent') unread++;
@@ -1174,7 +1197,7 @@ async function loadInbox() {
     const badge=document.getElementById('notif-count');
     if (unread>0){badge.style.display='flex';badge.textContent=unread;}else badge.style.display='none';
   } catch(e) {
-    list.innerHTML=`<div class="empty" style="font-size:12px">Error: ${e.message}<br><span style="font-size:10px;color:var(--muted)">If this is a new index error, check Firebase console for the link to create it.</span></div>`;
+    list.innerHTML=`<div class="empty" style="font-size:12px;color:#991b1b;padding:12px">❌ ${e.message}</div>`;
     log('Inbox: '+e.message);
   }
 }
