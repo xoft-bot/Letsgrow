@@ -213,6 +213,7 @@ onAuthStateChanged(auth, async user => {
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
       document.getElementById('nav-admin').style.display  = 'flex';
+      document.getElementById('nav-loans').style.display  = 'flex';
     }
 
     loading.style.display = 'none';
@@ -240,7 +241,15 @@ window.showSection = function(name, btn) {
   if (name === 'investments')   loadInvestments();
   if (name === 'loans')         loadLoansSection();
   if (name === 'account')       { loadMyAccount(); setTimeout(() => window.loadLoanStatus?.(), 400); }
-  if (name === 'notifications') markNotifsRead();
+  if (name === 'notifications') {
+    markNotifsRead();
+    loadInbox();
+    if (STATE.isAdmin) {
+      const bb=document.getElementById('inbox-broadcast-btn'); if(bb) bb.style.display='inline-block';
+      const ta=document.getElementById('inbox-tab-all'); if(ta) ta.style.display='inline-block';
+      populateInboxMemberSelect();
+    }
+  }
   if (name === 'admin') {
     showAdminTab('general');
     if (STATE.isAdmin) document.getElementById('balance-breakdown').style.display='block';
@@ -266,7 +275,7 @@ async function loadDashboard() {
       invested = b.totalInvested || 0;
       roi      = b.returnOnInvestment || 0;
       ut       = b.unitTrust || 0;
-      loanPool = b.loansPool || 0;
+      loanPool = b.loansPool || Math.round((b.total || 0) * 0.30);
       const updated = b.updatedAt?.toDate ? b.updatedAt.toDate().toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
       if (updated) document.getElementById('h-balance-date').textContent = `Uganda Shillings · Updated ${updated}`;
       if (document.getElementById('bd-welfare'))  document.getElementById('bd-welfare').textContent  = fmtFull(b.welfare||0);
@@ -1111,40 +1120,169 @@ async function loadLoanHistory() {
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────
-async function loadNotifications() {
-  try {
-    const snap = await getDocs(query(collection(db,'notifications'), orderBy('createdAt','desc'), limit(20)));
-    const list = document.getElementById('notif-list');
-    if (snap.empty) return;
+// ── INBOX SYSTEM ─────────────────────────────────────────────
+let _inboxFilter = 'inbox';
+let _inboxReplyTo = null;
 
-    let html = '';
-    let unread = 0;
+async function loadNotifications() {
+  // Called on login — load inbox badge count
+  try {
+    if (!STATE.user) return;
+    const q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), where('read','==',false), limit(20));
+    const snap = await getDocs(q);
+    const badge = document.getElementById('notif-count');
+    if (!snap.empty) { badge.style.display='flex'; badge.textContent=snap.size; }
+    else badge.style.display='none';
+  } catch(e) { /* index may not exist yet — silent */ }
+}
+
+function markNotifsRead() { /* handled by loadInbox */ }
+
+async function loadInbox() {
+  const list = document.getElementById('inbox-list');
+  if (!list) return;
+  list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px 0">Loading…</div>';
+  try {
+    let q;
+    if (STATE.isAdmin && _inboxFilter === 'all') {
+      q = query(collection(db,'messages'), orderBy('createdAt','desc'), limit(50));
+    } else if (_inboxFilter === 'sent') {
+      q = query(collection(db,'messages'), where('fromUid','==',STATE.user.uid), orderBy('createdAt','desc'), limit(30));
+    } else {
+      q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), orderBy('createdAt','desc'), limit(30));
+    }
+    const snap = await getDocs(q);
+    if (snap.empty) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
+    let unread=0, html='';
     snap.forEach(d => {
-      const n = d.data();
-      const date = n.eventDate || (n.createdAt?.toDate?.()?.toLocaleDateString?.() || '');
-      html += `<div class="notif-row">
-        <div class="notif-dot ${n.read?'read':''}"></div>
-        <div class="notif-body">
-          <div class="notif-title">${n.title||'Notification'}</div>
-          <div class="notif-text">${n.body||''}</div>
-          ${date ? `<div class="notif-date">${date}</div>` : ''}
+      const m=d.data();
+      const isUnread = !m.read && (m.toUid===STATE.user.uid || m.toUid==='all');
+      if (isUnread && _inboxFilter!=='sent') unread++;
+      const date = m.createdAt?.toDate?.()?.toLocaleDateString?.('en-GB',{day:'numeric',month:'short'})||'';
+      const labels={loan_request:'💰 Loan',general:'💬 General',complaint:'⚠️ Issue',feedback:'✅ Feedback',broadcast:'📣 Broadcast',reply:'↩️ Reply',other:'📄 Other'};
+      const lbl = labels[m.type||'general']||'📄';
+      html+=`<div onclick="inboxOpen('${d.id}')" style="padding:11px 12px;border-radius:10px;background:${isUnread?'#eef2ff':'var(--bg)'};border:1px solid ${isUnread?'#b6c6ff':'var(--border)'};margin-bottom:8px;cursor:pointer;box-sizing:border-box;width:100%">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:3px">
+          <span style="font-size:10px;font-weight:700;color:var(--muted)">${lbl}</span>
+          <span style="font-size:10px;color:var(--muted);flex-shrink:0;margin-left:6px">${date}</span>
         </div>
+        <div style="font-size:13px;font-weight:${isUnread?700:500};color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.fromName||'Club'}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(m.body||'').substring(0,70)}</div>
       </div>`;
-      if (!n.read) unread++;
     });
     list.innerHTML = html;
+    const badge=document.getElementById('notif-count');
+    if (unread>0){badge.style.display='flex';badge.textContent=unread;}else badge.style.display='none';
+  } catch(e) {
+    list.innerHTML=`<div class="empty" style="font-size:12px">Error: ${e.message}<br><span style="font-size:10px;color:var(--muted)">If this is a new index error, check Firebase console for the link to create it.</span></div>`;
+    log('Inbox: '+e.message);
+  }
+}
 
-    if (unread > 0) {
-      const badge = document.getElementById('notif-count');
-      badge.style.display = 'flex';
-      badge.textContent = unread;
+window.inboxFilter = function(filter, btn) {
+  _inboxFilter = filter;
+  document.querySelectorAll('#sec-notifications .pill').forEach(b=>{b.style.background='var(--border)';b.style.color='var(--ink)';});
+  btn.style.background='var(--ink)'; btn.style.color='#fff';
+  document.getElementById('inbox-detail').style.display='none';
+  document.getElementById('inbox-list').style.display='block';
+  loadInbox();
+};
+
+window.inboxOpen = async function(msgId) {
+  try {
+    const snap = await getDoc(doc(db,'messages',msgId));
+    if (!snap.exists()) return;
+    const m = snap.data();
+    document.getElementById('inbox-list').style.display='none';
+    document.getElementById('inbox-compose-form').style.display='none';
+    const det = document.getElementById('inbox-detail');
+    det.style.display='block';
+    const labels={loan_request:'Loan Application',general:'General Message',complaint:'Complaint / Issue',feedback:'Feedback',broadcast:'Broadcast',reply:'Reply',other:'Message'};
+    document.getElementById('inbox-detail-subject').textContent = labels[m.type||'general']||'Message';
+    document.getElementById('inbox-detail-meta').textContent = `From: ${m.fromName||'Club'} · ${m.createdAt?.toDate?.()?.toLocaleDateString?.('en-GB',{day:'numeric',month:'short',year:'numeric'})||''}`;
+    document.getElementById('inbox-detail-body').textContent = m.body||'';
+    const rw=document.getElementById('inbox-reply-wrap');
+    if (STATE.isAdmin && m.fromUid !== STATE.user.uid) { rw.style.display='block'; _inboxReplyTo=m; } else rw.style.display='none';
+    if (!m.read && (m.toUid===STATE.user.uid||m.toUid==='all')) {
+      await setDoc(doc(db,'messages',msgId),{read:true},{merge:true}).catch(()=>{});
     }
-  } catch(e) { log('Notifs: '+e.message); }
-}
+  } catch(e) { log('InboxOpen: '+e.message); }
+};
 
-function markNotifsRead() {
-  document.getElementById('notif-count').style.display = 'none';
-}
+window.inboxCloseDetail = function() {
+  document.getElementById('inbox-detail').style.display='none';
+  document.getElementById('inbox-list').style.display='block';
+  _inboxReplyTo=null;
+  loadInbox();
+};
+
+window.inboxCompose = function() {
+  const f=document.getElementById('inbox-compose-form');
+  const isOpen = f.style.display!=='none';
+  f.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) {
+    document.getElementById('inbox-compose-title').textContent = STATE.isAdmin ? 'New Message' : 'Message to Club';
+    if (STATE.isAdmin) { document.getElementById('inbox-to-wrap').style.display='block'; }
+  }
+};
+
+window.inboxBroadcast = function() {
+  const f=document.getElementById('inbox-compose-form');
+  f.style.display='block';
+  document.getElementById('inbox-compose-title').textContent='📣 Broadcast to All Members';
+  document.getElementById('inbox-to-member').value='all';
+  document.getElementById('inbox-to-wrap').style.display='none';
+  document.getElementById('inbox-subject').value='broadcast';
+};
+
+window.inboxCancelCompose = function() {
+  document.getElementById('inbox-compose-form').style.display='none';
+};
+
+window.inboxSend = async function() {
+  const body=(document.getElementById('inbox-body').value||'').trim();
+  const type=document.getElementById('inbox-subject').value||'general';
+  const msgEl=document.getElementById('inbox-send-msg');
+  if (!body){msgEl.style.color='#ef4444';msgEl.textContent='Please type a message.';return;}
+  msgEl.style.color='var(--muted)';msgEl.textContent='Sending…';
+  try {
+    let toUid='admin', toName='Admin';
+    if (STATE.isAdmin) {
+      const sel=document.getElementById('inbox-to-member');
+      toUid = (sel && sel.style.display!=='none') ? (sel.value||'all') : 'all';
+      toName = toUid==='all' ? 'All Members' : (sel?.options[sel.selectedIndex]?.text||'Member');
+    }
+    await addDoc(collection(db,'messages'),{
+      fromUid: STATE.user.uid,
+      fromName: STATE.member?.name || STATE.user.email,
+      toUid, toName, type, body, read:false,
+      createdAt: serverTimestamp()
+    });
+    msgEl.style.color='#22c55e'; msgEl.textContent='✓ Sent!';
+    document.getElementById('inbox-body').value='';
+    setTimeout(()=>{ document.getElementById('inbox-compose-form').style.display='none'; msgEl.textContent=''; loadInbox(); },1200);
+  } catch(e){ msgEl.style.color='#ef4444'; msgEl.textContent='Failed: '+e.message; log('InboxSend: '+e.message); }
+};
+
+window.inboxReply = async function() {
+  const body=(document.getElementById('inbox-reply-body').value||'').trim();
+  const msgEl=document.getElementById('inbox-reply-msg');
+  if (!body||!_inboxReplyTo){if(msgEl)msgEl.textContent='';return;}
+  if(msgEl){msgEl.style.color='var(--muted)';msgEl.textContent='Sending…';}
+  try {
+    await addDoc(collection(db,'messages'),{
+      fromUid: STATE.user.uid,
+      fromName: 'Club Admin',
+      toUid: _inboxReplyTo.fromUid,
+      toName: _inboxReplyTo.fromName,
+      type:'reply', body, read:false,
+      createdAt: serverTimestamp()
+    });
+    if(msgEl){msgEl.style.color='#22c55e';msgEl.textContent='✓ Reply sent!';}
+    document.getElementById('inbox-reply-body').value='';
+    setTimeout(()=>inboxCloseDetail(),1000);
+  } catch(e){ if(msgEl){msgEl.style.color='#ef4444';msgEl.textContent='Failed: '+e.message;} log('InboxReply: '+e.message); }
+};
 
 // ── ADMIN GENERAL FUNCTIONS ───────────────────────────────────
 async function populateMemberSelect() {
@@ -1824,359 +1962,164 @@ window.suCreate = async function() {
 };
 
 
-// ── LOAD LOANS MODULE ─────────────────────────────────────────
-// loans.js is a separate file for all loan logic.
-// It reads window.__lg for shared state.
-// Bug in loans? Edit loans.js only — no need to touch this file.
-import('./loans.js').catch(e => log('Failed to load loans.js: ' + e.message));
 
-// ═══════════════════════════════════════════════════════════════
-// ── INBOX SYSTEM ─────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════
-let inboxCurrentFilter = 'inbox';
-let inboxCurrentReplyTo = null;
-
-window.showSection = window.showSection; // keep existing
-
-// Patch showSection to handle inbox load
-const _origShowSection = window.showSection;
-window.showSection = function(name, btn) {
-  _origShowSection(name, btn);
-  if (name === 'notifications') {
-    loadInbox();
-    if (STATE.isAdmin) {
-      document.getElementById('inbox-broadcast-btn').style.display = 'inline-block';
-      document.getElementById('inbox-to-wrap').style.display = 'block';
-      document.getElementById('inbox-tab-all').style.display = 'inline-block';
-      populateInboxMemberSelect();
-    }
-  }
-};
-
-async function loadInbox() {
-  const list = document.getElementById('inbox-list');
-  if (!list) return;
-  list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px">Loading…</div>';
-  try {
-    let q;
-    if (STATE.isAdmin && inboxCurrentFilter === 'all') {
-      q = query(collection(db,'messages'), orderBy('createdAt','desc'), limit(50));
-    } else if (inboxCurrentFilter === 'sent') {
-      q = query(collection(db,'messages'), where('fromUid','==',STATE.user.uid), orderBy('createdAt','desc'), limit(30));
-    } else {
-      // inbox: messages addressed to this user or broadcasts
-      q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), orderBy('createdAt','desc'), limit(30));
-    }
-    const snap = await getDocs(q);
-    if (snap.empty) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
-
-    let unread = 0;
-    let html = '';
-    snap.forEach(d => {
-      const m = d.data();
-      const isUnread = !m.read && m.toUid === STATE.user.uid;
-      if (isUnread) unread++;
-      const date = m.createdAt?.toDate?.()?.toLocaleDateString?.() || '';
-      const typeLabel = {loan_request:'💰 Loan Request', general:'💬 General', complaint:'⚠️ Complaint', feedback:'✅ Feedback', broadcast:'📣 Broadcast', reply:'↩️ Reply', other:'📄 Other'}[m.type||'general'] || '📄';
-      html += `<div onclick="inboxOpenMessage('${d.id}')" style="padding:12px;border-radius:10px;background:${isUnread?'#f0f4ff':'var(--bg)'};border:1px solid ${isUnread?'#c7d7ff':'var(--border)'};margin-bottom:8px;cursor:pointer">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-          <span style="font-size:11px;font-weight:700;color:var(--muted)">${typeLabel}</span>
-          <span style="font-size:10px;color:var(--muted)">${date}</span>
-        </div>
-        <div style="font-size:13px;font-weight:${isUnread?700:500};color:var(--ink)">${m.fromName||'Club'}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${(m.body||'').substring(0,80)}</div>
-      </div>`;
-    });
-    list.innerHTML = html;
-
-    const badge = document.getElementById('notif-count');
-    if (unread > 0) { badge.style.display='flex'; badge.textContent=unread; }
-    else badge.style.display='none';
-  } catch(e) { list.innerHTML = `<div class="empty">Error loading inbox: ${e.message}</div>`; log('Inbox: '+e.message); }
-}
-
-window.inboxFilter = function(filter, btn) {
-  inboxCurrentFilter = filter;
-  document.querySelectorAll('#sec-notifications .pill').forEach(b => { b.style.background='var(--border)'; b.style.color='var(--ink)'; });
-  btn.style.background='var(--ink)'; btn.style.color='#fff';
-  document.getElementById('inbox-detail').style.display='none';
-  document.getElementById('inbox-list').style.display='block';
-  loadInbox();
-};
-
-window.inboxOpenMessage = async function(msgId) {
-  try {
-    const snap = await getDoc(doc(db,'messages',msgId));
-    if (!snap.exists()) return;
-    const m = snap.data();
-    document.getElementById('inbox-list').style.display='none';
-    document.getElementById('inbox-compose-form').style.display='none';
-    const detail = document.getElementById('inbox-detail');
-    detail.style.display='block';
-    const typeLabel = {loan_request:'Loan Request', general:'General', complaint:'Complaint', feedback:'Feedback', broadcast:'Broadcast', reply:'Reply', other:'Other'}[m.type||'general']||'Message';
-    document.getElementById('inbox-detail-subject').textContent = typeLabel;
-    document.getElementById('inbox-detail-meta').textContent = `From: ${m.fromName||'Club'} · ${m.createdAt?.toDate?.()?.toLocaleDateString?.()|| ''}`;
-    document.getElementById('inbox-detail-body').textContent = m.body||'';
-    const replyWrap = document.getElementById('inbox-reply-wrap');
-    if (STATE.isAdmin && m.toUid !== 'all') { replyWrap.style.display='block'; inboxCurrentReplyTo = m; }
-    else replyWrap.style.display='none';
-    // Mark as read
-    if (!m.read && m.toUid === STATE.user?.uid) {
-      await setDoc(doc(db,'messages',msgId), {read:true}, {merge:true});
-    }
-  } catch(e) { log('InboxOpen: '+e.message); }
-};
-
-window.inboxCloseDetail = function() {
-  document.getElementById('inbox-detail').style.display='none';
-  document.getElementById('inbox-list').style.display='block';
-  inboxCurrentReplyTo = null;
-  loadInbox();
-};
-
-window.inboxCompose = function() {
-  const form = document.getElementById('inbox-compose-form');
-  form.style.display = form.style.display==='none' ? 'block' : 'none';
-  document.getElementById('inbox-compose-title').textContent = STATE.isAdmin ? 'New Message' : 'Message to Club';
-  if (STATE.isAdmin) document.getElementById('inbox-to-wrap').style.display='block';
-};
-
-window.inboxBroadcast = function() {
-  document.getElementById('inbox-compose-form').style.display='block';
-  document.getElementById('inbox-compose-title').textContent = '📣 Broadcast to All Members';
-  document.getElementById('inbox-to-member').value='all';
-  document.getElementById('inbox-to-wrap').style.display='none';
-  document.getElementById('inbox-subject').value='broadcast';
-};
-
-window.inboxCancelCompose = function() {
-  document.getElementById('inbox-compose-form').style.display='none';
-};
-
-window.inboxSend = async function() {
-  const body = document.getElementById('inbox-body').value.trim();
-  const type = document.getElementById('inbox-subject').value;
-  const msg  = document.getElementById('inbox-send-msg');
-  if (!body) { msg.style.color='#ef4444'; msg.textContent='Please type a message.'; return; }
-  msg.textContent='Sending…'; msg.style.color='var(--muted)';
-  try {
-    const toUid = STATE.isAdmin ? (document.getElementById('inbox-to-member').value||'all') : 'admin';
-    const toName = STATE.isAdmin ? (toUid==='all'?'All Members': document.getElementById('inbox-to-member').options[document.getElementById('inbox-to-member').selectedIndex]?.text||'Member') : 'Admin';
-    await addDoc(collection(db,'messages'), {
-      fromUid:  STATE.user.uid,
-      fromName: STATE.member?.name || STATE.user.email,
-      toUid, toName, type, body,
-      read: false,
-      createdAt: serverTimestamp()
-    });
-    msg.style.color='#22c55e'; msg.textContent='✓ Sent!';
-    document.getElementById('inbox-body').value='';
-    setTimeout(()=>{ document.getElementById('inbox-compose-form').style.display='none'; msg.textContent=''; loadInbox(); }, 1200);
-  } catch(e) { msg.style.color='#ef4444'; msg.textContent='Failed: '+e.message; }
-};
-
-window.inboxReply = async function() {
-  const body = document.getElementById('inbox-reply-body').value.trim();
-  if (!body || !inboxCurrentReplyTo) return;
-  try {
-    await addDoc(collection(db,'messages'), {
-      fromUid:  STATE.user.uid,
-      fromName: 'Club Admin',
-      toUid:    inboxCurrentReplyTo.fromUid,
-      toName:   inboxCurrentReplyTo.fromName,
-      type:     'reply',
-      body,
-      read: false,
-      createdAt: serverTimestamp()
-    });
-    toast('Reply sent ✓','success');
-    document.getElementById('inbox-reply-body').value='';
-    inboxCloseDetail();
-  } catch(e) { toast('Reply failed: '+e.message,'error'); }
-};
-
+// ── INBOX MEMBER SELECT HELPER ────────────────────────────────
 async function populateInboxMemberSelect() {
   const sel = document.getElementById('inbox-to-member');
-  if (sel.options.length > 1) return;
+  if (!sel || sel.options.length > 1) return;
   try {
     const snap = await getDocs(collection(db,'members'));
     snap.forEach(d => {
-      const m = d.data();
-      if (m.uid) {
-        const opt = document.createElement('option');
-        opt.value = m.uid; opt.textContent = m.name||d.id;
-        sel.appendChild(opt);
-      }
+      const m=d.data(); if (!m.uid) return;
+      const opt=document.createElement('option');
+      opt.value=m.uid; opt.textContent=m.name||d.id;
+      sel.appendChild(opt);
     });
   } catch(e) {}
 }
 
-// ═══════════════════════════════════════════════════════════════
-// ── CLUB RECORDS (Expenses, Fines, Dividends, Diaspora, Reg) ─
-// ═══════════════════════════════════════════════════════════════
+// ── CLUB RECORDS ──────────────────────────────────────────────
 let crLoaded = {};
 
 window.toggleClubRecords = function(card) {
-  const detail = document.getElementById('club-records-detail');
-  const chevron = card.querySelector('.cr-chevron');
-  const isOpen = detail.style.display !== 'none';
-  detail.style.display = isOpen ? 'none' : 'block';
-  chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  const det=document.getElementById('club-records-detail');
+  const chev=card.querySelector('.cr-chevron');
+  const isOpen = det.style.display!=='none';
+  det.style.display = isOpen?'none':'block';
+  chev.style.transform = isOpen?'':'rotate(180deg)';
   if (!isOpen && !crLoaded.expenses) crLoadPanel('expenses');
 };
 
 window.crTab = function(tab, btn) {
-  document.querySelectorAll('.cr-tab').forEach(b => { b.style.background='var(--border)'; b.style.color='var(--ink)'; });
+  document.querySelectorAll('.cr-tab').forEach(b=>{b.style.background='var(--border)';b.style.color='var(--ink)';});
   btn.style.background='var(--ink)'; btn.style.color='#fff';
-  document.querySelectorAll('.cr-panel').forEach(p => p.style.display='none');
+  document.querySelectorAll('.cr-panel').forEach(p=>p.style.display='none');
   document.getElementById('cr-'+tab).style.display='block';
   if (!crLoaded[tab]) crLoadPanel(tab);
 };
 
 async function crLoadPanel(tab) {
-  crLoaded[tab] = true;
-  if (tab==='expenses')     await crLoadExpenses();
-  if (tab==='fines')        await crLoadFines();
-  if (tab==='dividends')    await crLoadDividends();
-  if (tab==='diaspora')     await crLoadDiaspora();
-  if (tab==='registration') await crLoadRegistration();
-
-  // Show admin add forms
+  crLoaded[tab]=true;
+  if(tab==='expenses') await crLoadExpenses();
+  if(tab==='fines') await crLoadFines();
+  if(tab==='dividends') await crLoadDividends();
+  if(tab==='diaspora') await crLoadDiaspora();
+  if(tab==='registration') await crLoadRegistration();
   if (STATE.isAdmin) {
-    ['expenses','fines','dividends','diaspora'].forEach(t => {
-      const el = document.getElementById(`cr-${t}-admin`);
-      if (el) el.style.display='block';
+    ['expenses','fines','dividends','diaspora'].forEach(t=>{
+      const el=document.getElementById(`cr-${t}-admin`); if(el) el.style.display='block';
     });
-    // Populate member selects
-    const snap = await getDocs(collection(db,'members'));
-    ['cr-fine-member','cr-div-member','cr-dia-member'].forEach(selId => {
-      const sel = document.getElementById(selId);
-      if (!sel || sel.options.length > 1) return;
-      snap.forEach(d => {
-        const m = d.data();
-        const opt = document.createElement('option');
-        opt.value = d.id; opt.textContent = m.name||d.id;
-        sel.appendChild(opt);
-      });
+    const snap=await getDocs(collection(db,'members'));
+    ['cr-fine-member','cr-div-member','cr-dia-member'].forEach(selId=>{
+      const sel=document.getElementById(selId); if(!sel||sel.options.length>1) return;
+      snap.forEach(d=>{const m=d.data();const opt=document.createElement('option');opt.value=d.id;opt.textContent=m.name||d.id;sel.appendChild(opt);});
     });
   }
 }
 
 async function crLoadExpenses() {
-  const el = document.getElementById('cr-expenses-list');
+  const el=document.getElementById('cr-expenses-list'); if(!el) return;
   try {
-    const snap = await getDocs(query(collection(db,'clubExpenses'), orderBy('date','desc'), limit(50)));
-    if (snap.empty) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No expenses recorded yet.</div>'; return; }
-    let total=0, html='';
-    snap.forEach(d => {
-      const e=d.data(); total+=Number(e.amount||0);
-      html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <div><div style="font-weight:500">${e.description||'—'}</div><div style="color:var(--muted);font-size:10px">${e.date||''} · ${e.category||''}</div></div>
-        <div style="font-weight:600;color:#991b1b;white-space:nowrap;margin-left:8px">${fmtFull(e.amount)}</div>
-      </div>`;
-    });
-    el.innerHTML=`<div style="display:flex;justify-content:space-between;padding:6px 0;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px"><span>Description</span><span>Amount</span></div>${html}<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:#991b1b"><span>Total Expenses</span><span>${fmtFull(total)}</span></div>`;
-  } catch(e) { el.innerHTML='<div style="color:#ef4444;font-size:12px">'+e.message+'</div>'; }
+    const snap=await getDocs(query(collection(db,'clubExpenses'),orderBy('date','desc'),limit(50)));
+    if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No expenses recorded yet.</div>';return;}
+    let total=0,html='';
+    snap.forEach(d=>{const e=d.data();total+=Number(e.amount||0);
+      html+=`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;gap:8px">
+        <div style="min-width:0;flex:1"><div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.description||'—'}</div><div style="color:var(--muted);font-size:10px">${e.date||''} · ${e.category||''}</div></div>
+        <div style="font-weight:600;color:#991b1b;flex-shrink:0">${fmtFull(e.amount)}</div></div>`;});
+    el.innerHTML=html+`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:#991b1b"><span>Total</span><span>${fmtFull(total)}</span></div>`;
+  } catch(e){el.innerHTML=`<div style="color:#ef4444;font-size:12px">${e.message}</div>`;}
 }
 
 async function crLoadFines() {
-  const el = document.getElementById('cr-fines-list');
+  const el=document.getElementById('cr-fines-list'); if(!el) return;
   try {
-    const snap = await getDocs(query(collection(db,'fines'), orderBy('date','desc'), limit(50)));
-    if (snap.empty) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No fines recorded yet.</div>'; return; }
-    let outstanding=0, html='';
-    snap.forEach(d => {
-      const f=d.data();
-      if (f.status!=='paid') outstanding+=Number(f.amount||0);
+    const snap=await getDocs(query(collection(db,'fines'),orderBy('date','desc'),limit(50)));
+    if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No fines recorded yet.</div>';return;}
+    let out=0,html='';
+    snap.forEach(d=>{const f=d.data();if(f.status!=='paid')out+=Number(f.amount||0);
       const badge=f.status==='paid'?'<span style="background:#dcfce7;color:#166534;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">PAID</span>':'<span style="background:#fef2f2;color:#991b1b;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">UNPAID</span>';
-      html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <div><div style="font-weight:500">${f.memberName||f.memberId||'—'}</div><div style="color:var(--muted);font-size:10px">${f.reason||''} · ${f.date||''}</div></div>
-        <div style="text-align:right"><div style="font-weight:600">${fmtFull(f.amount)}</div>${badge}${STATE.isAdmin&&f.status!=='paid'?`<button onclick="crMarkFinePaid('${d.id}')" style="display:block;margin-top:3px;font-size:9px;padding:2px 6px;background:var(--gold);border:none;border-radius:6px;cursor:pointer;font-weight:600">Mark Paid</button>`:''}
-        </div>
-      </div>`;
-    });
-    el.innerHTML=`${html}<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;font-weight:700;color:#d97706"><span>Outstanding Fines</span><span>${fmtFull(outstanding)}</span></div>`;
-  } catch(e) { el.innerHTML='<div style="color:#ef4444;font-size:12px">'+e.message+'</div>'; }
+      const markBtn=STATE.isAdmin&&f.status!=='paid'?`<button onclick="crMarkFinePaid('${d.id}')" style="display:block;margin-top:3px;font-size:9px;padding:2px 6px;background:var(--gold);border:none;border-radius:6px;cursor:pointer;font-weight:600">Mark Paid</button>`:'';
+      html+=`<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;gap:8px">
+        <div style="min-width:0;flex:1"><div style="font-weight:500">${f.memberName||'—'}</div><div style="color:var(--muted);font-size:10px">${f.reason||''} · ${f.date||''}</div></div>
+        <div style="text-align:right;flex-shrink:0"><div style="font-weight:600">${fmtFull(f.amount)}</div>${badge}${markBtn}</div></div>`;});
+    el.innerHTML=html+`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:12px;font-weight:700;color:#d97706"><span>Outstanding</span><span>${fmtFull(out)}</span></div>`;
+  } catch(e){el.innerHTML=`<div style="color:#ef4444;font-size:12px">${e.message}</div>`;}
 }
 
 async function crLoadDividends() {
-  const el = document.getElementById('cr-dividends-list');
+  const el=document.getElementById('cr-dividends-list'); if(!el) return;
   try {
-    const snap = await getDocs(query(collection(db,'dividends'), orderBy('year','desc'), limit(100)));
-    if (snap.empty) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No dividends recorded yet.</div>'; return; }
-    let html='', byYear={};
-    snap.forEach(d => { const v=d.data(); if(!byYear[v.year]) byYear[v.year]=[]; byYear[v.year].push({id:d.id,...v}); });
-    for (const yr of Object.keys(byYear).sort().reverse()) {
-      const entries=byYear[yr]; const total=entries.reduce((a,b)=>a+Number(b.amount||0),0);
-      html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);padding:8px 0 4px">${yr} — Total: ${fmtFull(total)}</div>`;
-      entries.forEach(e => {
-        const badge=e.status==='paid'?'<span style="background:#dcfce7;color:#166534;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">PAID</span>':'<span style="background:#fef9c3;color:#92400e;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">PENDING</span>';
-        html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><div style="font-weight:500">${e.memberName||e.memberId||'—'}</div><div style="text-align:right"><div style="color:var(--gold);font-weight:700">${fmtFull(e.amount)}</div>${badge}</div></div>`;
-      });
-    }
+    const snap=await getDocs(query(collection(db,'dividends'),orderBy('year','desc'),limit(100)));
+    if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No dividends recorded yet.</div>';return;}
+    let html='',byYear={};
+    snap.forEach(d=>{const v=d.data();if(!byYear[v.year])byYear[v.year]=[];byYear[v.year].push({id:d.id,...v});});
+    for(const yr of Object.keys(byYear).sort().reverse()){
+      const ents=byYear[yr],tot=ents.reduce((a,b)=>a+Number(b.amount||0),0);
+      html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);padding:8px 0 4px">${yr} — ${fmtFull(tot)}</div>`;
+      ents.forEach(e=>{const b=e.status==='paid'?'<span style="background:#dcfce7;color:#166534;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">PAID</span>':'<span style="background:#fef9c3;color:#92400e;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:700">PENDING</span>';
+        html+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;gap:8px"><div style="font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.memberName||'—'}</div><div style="text-align:right;flex-shrink:0"><div style="color:var(--gold);font-weight:700">${fmtFull(e.amount)}</div>${b}</div></div>`;});}
     el.innerHTML=html;
-  } catch(e) { el.innerHTML='<div style="color:#ef4444;font-size:12px">'+e.message+'</div>'; }
+  } catch(e){el.innerHTML=`<div style="color:#ef4444;font-size:12px">${e.message}</div>`;}
 }
 
 async function crLoadDiaspora() {
-  const el = document.getElementById('cr-diaspora-list');
+  const el=document.getElementById('cr-diaspora-list'); if(!el) return;
   try {
-    const snap = await getDocs(query(collection(db,'diasporaFees'), orderBy('year','desc'), limit(50)));
-    if (snap.empty) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No diaspora fees recorded yet.</div>'; return; }
+    const snap=await getDocs(query(collection(db,'diasporaFees'),orderBy('year','desc'),limit(50)));
+    if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No diaspora fees recorded yet.</div>';return;}
     let html='';
-    snap.forEach(d => {
-      const f=d.data();
-      html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
-        <div><div style="font-weight:500">${f.memberName||f.memberId||'—'}</div><div style="color:var(--muted);font-size:10px">${f.year||''}</div></div>
-        <div style="font-weight:600;color:var(--gold)">${fmtFull(f.amount)}</div>
-      </div>`;
-    });
+    snap.forEach(d=>{const f=d.data();html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <div><div style="font-weight:500">${f.memberName||'—'}</div><div style="color:var(--muted);font-size:10px">${f.year||''}</div></div>
+      <div style="font-weight:600;color:var(--gold);flex-shrink:0">${fmtFull(f.amount)}</div></div>`;});
     el.innerHTML=html;
-  } catch(e) { el.innerHTML='<div style="color:#ef4444;font-size:12px">'+e.message+'</div>'; }
+  } catch(e){el.innerHTML=`<div style="color:#ef4444;font-size:12px">${e.message}</div>`;}
 }
 
 async function crLoadRegistration() {
-  const el = document.getElementById('cr-registration-list');
+  const el=document.getElementById('cr-registration-list'); if(!el) return;
   try {
-    const snap = await getDocs(collection(db,'registrationFees'));
-    if (snap.empty) { el.innerHTML='<div style="color:var(--muted);font-size:12px">No registration records yet.</div>'; return; }
-    let total=0, html='';
-    snap.forEach(d => {
-      const r=d.data(); total+=Number(r.amount||0);
-      html+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:500">${r.memberName||d.id}</span><span>${fmtFull(r.amount)}</span></div>`;
-    });
-    el.innerHTML=`${html}<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--gold)"><span>Total</span><span>${fmtFull(total)}</span></div>`;
-  } catch(e) { el.innerHTML='<div style="color:#ef4444;font-size:12px">'+e.message+'</div>'; }
+    const snap=await getDocs(collection(db,'registrationFees'));
+    if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No registration records yet.</div>';return;}
+    let total=0,html='';
+    snap.forEach(d=>{const r=d.data();total+=Number(r.amount||0);html+=`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px"><span style="font-weight:500">${r.memberName||d.id}</span><span>${fmtFull(r.amount)}</span></div>`;});
+    el.innerHTML=html+`<div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--gold)"><span>Total</span><span>${fmtFull(total)}</span></div>`;
+  } catch(e){el.innerHTML=`<div style="color:#ef4444;font-size:12px">${e.message}</div>`;}
 }
 
-// Admin add actions
-window.crMarkFinePaid = async function(fineId) {
-  try { await setDoc(doc(db,'fines',fineId),{status:'paid'},{merge:true}); crLoaded.fines=false; crLoadFines(); toast('Fine marked paid','success'); } catch(e){toast(e.message,'error');}
+window.crMarkFinePaid = async function(id){try{await setDoc(doc(db,'fines',id),{status:'paid'},{merge:true});crLoaded.fines=false;crLoadFines();toast('Fine marked paid','success');}catch(e){toast(e.message,'error');}};
+window.crAddExpense = async function(){
+  const date=document.getElementById('cr-exp-date').value,amount=document.getElementById('cr-exp-amount').value,desc=document.getElementById('cr-exp-desc').value,cat=document.getElementById('cr-exp-cat').value,msg=document.getElementById('cr-exp-msg');
+  if(!date||!amount||!desc){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
+  try{await addDoc(collection(db,'clubExpenses'),{date,amount:Number(amount),description:desc,category:cat,createdAt:serverTimestamp(),createdBy:STATE.user.uid});msg.style.color='#22c55e';msg.textContent='✓ Added';crLoaded.expenses=false;setTimeout(()=>{msg.textContent='';crLoadExpenses();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
-window.crAddExpense = async function() {
-  const date=document.getElementById('cr-exp-date').value, amount=document.getElementById('cr-exp-amount').value, desc=document.getElementById('cr-exp-desc').value, cat=document.getElementById('cr-exp-cat').value, msg=document.getElementById('cr-exp-msg');
-  if (!date||!amount||!desc){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
-  try { await addDoc(collection(db,'clubExpenses'),{date,amount:Number(amount),description:desc,category:cat,createdAt:serverTimestamp(),createdBy:STATE.user.uid}); msg.style.color='#22c55e';msg.textContent='✓ Added'; crLoaded.expenses=false; setTimeout(()=>{msg.textContent='';crLoadExpenses();},1000); } catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
-};
-window.crAddFine = async function() {
-  const memberId=document.getElementById('cr-fine-member').value, amount=document.getElementById('cr-fine-amount').value, reason=document.getElementById('cr-fine-reason').value, date=document.getElementById('cr-fine-date').value, status=document.getElementById('cr-fine-paid').value, msg=document.getElementById('cr-fine-msg');
-  if (!memberId||!amount){msg.style.color='#ef4444';msg.textContent='Select member and amount.';return;}
+window.crAddFine = async function(){
+  const memberId=document.getElementById('cr-fine-member').value,amount=document.getElementById('cr-fine-amount').value,reason=document.getElementById('cr-fine-reason').value,date=document.getElementById('cr-fine-date').value,status=document.getElementById('cr-fine-paid').value,msg=document.getElementById('cr-fine-msg');
+  if(!memberId||!amount){msg.style.color='#ef4444';msg.textContent='Select member and amount.';return;}
   const memberName=document.getElementById('cr-fine-member').options[document.getElementById('cr-fine-member').selectedIndex].text;
-  try { await addDoc(collection(db,'fines'),{memberId,memberName,amount:Number(amount),reason,date,status,createdAt:serverTimestamp(),createdBy:STATE.user.uid}); msg.style.color='#22c55e';msg.textContent='✓ Recorded'; crLoaded.fines=false; setTimeout(()=>{msg.textContent='';crLoadFines();},1000); } catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
+  try{await addDoc(collection(db,'fines'),{memberId,memberName,amount:Number(amount),reason,date,status,createdAt:serverTimestamp(),createdBy:STATE.user.uid});msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.fines=false;setTimeout(()=>{msg.textContent='';crLoadFines();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
-window.crAddDividend = async function() {
-  const memberId=document.getElementById('cr-div-member').value, year=document.getElementById('cr-div-year').value, amount=document.getElementById('cr-div-amount').value, status=document.getElementById('cr-div-status').value, msg=document.getElementById('cr-div-msg');
-  if (!memberId||!amount||!year){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
+window.crAddDividend = async function(){
+  const memberId=document.getElementById('cr-div-member').value,year=document.getElementById('cr-div-year').value,amount=document.getElementById('cr-div-amount').value,status=document.getElementById('cr-div-status').value,msg=document.getElementById('cr-div-msg');
+  if(!memberId||!amount||!year){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
   const memberName=document.getElementById('cr-div-member').options[document.getElementById('cr-div-member').selectedIndex].text;
-  try { await addDoc(collection(db,'dividends'),{memberId,memberName,year:Number(year),amount:Number(amount),status,createdAt:serverTimestamp(),createdBy:STATE.user.uid}); 
-    // Fetch current dividendsTotal before incrementing to avoid overwriting with stale data
-    const mSnap = await getDoc(doc(db,'members',memberId)); 
-    const curTotal = mSnap.exists() ? (mSnap.data().dividendsTotal||0) : 0;
-    await setDoc(doc(db,'members',memberId),{dividendsTotal: curTotal + Number(amount)},{merge:true}); msg.style.color='#22c55e';msg.textContent='✓ Recorded'; crLoaded.dividends=false; setTimeout(()=>{msg.textContent='';crLoadDividends();},1000); } catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
+  try{
+    await addDoc(collection(db,'dividends'),{memberId,memberName,year:Number(year),amount:Number(amount),status,createdAt:serverTimestamp(),createdBy:STATE.user.uid});
+    const mSnap=await getDoc(doc(db,'members',memberId));
+    const cur=mSnap.exists()?(mSnap.data().dividendsTotal||0):0;
+    await setDoc(doc(db,'members',memberId),{dividendsTotal:cur+Number(amount)},{merge:true});
+    msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.dividends=false;setTimeout(()=>{msg.textContent='';crLoadDividends();},1000);
+  }catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
-window.crAddDiaspora = async function() {
-  const memberId=document.getElementById('cr-dia-member').value, year=document.getElementById('cr-dia-year').value, amount=document.getElementById('cr-dia-amount').value, msg=document.getElementById('cr-dia-msg');
-  if (!memberId||!amount){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
+window.crAddDiaspora = async function(){
+  const memberId=document.getElementById('cr-dia-member').value,year=document.getElementById('cr-dia-year').value,amount=document.getElementById('cr-dia-amount').value,msg=document.getElementById('cr-dia-msg');
+  if(!memberId||!amount){msg.style.color='#ef4444';msg.textContent='Fill all fields.';return;}
   const memberName=document.getElementById('cr-dia-member').options[document.getElementById('cr-dia-member').selectedIndex].text;
-  try { await addDoc(collection(db,'diasporaFees'),{memberId,memberName,year:Number(year),amount:Number(amount),createdAt:serverTimestamp()}); msg.style.color='#22c55e';msg.textContent='✓ Recorded'; crLoaded.diaspora=false; setTimeout(()=>{msg.textContent='';crLoadDiaspora();},1000); } catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
+  try{await addDoc(collection(db,'diasporaFees'),{memberId,memberName,year:Number(year),amount:Number(amount),createdAt:serverTimestamp()});msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.diaspora=false;setTimeout(()=>{msg.textContent='';crLoadDiaspora();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
+
+// ── LOAD LOANS MODULE ─────────────────────────────────────────
+// loans.js is a separate file for all loan logic.
+// It reads window.__lg for shared state.
+// Bug in loans? Edit loans.js only — no need to touch this file.
+import('./loans.js').catch(e => log('Failed to load loans.js: ' + e.message));
