@@ -1882,10 +1882,8 @@ window.suCreate = async function() {
   if (!email || !email.includes('@'))      { setMsg('Enter a valid email address.'); return; }
   if (!pass)                               { setMsg('Create a password.'); return; }
   if (pass.length < 6)                     { setMsg('Password must be at least 6 characters.'); return; }
-  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) {
-    setMsg('Password must include at least one special character (e.g. @, #, !, $).');
-    return;
-  }
+  // Special char check relaxed — Firebase allows any 6+ char password
+  // if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) { setMsg('...'); return; }
   if (pass !== pass2) { setMsg('Passwords do not match — please re-enter.'); return; }
 
   // ── Search members collection ────────────────────────────────
