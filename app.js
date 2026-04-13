@@ -275,9 +275,7 @@ async function loadDashboard() {
       invested = b.totalInvested || 0;
       roi      = b.returnOnInvestment || 0;
       ut       = b.unitTrust || 0;
-      loanPool = Math.round((b.total || 0) * 0.30); // always 30% of live balance — ignore any stored loansPool field
-      window.__lg.bankBalance = b.total || 0;
-      window.__lg.loanPool    = loanPool;
+      loanPool = b.loansPool || Math.round((b.total || 0) * 0.30);
       const updated = b.updatedAt?.toDate ? b.updatedAt.toDate().toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
       if (updated) document.getElementById('h-balance-date').textContent = `Uganda Shillings · Updated ${updated}`;
       if (document.getElementById('bd-welfare'))  document.getElementById('bd-welfare').textContent  = fmtFull(b.welfare||0);
@@ -321,7 +319,7 @@ async function loadDashboard() {
 
     const subPct     = totalTarget2026 > 0 ? Math.round(totalSub2026/totalTarget2026*100) : 0;
     const memberPct  = activeCount > 0 ? Math.round(upToDateCount/activeCount*100) : 0;
-    const loanUtil   = (loanPool + 1) > 0 ? 0 : 0; // placeholder — real calc in loans tab
+    // loanUtil calculated in loans tab — no placeholder needed here
 
     document.getElementById('fy-year-badge').textContent = `Jan–Dec ${currentYear}`;
     document.getElementById('fy-sub-label').textContent  = `${fmt(totalSub2026)} / ${fmt(totalTarget2026)}`;
@@ -331,11 +329,11 @@ async function loadDashboard() {
     document.getElementById('fy-members-bar').style.width   = memberPct + '%';
 
     if (STATE.isAdmin) {
-      document.getElementById('f-balance')?.setAttribute('value', bal||'');
-      document.getElementById('f-inflow')?.setAttribute('value', inflow||'');
-      document.getElementById('f-invested')?.setAttribute('value', invested||'');
-      document.getElementById('f-roi')?.setAttribute('value', roi||'');
-      document.getElementById('f-ut')?.setAttribute('value', ut||'');
+      const fb=document.getElementById('f-balance');   if(fb)  fb.value  = bal||'';
+      const fi=document.getElementById('f-inflow');    if(fi)  fi.value  = inflow||'';
+      const fv=document.getElementById('f-invested');  if(fv)  fv.value  = invested||'';
+      const fr=document.getElementById('f-roi');       if(fr)  fr.value  = roi||'';
+      const fu=document.getElementById('f-ut');        if(fu)  fu.value  = ut||'';
       document.getElementById('balance-breakdown').style.display = 'block';
       const addEvtBtn = document.getElementById('add-event-btn');
       if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
@@ -1127,24 +1125,22 @@ let _inboxFilter = 'inbox';
 let _inboxReplyTo = null;
 
 async function loadNotifications() {
-  // FIX: single where only — no compound clause — no composite index needed
-  // unread count filtered client-side
+  // Called on login — load inbox badge count
   try {
     if (!STATE.user) return;
+    // Single where only — no compound clause — no composite index needed
     const q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
     const snap = await getDocs(q);
     const unread = snap.docs.filter(d => !d.data().read).length;
     const badge = document.getElementById('notif-count');
     if (unread > 0) { badge.style.display='flex'; badge.textContent=unread; }
     else badge.style.display='none';
-  } catch(e) { /* silent */ }
+  } catch(e) { /* index may not exist yet — silent */ }
 }
 
 function markNotifsRead() { /* handled by loadInbox */ }
 
 async function loadInbox() {
-  // FIX: no orderBy + no compound where — zero composite indexes needed
-  // Results sorted client-side after fetch
   const list = document.getElementById('inbox-list');
   if (!list) return;
   list.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:10px 0">Loading…</div>';
@@ -1158,17 +1154,9 @@ async function loadInbox() {
       q = query(collection(db,'messages'), where('toUid','in',[STATE.user.uid,'all']), limit(50));
     }
     const snap = await getDocs(q);
-
-    // Sort client-side newest-first — avoids orderBy index requirement
-    const docs = snap.docs.slice().sort((a, b) => {
-      const ta = a.data().createdAt?.toMillis?.() || 0;
-      const tb = b.data().createdAt?.toMillis?.() || 0;
-      return tb - ta;
-    }).slice(0, 30);
-
-    if (!docs.length) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
+    if (snap.empty) { list.innerHTML = '<div class="empty"><div class="empty-icon">📬</div>No messages yet</div>'; return; }
     let unread=0, html='';
-    docs.forEach(d => {
+    snap.forEach(d => {
       const m=d.data();
       const isUnread = !m.read && (m.toUid===STATE.user.uid || m.toUid==='all');
       if (isUnread && _inboxFilter!=='sent') unread++;
@@ -1188,10 +1176,11 @@ async function loadInbox() {
     const badge=document.getElementById('notif-count');
     if (unread>0){badge.style.display='flex';badge.textContent=unread;}else badge.style.display='none';
   } catch(e) {
-    list.innerHTML=`<div class="empty" style="color:#991b1b;font-size:12px;padding:12px">❌ ${e.message}</div>`;
+    list.innerHTML=`<div class="empty" style="font-size:12px">Error: ${e.message}<br><span style="font-size:10px;color:var(--muted)">If this is a new index error, check Firebase console for the link to create it.</span></div>`;
     log('Inbox: '+e.message);
   }
 }
+
 window.inboxFilter = function(filter, btn) {
   _inboxFilter = filter;
   document.querySelectorAll('#sec-notifications .pill').forEach(b=>{b.style.background='var(--border)';b.style.color='var(--ink)';});
@@ -1358,7 +1347,19 @@ window.saveFinancials = async function() {
     updatedAt: serverTimestamp(),
   };
   try {
-    await setDoc(doc(db,'settings','financials'), data);
+    // Write to settings/financials (legacy) AND club/bankBalance (used by loans pool)
+    const bankBal = Number(document.getElementById('f-balance').value)||0;
+    await Promise.all([
+      setDoc(doc(db,'settings','financials'), data),
+      setDoc(doc(db,'club','bankBalance'), {
+        total: bankBal,
+        totalInflow: data.totalInflow,
+        totalInvested: data.totalInvested,
+        returnOnInvestment: data.confirmedROI,
+        unitTrust: data.unitTrustBalance,
+        updatedAt: serverTimestamp()
+      }, { merge: true })
+    ]);
     toast('Financials saved', 'success');
     await loadDashboard();
   } catch(e) { toast('Error: '+e.message,'error'); }
@@ -1982,10 +1983,14 @@ async function populateInboxMemberSelect() {
   if (!sel || sel.options.length > 1) return;
   try {
     const snap = await getDocs(collection(db,'members'));
-    snap.forEach(d => {
-      const m=d.data(); if (!m.uid) return;
+    const members=[];
+    snap.forEach(d=>{ const m=d.data(); if(['active','diaspora','partial'].includes(m.status||'active')) members.push({id:d.id,...m}); });
+    members.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    members.forEach(m=>{
       const opt=document.createElement('option');
-      opt.value=m.uid; opt.textContent=m.name||d.id;
+      // Use uid for toUid field if available, fallback to doc id
+      opt.value = m.uid || m.id;
+      opt.textContent = m.name || m.id;
       sel.appendChild(opt);
     });
   } catch(e) {}
@@ -2019,21 +2024,35 @@ async function crLoadPanel(tab) {
   if(tab==='diaspora') await crLoadDiaspora();
   if(tab==='registration') await crLoadRegistration();
   if (STATE.isAdmin) {
+    // Show all admin add-forms
     ['expenses','fines','dividends','diaspora'].forEach(t=>{
-      const el=document.getElementById(`cr-${t}-admin`); if(el) el.style.display='block';
+      const el=document.getElementById('cr-'+t+'-admin'); if(el) el.style.display='block';
     });
-    const snap=await getDocs(collection(db,'members'));
-    ['cr-fine-member','cr-div-member','cr-dia-member'].forEach(selId=>{
-      const sel=document.getElementById(selId); if(!sel||sel.options.length>1) return;
-      snap.forEach(d=>{const m=d.data();const opt=document.createElement('option');opt.value=d.id;opt.textContent=m.name||d.id;sel.appendChild(opt);});
+    // Auto-fill today's date in expense and fine forms
+    const today = new Date().toISOString().split('T')[0];
+    ['cr-exp-date','cr-fine-date'].forEach(id=>{
+      const el=document.getElementById(id); if(el&&!el.value) el.value=today;
     });
+    // Populate member dropdowns (skip if already filled)
+    try {
+      const snap=await getDocs(collection(db,'members'));
+      const members=[];
+      snap.forEach(d=>{ const m=d.data(); if(['active','diaspora','partial'].includes(m.status||'active')) members.push({id:d.id,...m}); });
+      members.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+      ['cr-fine-member','cr-div-member','cr-dia-member'].forEach(selId=>{
+        const sel=document.getElementById(selId); if(!sel||sel.options.length>1) return;
+        members.forEach(m=>{const opt=document.createElement('option');opt.value=m.id;opt.textContent=m.name||m.id;sel.appendChild(opt);});
+      });
+    } catch(e){}
   }
 }
 
 async function crLoadExpenses() {
   const el=document.getElementById('cr-expenses-list'); if(!el) return;
   try {
-    const snap=await getDocs(query(collection(db,'clubExpenses'),orderBy('date','desc'),limit(50)));
+    const _eSnap=await getDocs(query(collection(db,'clubExpenses'),limit(100)));
+    const snap={docs:_eSnap.docs.slice().sort((a,b)=>(b.data().date||'').localeCompare(a.data().date||'')),empty:_eSnap.empty};
+    snap.forEach=fn=>snap.docs.forEach(fn);
     if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No expenses recorded yet.</div>';return;}
     let total=0,html='';
     snap.forEach(d=>{const e=d.data();total+=Number(e.amount||0);
@@ -2047,7 +2066,9 @@ async function crLoadExpenses() {
 async function crLoadFines() {
   const el=document.getElementById('cr-fines-list'); if(!el) return;
   try {
-    const snap=await getDocs(query(collection(db,'fines'),orderBy('date','desc'),limit(50)));
+    const _fSnap=await getDocs(query(collection(db,'fines'),limit(100)));
+    const snap={docs:_fSnap.docs.slice().sort((a,b)=>(b.data().date||'').localeCompare(a.data().date||'')),empty:_fSnap.empty};
+    snap.forEach=fn=>snap.docs.forEach(fn);
     if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No fines recorded yet.</div>';return;}
     let out=0,html='';
     snap.forEach(d=>{const f=d.data();if(f.status!=='paid')out+=Number(f.amount||0);
@@ -2063,7 +2084,9 @@ async function crLoadFines() {
 async function crLoadDividends() {
   const el=document.getElementById('cr-dividends-list'); if(!el) return;
   try {
-    const snap=await getDocs(query(collection(db,'dividends'),orderBy('year','desc'),limit(100)));
+    const _dSnap=await getDocs(query(collection(db,'dividends'),limit(200)));
+    const snap={docs:_dSnap.docs,empty:_dSnap.empty};
+    snap.forEach=fn=>snap.docs.forEach(fn);
     if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No dividends recorded yet.</div>';return;}
     let html='',byYear={};
     snap.forEach(d=>{const v=d.data();if(!byYear[v.year])byYear[v.year]=[];byYear[v.year].push({id:d.id,...v});});
@@ -2079,7 +2102,9 @@ async function crLoadDividends() {
 async function crLoadDiaspora() {
   const el=document.getElementById('cr-diaspora-list'); if(!el) return;
   try {
-    const snap=await getDocs(query(collection(db,'diasporaFees'),orderBy('year','desc'),limit(50)));
+    const _diasSnap=await getDocs(query(collection(db,'diasporaFees'),limit(100)));
+    const snap={docs:_diasSnap.docs.slice().sort((a,b)=>(b.data().year||0)-(a.data().year||0)),empty:_diasSnap.empty};
+    snap.forEach=fn=>snap.docs.forEach(fn);
     if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No diaspora fees recorded yet.</div>';return;}
     let html='';
     snap.forEach(d=>{const f=d.data();html+=`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">

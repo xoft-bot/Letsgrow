@@ -56,11 +56,19 @@ window.loadLoanStatus = async function() {
 async function _renderLoanStatus(wrap, member) {
   const memberId = member.id;
   try {
-    const [activeSnap, pendingSnap, profileSnap] = await Promise.all([
-      getDocs(query(collection(db(),'loans'), where('memberId','==',memberId), where('status','in',['active','overdue']))),
-      getDocs(query(collection(db(),'loans'), where('memberId','==',memberId), where('status','==','pending'))),
+    // FIX: No compound where queries — fetch all member loans then filter client-side
+    const [allLoansSnap, profileSnap] = await Promise.all([
+      getDocs(query(collection(db(),'loans'), where('memberId','==',memberId))),
       getDoc(doc(db(),'memberLoanProfiles',memberId))
     ]);
+    const allMemberLoans = allLoansSnap.docs.map(d=>({id:d.id,...d.data()}));
+    const activeSnap = { docs: allMemberLoans.filter(l=>['active','overdue'].includes(l.status)), empty: false };
+    activeSnap.empty = activeSnap.docs.length === 0;
+    const pendingSnap = { docs: allMemberLoans.filter(l=>l.status==='pending'), empty: false };
+    pendingSnap.empty = pendingSnap.docs.length === 0;
+    // Patch: make activeSnap work like a Firestore snapshot
+    activeSnap.docs = activeSnap.docs.map(d=>({ id:d.id, data:()=>d, ...d }));
+    pendingSnap.docs = pendingSnap.docs.map(d=>({ id:d.id, data:()=>d, ...d }));
 
     const profile  = profileSnap.exists() ? profileSnap.data() : {};
     // Eligibility = 25% of subscriptions to 2025 ONLY (no GLA, welfare, UT)
@@ -317,7 +325,7 @@ window.loadLoansAdmin = async function() {
       laAllLoans.push(loan);
     });
 
-    // FIX: always 30% of live bank balance — never a hardcoded stored value
+    // Always 30% of live bank balance — never a stored/hardcoded value
     const totalPool = Math.round((bank.total || 0) * 0.30);
     const avail     = Math.max(0, totalPool - totalOut);
     const par  = totalOut > 0 ? (totalOver / totalOut) * 100 : 0;
@@ -538,22 +546,23 @@ window.loadPendingLoans = async function() {
   if (!targets.length) return;
   targets.forEach(el => el.innerHTML = '<div style="color:var(--muted);font-size:12px">Loading…</div>');
   try {
-    // FIX: no orderBy — avoids composite index requirement. Sort client-side instead.
-    const _rawSnap = await getDocs(query(
+    // No orderBy — avoids composite index. Sort client-side instead.
+    const _snap = await getDocs(query(
       collection(db(),'loans'),
       where('status','==','pending')
-    )).catch(()=>({ docs:[], forEach:()=>{} }));
-    const snap = { docs: (_rawSnap.docs||[]).slice().sort((a,b)=>{
+    )).catch(()=>({ docs:[] }));
+
+    const _sorted = (_snap.docs||[]).slice().sort((a,b)=>{
       const ta = a.data().requestedAt?.toMillis?.() || 0;
       const tb = b.data().requestedAt?.toMillis?.() || 0;
       return tb - ta;
-    }) };
+    });
 
     const emptyHtml = '<div style="color:var(--muted);font-size:12px;padding:8px 0">No pending requests</div>';
-    if (!snap.docs?.length) { targets.forEach(el => el.innerHTML = emptyHtml); return; }
+    if (!_sorted.length) { targets.forEach(el => el.innerHTML = emptyHtml); return; }
 
     let html = '';
-    snap.forEach(d => {
+    _sorted.forEach(d => {
       const l    = { id: d.id, ...d.data() };
       const date = l.requestedAt?.toDate ? l.requestedAt.toDate().toLocaleDateString('en-GB') : '—';
       html += `<div style="border:1px solid #f59e0b;border-radius:10px;padding:12px;margin-bottom:8px;background:#fffbeb">
@@ -613,10 +622,7 @@ window.approveLoan = async function(loanId) {
       approvedBy: state.user?.email||'admin',
     });
 
-    // Deduct from loans pool
-    const bankSnap = await getDoc(doc(db(),'club','bankBalance'));
-    const bank = bankSnap.data();
-    await setDoc(doc(db(),'club','bankBalance'), { ...bank, loansPool: (bank.loansPool||0) - loan.amount });
+    // Pool is now calculated dynamically (30% of bank.total) — no need to track loansPool
 
     // Notify member
     await addDoc(collection(db(),'notifications'), {
@@ -682,10 +688,7 @@ window.adminRecordRepayment = async function(loanId, instIdx) {
       outstandingBalance: Math.max(0,(loan.amount||0) - schedule.filter(s=>s.paid).reduce((a,s)=>a+(s.paidAmount||0),0)),
     });
 
-    // Return amount to loans pool
-    const bankSnap = await getDoc(doc(db(),'club','bankBalance'));
-    const bank = bankSnap.data();
-    await setDoc(doc(db(),'club','bankBalance'), { ...bank, loansPool: (bank.loansPool||0) + amtPaid });
+    // Pool is dynamic (30% of bank.total) — no loansPool adjustment needed
 
     if (allPaid) {
       // Advance member's credit cycle if repaid on time
