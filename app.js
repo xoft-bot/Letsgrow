@@ -391,10 +391,23 @@ async function loadFinancesSummary() {
       tabsEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">No data yet — admin can add entries below</div>';
     }
 
-    // Show admin add form
+    // Admin note — expenses are entered via Club Records tab, not here
     if (STATE.isAdmin) {
       const addEl = document.getElementById('fin-admin-add');
-      if (addEl) addEl.style.display = 'block';
+      if (addEl) addEl.style.display = 'none'; // hidden: use Club Records → Expenses tab
+      const noteEl = document.getElementById('fin-admin-note');
+      if (noteEl) { noteEl.style.display = 'block'; }
+      else {
+        // inject note if element doesn't exist
+        const wrap = document.getElementById('finances-detail');
+        if (wrap) {
+          const note = document.createElement('div');
+          note.id = 'fin-admin-note';
+          note.style.cssText = 'font-size:11px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);margin-top:4px;text-align:center';
+          note.textContent = '📝 To add expenses or income, use the Club Records tab above.';
+          wrap.appendChild(note);
+        }
+      }
     }
   } catch(e) { log('Finances: '+e.message); }
 }
@@ -2000,16 +2013,6 @@ async function populateInboxMemberSelect() {
 let crLoaded = {};
 
 window.toggleClubRecords = function(card) {
-  // Don't toggle if the user clicked on an interactive element inside the panel
-  // (inputs, selects, textareas, buttons, labels) — those clicks must not collapse the card.
-  const evtTarget = window.event && window.event.target;
-  if (evtTarget) {
-    const tag = evtTarget.tagName.toUpperCase();
-    if (['INPUT','SELECT','TEXTAREA','BUTTON','LABEL','OPTION'].includes(tag)) return;
-    // Also ignore clicks that originate inside the detail panel itself
-    const det2 = document.getElementById('club-records-detail');
-    if (det2 && det2.contains(evtTarget)) return;
-  }
   const det=document.getElementById('club-records-detail');
   const chev=card.querySelector('.cr-chevron');
   const isOpen = det.style.display!=='none';
