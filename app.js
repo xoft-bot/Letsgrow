@@ -1882,8 +1882,10 @@ window.suCreate = async function() {
   if (!email || !email.includes('@'))      { setMsg('Enter a valid email address.'); return; }
   if (!pass)                               { setMsg('Create a password.'); return; }
   if (pass.length < 6)                     { setMsg('Password must be at least 6 characters.'); return; }
-  // Special char check relaxed — Firebase allows any 6+ char password
-  // if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) { setMsg('...'); return; }
+  if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?`~]/.test(pass)) {
+    setMsg('Password must include at least one special character (e.g. @, #, !, $).');
+    return;
+  }
   if (pass !== pass2) { setMsg('Passwords do not match — please re-enter.'); return; }
 
   // ── Search members collection ────────────────────────────────
@@ -1998,6 +2000,16 @@ async function populateInboxMemberSelect() {
 let crLoaded = {};
 
 window.toggleClubRecords = function(card) {
+  // Don't toggle if the user clicked on an interactive element inside the panel
+  // (inputs, selects, textareas, buttons, labels) — those clicks must not collapse the card.
+  const evtTarget = window.event && window.event.target;
+  if (evtTarget) {
+    const tag = evtTarget.tagName.toUpperCase();
+    if (['INPUT','SELECT','TEXTAREA','BUTTON','LABEL','OPTION'].includes(tag)) return;
+    // Also ignore clicks that originate inside the detail panel itself
+    const det2 = document.getElementById('club-records-detail');
+    if (det2 && det2.contains(evtTarget)) return;
+  }
   const det=document.getElementById('club-records-detail');
   const chev=card.querySelector('.cr-chevron');
   const isOpen = det.style.display!=='none';
