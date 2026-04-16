@@ -210,10 +210,15 @@ onAuthStateChanged(auth, async user => {
       pill.className = `tier-badge tier-${memberTier}`;
     }
 
+    // Admin-only nav — members never see Admin or Loans tabs
+    const adminNav = document.getElementById('nav-admin');
+    const loansNav = document.getElementById('nav-loans');
+    if (adminNav) adminNav.style.display = 'none';
+    if (loansNav) loansNav.style.display = 'none';
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
-      document.getElementById('nav-admin').style.display  = 'flex';
-      document.getElementById('nav-loans').style.display  = 'flex';
+      if (adminNav) adminNav.style.display = 'flex';
+      if (loansNav) loansNav.style.display = 'flex';
     }
 
     loading.style.display = 'none';
@@ -337,6 +342,10 @@ async function loadDashboard() {
       document.getElementById('balance-breakdown').style.display = 'block';
       const addEvtBtn = document.getElementById('add-event-btn');
       if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
+    } else {
+      // Ensure non-admins never see the add event button
+      const addEvtBtn = document.getElementById('add-event-btn');
+      if (addEvtBtn) addEvtBtn.style.display = 'none';
     }
   } catch(e) { log('Dashboard: '+e.message); }
 
@@ -391,23 +400,10 @@ async function loadFinancesSummary() {
       tabsEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">No data yet — admin can add entries below</div>';
     }
 
-    // Admin note — expenses are entered via Club Records tab, not here
+    // Show admin add form
     if (STATE.isAdmin) {
       const addEl = document.getElementById('fin-admin-add');
-      if (addEl) addEl.style.display = 'none'; // hidden: use Club Records → Expenses tab
-      const noteEl = document.getElementById('fin-admin-note');
-      if (noteEl) { noteEl.style.display = 'block'; }
-      else {
-        // inject note if element doesn't exist
-        const wrap = document.getElementById('finances-detail');
-        if (wrap) {
-          const note = document.createElement('div');
-          note.id = 'fin-admin-note';
-          note.style.cssText = 'font-size:11px;color:var(--muted);padding:8px 0;border-top:1px solid var(--border);margin-top:4px;text-align:center';
-          note.textContent = '📝 To add expenses or income, use the Club Records tab above.';
-          wrap.appendChild(note);
-        }
-      }
+      if (addEl) addEl.style.display = 'block';
     }
   } catch(e) { log('Finances: '+e.message); }
 }
@@ -572,6 +568,7 @@ async function loadEvents() {
 }
 
 window.toggleAddEvent = function() {
+  if (!STATE.isAdmin) return;
   const form = document.getElementById('add-event-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
 };
