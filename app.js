@@ -210,10 +210,15 @@ onAuthStateChanged(auth, async user => {
       pill.className = `tier-badge tier-${memberTier}`;
     }
 
+    // Hide admin/loans tabs by default; only show for admins
+    const _navAdmin = document.getElementById('nav-admin');
+    const _navLoans = document.getElementById('nav-loans');
+    if (_navAdmin) _navAdmin.style.display = 'none';
+    if (_navLoans) _navLoans.style.display = 'none';
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
-      document.getElementById('nav-admin').style.display  = 'flex';
-      document.getElementById('nav-loans').style.display  = 'flex';
+      if (_navAdmin) _navAdmin.style.display = 'flex';
+      if (_navLoans) _navLoans.style.display = 'flex';
     }
 
     loading.style.display = 'none';
@@ -222,6 +227,7 @@ onAuthStateChanged(auth, async user => {
 
     await Promise.all([loadDashboard(), loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
+    _initFCM().catch(()=>{}); // request push permission (no-op if VAPID key not set)
 
   } catch(e) {
     log('Auth error: ' + e.message);
@@ -290,13 +296,16 @@ async function loadDashboard() {
     }
 
     // Hero
-    document.getElementById('h-balance').textContent  = fmt(bal);
-    document.getElementById('h-inflow').textContent   = fmt(inflow);
-    document.getElementById('h-invested').textContent = fmt(invested);
-    document.getElementById('h-roi').textContent      = fmt(roi);
-    document.getElementById('h-ut').textContent       = fmt(ut);
-    document.getElementById('s-invested').textContent = fmt(invested);
-    document.getElementById('s-loanpool').textContent = fmt(loanPool);
+    const _set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    _set('h-balance',  fmt(bal));
+    _set('h-inflow',   fmt(inflow));
+    _set('h-invested', fmt(invested));
+    _set('h-roi',      fmt(roi));
+    _set('h-ut',       fmt(ut));
+    _set('s-invested', fmt(invested));
+    // Loan pool — admin only
+    const _lpEl = document.getElementById('s-loanpool');
+    if (_lpEl) { if (STATE.isAdmin) { _lpEl.textContent = fmt(loanPool); _lpEl.closest?.('[data-loanpool-wrap]')?.style && (_lpEl.closest('[data-loanpool-wrap]').style.display='block'); } else { const _lpWrap = _lpEl.closest?.('[data-loanpool-wrap]') || _lpEl.parentElement?.closest?.('.stat-item'); if (_lpWrap) _lpWrap.style.display='none'; else _lpEl.textContent='—'; } }
 
     // Active member count + FY2026 progress
     const currentYear = new Date().getFullYear();
@@ -337,82 +346,68 @@ async function loadDashboard() {
       document.getElementById('balance-breakdown').style.display = 'block';
       const addEvtBtn = document.getElementById('add-event-btn');
       if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
+    } else {
+      const addEvtBtn = document.getElementById('add-event-btn');
+      if (addEvtBtn) addEvtBtn.style.display = 'none';
     }
   } catch(e) { log('Dashboard: '+e.message); }
 
   // Load finances summary + events in parallel
   await Promise.all([loadFinancesSummary(), loadEvents()]);
 
-  // ── Payment alert for non-admin members ──────────────────────
+  // ── Member payment alert (non-admin only) ───────────────────
   if (!STATE.isAdmin && STATE.member) {
     const m = STATE.member;
     const now = new Date();
     const yr  = now.getFullYear();
-    const mo  = now.getMonth(); // 0-indexed
+    const mo  = now.getMonth();
     const rate = m.monthlySubscription || m.monthlyRate || 40000;
-    const paid = (m.subscriptionByYear || {})[String(yr)] || 0;
+    const paid = (m.subscriptionByYear||{})[String(yr)] || 0;
     const expectedToDate = rate * (mo + 1);
     const outstanding    = Math.max(0, expectedToDate - paid);
     const monthsBehind   = outstanding > 0 ? Math.ceil(outstanding / rate) : 0;
-
-    // Days left in current month
     const lastDay = new Date(yr, mo + 1, 0);
     const daysLeft = Math.ceil((lastDay - now) / 86400000);
 
-    const alertEl = document.getElementById('member-payment-alert');
+    let alertEl = document.getElementById('member-payment-alert');
     if (!alertEl) {
-      // Inject alert container after hero stats if not present
-      const heroEl = document.querySelector('.hero-stats, #h-balance')?.closest('.card, .hero, section');
-      const alertDiv = document.createElement('div');
-      alertDiv.id = 'member-payment-alert';
-      // find a good anchor — insert before the first .card in the dashboard section
+      alertEl = document.createElement('div');
+      alertEl.id = 'member-payment-alert';
+      alertEl.style.cssText = 'margin:8px 0';
       const dashSec = document.getElementById('sec-dashboard');
-      if (dashSec) {
-        const firstCard = dashSec.querySelector('.card');
-        if (firstCard) dashSec.insertBefore(alertDiv, firstCard);
-        else dashSec.appendChild(alertDiv);
-      }
+      const firstCard = dashSec?.querySelector('.card');
+      if (firstCard) dashSec.insertBefore(alertEl, firstCard);
+      else dashSec?.appendChild(alertEl);
     }
 
-    const alertTarget = document.getElementById('member-payment-alert');
-    if (!alertTarget) return;
-
     if (monthsBehind === 0) {
-      // Up to date — subtle green pill
-      alertTarget.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:20px">✅</span>
-        <div>
-          <div style="font-size:13px;font-weight:700;color:#166534">Contributions Up To Date</div>
-          <div style="font-size:11px;color:#166534;opacity:.8">Next payment due within ${daysLeft} day${daysLeft!==1?'s':''}</div>
-        </div>
+      alertEl.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:18px">✅</span>
+        <div><div style="font-size:12px;font-weight:700;color:#166534">Contributions Up To Date</div>
+        <div style="font-size:10px;color:#166534;opacity:.8">Next payment due in ${daysLeft} day${daysLeft!==1?'s':''}</div></div>
       </div>`;
     } else {
-      // Behind — urgent alert
-      const urgency = monthsBehind >= 3 ? '#7f1d1d' : monthsBehind >= 2 ? '#991b1b' : '#b45309';
-      const bg      = monthsBehind >= 3 ? '#fef2f2' : monthsBehind >= 2 ? '#fef2f2' : '#fffbeb';
-      const border  = monthsBehind >= 3 ? '#fecaca' : monthsBehind >= 2 ? '#fecaca' : '#fde68a';
-      const icon    = monthsBehind >= 3 ? '🚨' : '⚠️';
-      const fineMsg = monthsBehind >= 1
-        ? `<div style="font-size:11px;color:${urgency};opacity:.85;margin-top:3px">⚡ Late payment may attract a fine of UGX 15,000 per quarter</div>`
-        : '';
-      const evictMsg = monthsBehind >= 4
-        ? `<div style="font-size:11px;font-weight:700;color:#7f1d1d;margin-top:4px;padding:4px 8px;background:#fee2e2;border-radius:6px">⚠ Members 4+ months behind risk suspension or review</div>`
-        : '';
-      alertTarget.innerHTML = `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:13px 14px;margin-bottom:12px">
-        <div style="display:flex;align-items:flex-start;gap:10px">
-          <span style="font-size:22px;flex-shrink:0">${icon}</span>
+      const sev = monthsBehind >= 4 ? 3 : monthsBehind >= 2 ? 2 : 1;
+      const [bg,border,clr,icon] = sev===3
+        ? ['#fef2f2','#fecaca','#7f1d1d','🚨']
+        : sev===2
+        ? ['#fef2f2','#fecaca','#991b1b','⚠️']
+        : ['#fffbeb','#fde68a','#b45309','⚠️'];
+      alertEl.innerHTML = `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px">
+        <div style="display:flex;align-items:flex-start;gap:9px">
+          <span style="font-size:20px;flex-shrink:0">${icon}</span>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;color:${urgency}">${monthsBehind} Month${monthsBehind!==1?'s':''} Behind — UGX ${outstanding.toLocaleString()} Outstanding</div>
-            <div style="font-size:11px;color:${urgency};opacity:.8;margin-top:2px">${daysLeft} day${daysLeft!==1?'s':''} remaining this month to avoid further arrears</div>
-            ${fineMsg}
-            ${evictMsg}
+            <div style="font-size:12px;font-weight:700;color:${clr}">${monthsBehind} Month${monthsBehind!==1?'s':''} Behind · UGX ${outstanding.toLocaleString()} Outstanding</div>
+            <div style="font-size:10px;color:${clr};opacity:.85;margin-top:2px">${daysLeft} day${daysLeft!==1?'s':''} remaining this month to avoid further arrears</div>
+            <div style="font-size:10px;color:${clr};opacity:.75;margin-top:2px">⚡ Late payment attracts a fine of UGX 15,000 per quarter</div>
+            ${sev===3?`<div style="font-size:10px;font-weight:700;color:#7f1d1d;margin-top:4px;padding:3px 7px;background:#fee2e2;border-radius:5px;display:inline-block">4+ months behind — account under review</div>`:''}
           </div>
         </div>
-        <div style="margin-top:10px;background:rgba(0,0,0,.06);border-radius:6px;height:5px;overflow:hidden">
-          <div style="height:100%;background:${urgency};border-radius:6px;width:${Math.min(100,Math.round(paid/expectedToDate*100))}%"></div>
+        <div style="margin-top:8px;background:rgba(0,0,0,.08);border-radius:4px;height:4px;overflow:hidden">
+          <div style="height:100%;background:${clr};border-radius:4px;width:${Math.min(100,Math.round(paid/expectedToDate*100))}%"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:${urgency};opacity:.7;margin-top:4px">
-          <span>UGX ${paid.toLocaleString()} paid of UGX ${expectedToDate.toLocaleString()} due so far</span>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:${clr};opacity:.65;margin-top:3px">
+          <span>UGX ${paid.toLocaleString()} of UGX ${expectedToDate.toLocaleString()} due</span>
           <span>${Math.min(100,Math.round(paid/expectedToDate*100))}%</span>
         </div>
       </div>`;
@@ -635,8 +630,9 @@ async function loadEvents() {
 }
 
 window.toggleAddEvent = function() {
+  if (!STATE.isAdmin) return;
   const form = document.getElementById('add-event-form');
-  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
 };
 
 window.saveEvent = async function() {
@@ -863,8 +859,11 @@ async function loadMyAccount() {
     </div>
 
     <div class="card" id="loan-request-card">
-      <div class="card-title">Loan</div>
-      <div id="loan-status-wrap"></div>
+      <div onclick="toggleLoanCard()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
+        <div class="card-title" style="margin-bottom:0">Loan</div>
+        <span id="loan-card-chevron" style="font-size:18px;color:var(--muted);transition:transform .25s">›</span>
+      </div>
+      <div id="loan-status-wrap" style="display:none;margin-top:12px"></div>
     </div>
 
     <div class="card">
@@ -920,10 +919,25 @@ async function loadMyAccount() {
   `;
 }
 
+window.toggleLoanCard = function() {
+  const wrap = document.getElementById('loan-status-wrap');
+  const chev = document.getElementById('loan-card-chevron');
+  if (!wrap) return;
+  const isOpen = wrap.style.display !== 'none';
+  wrap.style.display = isOpen ? 'none' : 'block';
+  if (chev) chev.style.transform = isOpen ? '' : 'rotate(90deg)';
+  // Lazy-load loan status the first time it's opened
+  if (!isOpen && !wrap.dataset.loaded) {
+    wrap.dataset.loaded = '1';
+    window.loadLoanStatus?.();
+  }
+};
+
 // ── MEMBERS ───────────────────────────────────────────────────
 let allMembersCache = [];
 async function loadMembers() {
   const list = document.getElementById('members-list');
+  if (!list) return;
   list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
 
   try {
@@ -931,73 +945,55 @@ async function loadMembers() {
       const snap = await getDocs(collection(db,'members'));
       snap.forEach(d => allMembersCache.push({ id: d.id, ...d.data() }));
     }
-    document.getElementById('member-count').textContent = `(${allMembersCache.length})`;
+    const mcEl = document.getElementById('member-count');
+    if (mcEl) mcEl.textContent = `(${allMembersCache.length})`;
     renderMembers(allMembersCache);
 
-    const eSnap = await getDocs(collection(db,'estates'));
+    // ── Estates (cached for filter tab) ──────────────────────
+    window._estatesCache = [];
+    const eSnap = await getDocs(collection(db,'estates')).catch(()=>({empty:true,forEach:()=>{}}));
     if (!eSnap.empty) {
-      document.getElementById('estates-section').style.display = 'block';
-      let eHtml = '';
-      eSnap.forEach(d => {
-        const e = d.data();
-        eHtml += `<div class="estate-card">
-          <div class="estate-name">Estate of ${e.memberName}</div>
-          <div class="estate-sub">Principal Date: ${e.startDate||'—'} · Next of Kin: ${e.nextOfKin||'TBD'}</div>
-          <div class="estate-val">${fmtFull(e.principal)}</div>
-        </div>`;
-      });
-      document.getElementById('estates-list').innerHTML = eHtml;
+      eSnap.forEach(d => window._estatesCache.push({ id: d.id, ...d.data() }));
     }
 
-    const jSnap = await getDocs(collection(db,'juniors'));
+    // ── Juniors (cached for filter tab) ──────────────────────
+    window._juniorsCache = [];
+    const jSnap = await getDocs(collection(db,'juniors')).catch(()=>({empty:true,forEach:()=>{}}));
     if (!jSnap.empty) {
-      document.getElementById('juniors-section').style.display = 'block';
-      const juniors = [];
-      jSnap.forEach(d => juniors.push({ id: d.id, ...d.data() }));
-      juniors.sort((a,b) => (a.name||'').localeCompare(b.name||''));
-      const yr = new Date().getFullYear();
-      let jHtml = '';
-      // group by parent
-      const byParent = {};
-      juniors.forEach(j => {
-        const p = j.parentMemberId || j.parentName || 'Other';
-        if (!byParent[p]) byParent[p] = { label: j.parentName || p, kids: [] };
-        byParent[p].kids.push(j);
-      });
-      juniors.forEach(j => {
-        const ini = (j.name||'?')[0].toUpperCase();
-        const yrPaid = (j.subscriptionByYear||{})[String(yr)] || 0;
-        const target = (j.monthlyRate||20000) * 12;
-        const pct = Math.min(100, Math.round(yrPaid/target*100));
-        const barColor = pct>=100 ? '#166534' : pct>=50 ? '#d97706' : '#991b1b';
-        const welfPaid = (j.welfareByYear||{})[String(yr)] || 0;
-        jHtml += `<div class="member-row" onclick="openJuniorDetail('${j.id}')" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:6px">
-          <div style="display:flex;align-items:center;gap:10px">
-            <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700;flex-shrink:0">${ini}</div>
-            <div class="m-info" style="flex:1;min-width:0">
-              <div class="m-name">${j.name||'—'}</div>
-              <div class="m-sub">Parent: ${j.parentName||'—'} · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
-            </div>
-            <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
-          </div>
-          <div style="padding:0 4px">
-            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
-              <span>${yr}: UGX ${yrPaid.toLocaleString()} paid</span>
-              <span style="color:${barColor};font-weight:600">${pct}%</span>
-            </div>
-            <div style="background:var(--border);border-radius:3px;height:3px;overflow:hidden">
-              <div style="height:100%;background:${barColor};width:${pct}%;border-radius:3px"></div>
-            </div>
-            ${welfPaid > 0 ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">Welfare ${yr}: UGX ${welfPaid.toLocaleString()}</div>` : ''}
-          </div>
-        </div>`;
-      });
-      document.getElementById('juniors-list').innerHTML = jHtml || '<div class="empty">No junior records</div>';
-      document.getElementById('juniors-count').textContent = `(${juniors.length})`;
+      jSnap.forEach(d => window._juniorsCache.push({ id: d.id, ...d.data() }));
     }
+
+    // inject filter tabs for Juniors + Estates if they exist and aren't there yet
+    _injectMemberFilterTabs();
+
   } catch(e) {
     list.innerHTML = '<div class="empty">Error loading members</div>';
     log('Members: '+e.message);
+  }
+}
+
+function _injectMemberFilterTabs() {
+  // Only inject once
+  if (document.getElementById('filter-btn-juniors')) return;
+  const filterBar = document.querySelector('#sec-members [onclick^="filterMembers"]')?.parentElement;
+  if (!filterBar) return;
+  if (window._juniorsCache?.length) {
+    const jBtn = document.createElement('button');
+    jBtn.id = 'filter-btn-juniors';
+    jBtn.className = 'pill';
+    jBtn.style.cssText = 'background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap';
+    jBtn.textContent = `Juniors (${window._juniorsCache.length})`;
+    jBtn.onclick = function(){ filterMembers('juniors', jBtn); };
+    filterBar.appendChild(jBtn);
+  }
+  if (window._estatesCache?.length) {
+    const eBtn = document.createElement('button');
+    eBtn.id = 'filter-btn-estates';
+    eBtn.className = 'pill';
+    eBtn.style.cssText = 'background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap';
+    eBtn.textContent = `Estates (${window._estatesCache.length})`;
+    eBtn.onclick = function(){ filterMembers('estates', eBtn); };
+    filterBar.appendChild(eBtn);
   }
 }
 
@@ -1027,16 +1023,73 @@ function renderMembers(members) {
 }
 
 window.filterMembers = function(filter, btn) {
-  document.querySelectorAll('[onclick^="filterMembers"]').forEach(b => {
+  // Reset all filter button styles
+  document.querySelectorAll('#sec-members .pill').forEach(b => {
     b.style.background = 'var(--border)'; b.style.color = 'var(--ink)';
   });
-  btn.style.background = 'var(--ink)'; btn.style.color = '#fff';
+  if (btn) { btn.style.background = 'var(--ink)'; btn.style.color = '#fff'; }
+
+  const list = document.getElementById('members-list');
+
+  if (filter === 'juniors') {
+    // Show juniors list
+    const juniors = window._juniorsCache || [];
+    const yr = new Date().getFullYear();
+    if (!juniors.length) { list.innerHTML = '<div class="empty">No junior records</div>'; return; }
+    list.innerHTML = juniors.sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(j => {
+      const ini = (j.name||'?')[0].toUpperCase();
+      const yrPaid = (j.subscriptionByYear||{})[String(yr)] || 0;
+      const target = (j.monthlyRate||20000) * 12;
+      const pct = Math.min(100, Math.round(yrPaid/target*100));
+      const barColor = pct>=100?'#166534':pct>=50?'#d97706':'#991b1b';
+      return `<div class="member-row" onclick="openJuniorDetail('${j.id}')" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:5px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700;flex-shrink:0">${ini}</div>
+          <div class="m-info" style="flex:1;min-width:0">
+            <div class="m-name">${j.name||'—'}</div>
+            <div class="m-sub">Parent: ${j.parentName||'—'} · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
+          </div>
+          <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
+        </div>
+        <div style="padding:0 4px">
+          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+            <span>${yr}: UGX ${yrPaid.toLocaleString()} paid</span>
+            <span style="color:${barColor};font-weight:600">${pct}%</span>
+          </div>
+          <div style="background:var(--border);border-radius:3px;height:3px;overflow:hidden">
+            <div style="height:100%;background:${barColor};width:${pct}%;border-radius:3px"></div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  if (filter === 'estates') {
+    // Show estates list
+    const estates = window._estatesCache || [];
+    if (!estates.length) { list.innerHTML = '<div class="empty">No estate records</div>'; return; }
+    list.innerHTML = estates.map(e => `
+      <div class="member-row" style="cursor:default;flex-direction:column;align-items:flex-start;gap:3px">
+        <div style="font-weight:700;font-size:13px;color:var(--ink)">Estate of ${e.memberName||'—'}</div>
+        <div style="font-size:11px;color:var(--muted)">Principal Date: ${e.startDate||'—'} · Next of Kin: ${e.nextOfKin||'TBD'}</div>
+        <div style="font-size:14px;font-weight:700;color:var(--gold)">${fmtFull(e.principal||0)}</div>
+      </div>`).join('');
+    return;
+  }
+
   if (filter === 'all') { renderMembers(allMembersCache); return; }
   if (filter === 'inactive') {
     renderMembers(allMembersCache.filter(m => ['inactive','exited','deceased'].includes(m.status)));
     return;
   }
-  renderMembers(allMembersCache.filter(m => m.status === filter || m.tier === filter || m.memberType === filter));
+  // gold/golden normalisation
+  const normFilter = filter === 'gold' ? ['gold','golden'] : [filter];
+  renderMembers(allMembersCache.filter(m =>
+    m.status === filter ||
+    normFilter.includes(m.tier) ||
+    normFilter.includes(m.memberType)
+  ));
 };
 
 // ── INVESTMENTS ───────────────────────────────────────────────
@@ -1366,6 +1419,11 @@ window.inboxSend = async function() {
     });
     msgEl.style.color='#22c55e'; msgEl.textContent='✓ Sent!';
     document.getElementById('inbox-body').value='';
+    // ── Fire email + push notification ───────────────────────
+    if (STATE.isAdmin) {
+      _sendEmailNotification(toUid, toName, type, body).catch(()=>{});
+      _sendPushNotification(toUid, type, body).catch(()=>{});
+    }
     setTimeout(()=>{ document.getElementById('inbox-compose-form').style.display='none'; msgEl.textContent=''; loadInbox(); },1200);
   } catch(e){ msgEl.style.color='#ef4444'; msgEl.textContent='Failed: '+e.message; log('InboxSend: '+e.message); }
 };
@@ -2259,6 +2317,102 @@ window.crAddDiaspora = async function(){
   const memberName=document.getElementById('cr-dia-member').options[document.getElementById('cr-dia-member').selectedIndex].text;
   try{await addDoc(collection(db,'diasporaFees'),{memberId,memberName,year:Number(year),amount:Number(amount),createdAt:serverTimestamp()});msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.diaspora=false;setTimeout(()=>{msg.textContent='';crLoadDiaspora();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
+
+// ── EMAIL NOTIFICATIONS (EmailJS) ────────────────────────────
+// EmailJS sends emails directly from the browser — no server needed.
+// Setup: sign up at emailjs.com → create a service + template → fill keys below.
+const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';   // e.g. 'service_abc123'
+const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';  // e.g. 'template_xyz456'
+const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';   // e.g. 'user_abcdef'
+let _emailJsLoaded = false;
+
+async function _loadEmailJs() {
+  if (_emailJsLoaded || typeof emailjs !== 'undefined') return;
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
+    s.onload = () => { emailjs.init(EMAILJS_PUBLIC_KEY); _emailJsLoaded = true; res(); };
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function _sendEmailNotification(toUid, toName, type, body) {
+  if (EMAILJS_SERVICE_ID === 'YOUR_EMAILJS_SERVICE_ID') return; // not configured
+  try {
+    await _loadEmailJs();
+    // Get recipient email from Firestore
+    let toEmail = null;
+    if (toUid === 'all') {
+      // Broadcast — send to all active members
+      const snap = await getDocs(collection(db,'members'));
+      const emails = [];
+      snap.forEach(d => { const m=d.data(); if(m.email && ['active','diaspora'].includes(m.status)) emails.push(m.email); });
+      for (const email of emails) {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+          to_email: email, to_name: 'Member',
+          from_name: "Let's Grow Investment Club",
+          subject: `New message from the Club`,
+          message: body,
+        });
+      }
+      return;
+    }
+    // Find member email by uid
+    const byUid = await getDocs(query(collection(db,'members'), where('uid','==',toUid)));
+    if (!byUid.empty) toEmail = byUid.docs[0].data().email;
+    if (!toEmail) return;
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: toEmail, to_name: toName,
+      from_name: "Let's Grow Investment Club",
+      subject: `New club message for you`,
+      message: body,
+    });
+    toast('Email sent to ' + toName, 'success');
+  } catch(e) { log('EmailJS: ' + e.message); }
+}
+
+// ── PUSH NOTIFICATIONS (Firebase Cloud Messaging) ─────────────
+// Setup: Firebase Console → Project Settings → Cloud Messaging
+//        → Web Push Certificates → Generate Key Pair → paste below.
+const FCM_VAPID_KEY = 'YOUR_FCM_VAPID_KEY'; // paste your VAPID public key here
+
+async function _initFCM() {
+  if (FCM_VAPID_KEY === 'YOUR_FCM_VAPID_KEY') return;
+  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  try {
+    const { getMessaging, getToken, onMessage } =
+      await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+    const messaging = getMessaging(fbApp);
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return;
+    const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
+    if (token && STATE.user) {
+      // Save token to member's Firestore doc
+      await setDoc(doc(db,'members',STATE.member?.id||STATE.user.uid), { fcmToken: token }, { merge: true });
+    }
+    // Foreground messages — show as in-app toast
+    onMessage(messaging, payload => {
+      const title = payload.notification?.title || 'New message';
+      const body  = payload.notification?.body  || '';
+      toast(`📣 ${title}: ${body}`);
+    });
+  } catch(e) { log('FCM: ' + e.message); }
+}
+
+async function _sendPushNotification(toUid, type, body) {
+  // Reads FCM token from Firestore and writes a push job doc
+  // A Firebase Function (or Codespaces script) can consume these.
+  // For now we write a notification request to Firestore so it's queued.
+  if (FCM_VAPID_KEY === 'YOUR_FCM_VAPID_KEY') return;
+  try {
+    const title = `Let's Grow: ${type === 'broadcast' ? 'Announcement' : 'New Message'}`;
+    await addDoc(collection(db, 'pushQueue'), {
+      toUid, title, body, sentAt: serverTimestamp(), processed: false,
+    });
+  } catch(e) { log('PushQueue: ' + e.message); }
+}
 
 // ── LOAD LOANS MODULE ─────────────────────────────────────────
 // loans.js is a separate file for all loan logic.
