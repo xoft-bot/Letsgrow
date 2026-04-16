@@ -210,15 +210,10 @@ onAuthStateChanged(auth, async user => {
       pill.className = `tier-badge tier-${memberTier}`;
     }
 
-    // Admin-only nav — members never see Admin or Loans tabs
-    const adminNav = document.getElementById('nav-admin');
-    const loansNav = document.getElementById('nav-loans');
-    if (adminNav) adminNav.style.display = 'none';
-    if (loansNav) loansNav.style.display = 'none';
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
-      if (adminNav) adminNav.style.display = 'flex';
-      if (loansNav) loansNav.style.display = 'flex';
+      document.getElementById('nav-admin').style.display  = 'flex';
+      document.getElementById('nav-loans').style.display  = 'flex';
     }
 
     loading.style.display = 'none';
@@ -342,15 +337,87 @@ async function loadDashboard() {
       document.getElementById('balance-breakdown').style.display = 'block';
       const addEvtBtn = document.getElementById('add-event-btn');
       if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
-    } else {
-      // Ensure non-admins never see the add event button
-      const addEvtBtn = document.getElementById('add-event-btn');
-      if (addEvtBtn) addEvtBtn.style.display = 'none';
     }
   } catch(e) { log('Dashboard: '+e.message); }
 
   // Load finances summary + events in parallel
   await Promise.all([loadFinancesSummary(), loadEvents()]);
+
+  // ── Payment alert for non-admin members ──────────────────────
+  if (!STATE.isAdmin && STATE.member) {
+    const m = STATE.member;
+    const now = new Date();
+    const yr  = now.getFullYear();
+    const mo  = now.getMonth(); // 0-indexed
+    const rate = m.monthlySubscription || m.monthlyRate || 40000;
+    const paid = (m.subscriptionByYear || {})[String(yr)] || 0;
+    const expectedToDate = rate * (mo + 1);
+    const outstanding    = Math.max(0, expectedToDate - paid);
+    const monthsBehind   = outstanding > 0 ? Math.ceil(outstanding / rate) : 0;
+
+    // Days left in current month
+    const lastDay = new Date(yr, mo + 1, 0);
+    const daysLeft = Math.ceil((lastDay - now) / 86400000);
+
+    const alertEl = document.getElementById('member-payment-alert');
+    if (!alertEl) {
+      // Inject alert container after hero stats if not present
+      const heroEl = document.querySelector('.hero-stats, #h-balance')?.closest('.card, .hero, section');
+      const alertDiv = document.createElement('div');
+      alertDiv.id = 'member-payment-alert';
+      // find a good anchor — insert before the first .card in the dashboard section
+      const dashSec = document.getElementById('sec-dashboard');
+      if (dashSec) {
+        const firstCard = dashSec.querySelector('.card');
+        if (firstCard) dashSec.insertBefore(alertDiv, firstCard);
+        else dashSec.appendChild(alertDiv);
+      }
+    }
+
+    const alertTarget = document.getElementById('member-payment-alert');
+    if (!alertTarget) return;
+
+    if (monthsBehind === 0) {
+      // Up to date — subtle green pill
+      alertTarget.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px">
+        <span style="font-size:20px">✅</span>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#166534">Contributions Up To Date</div>
+          <div style="font-size:11px;color:#166534;opacity:.8">Next payment due within ${daysLeft} day${daysLeft!==1?'s':''}</div>
+        </div>
+      </div>`;
+    } else {
+      // Behind — urgent alert
+      const urgency = monthsBehind >= 3 ? '#7f1d1d' : monthsBehind >= 2 ? '#991b1b' : '#b45309';
+      const bg      = monthsBehind >= 3 ? '#fef2f2' : monthsBehind >= 2 ? '#fef2f2' : '#fffbeb';
+      const border  = monthsBehind >= 3 ? '#fecaca' : monthsBehind >= 2 ? '#fecaca' : '#fde68a';
+      const icon    = monthsBehind >= 3 ? '🚨' : '⚠️';
+      const fineMsg = monthsBehind >= 1
+        ? `<div style="font-size:11px;color:${urgency};opacity:.85;margin-top:3px">⚡ Late payment may attract a fine of UGX 15,000 per quarter</div>`
+        : '';
+      const evictMsg = monthsBehind >= 4
+        ? `<div style="font-size:11px;font-weight:700;color:#7f1d1d;margin-top:4px;padding:4px 8px;background:#fee2e2;border-radius:6px">⚠ Members 4+ months behind risk suspension or review</div>`
+        : '';
+      alertTarget.innerHTML = `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:13px 14px;margin-bottom:12px">
+        <div style="display:flex;align-items:flex-start;gap:10px">
+          <span style="font-size:22px;flex-shrink:0">${icon}</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;color:${urgency}">${monthsBehind} Month${monthsBehind!==1?'s':''} Behind — UGX ${outstanding.toLocaleString()} Outstanding</div>
+            <div style="font-size:11px;color:${urgency};opacity:.8;margin-top:2px">${daysLeft} day${daysLeft!==1?'s':''} remaining this month to avoid further arrears</div>
+            ${fineMsg}
+            ${evictMsg}
+          </div>
+        </div>
+        <div style="margin-top:10px;background:rgba(0,0,0,.06);border-radius:6px;height:5px;overflow:hidden">
+          <div style="height:100%;background:${urgency};border-radius:6px;width:${Math.min(100,Math.round(paid/expectedToDate*100))}%"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:${urgency};opacity:.7;margin-top:4px">
+          <span>UGX ${paid.toLocaleString()} paid of UGX ${expectedToDate.toLocaleString()} due so far</span>
+          <span>${Math.min(100,Math.round(paid/expectedToDate*100))}%</span>
+        </div>
+      </div>`;
+    }
+  }
 }
 
 // ── FINANCES: INCOME & EXPENDITURE ───────────────────────────
@@ -568,7 +635,6 @@ async function loadEvents() {
 }
 
 window.toggleAddEvent = function() {
-  if (!STATE.isAdmin) return;
   const form = document.getElementById('add-event-form');
   form.style.display = form.style.display === 'none' ? 'block' : 'none';
 };
@@ -886,20 +952,48 @@ async function loadMembers() {
     const jSnap = await getDocs(collection(db,'juniors'));
     if (!jSnap.empty) {
       document.getElementById('juniors-section').style.display = 'block';
+      const juniors = [];
+      jSnap.forEach(d => juniors.push({ id: d.id, ...d.data() }));
+      juniors.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      const yr = new Date().getFullYear();
       let jHtml = '';
-      jSnap.forEach(d => {
-        const j = d.data();
+      // group by parent
+      const byParent = {};
+      juniors.forEach(j => {
+        const p = j.parentMemberId || j.parentName || 'Other';
+        if (!byParent[p]) byParent[p] = { label: j.parentName || p, kids: [] };
+        byParent[p].kids.push(j);
+      });
+      juniors.forEach(j => {
         const ini = (j.name||'?')[0].toUpperCase();
-        jHtml += `<div class="member-row" onclick="openJuniorDetail('${d.id}')" style="cursor:pointer">
-          <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700">${ini}</div>
-          <div class="m-info">
-            <div class="m-name">${j.name}</div>
-            <div class="m-sub">Junior · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo · Parent: ${j.parentName||'—'}</div>
+        const yrPaid = (j.subscriptionByYear||{})[String(yr)] || 0;
+        const target = (j.monthlyRate||20000) * 12;
+        const pct = Math.min(100, Math.round(yrPaid/target*100));
+        const barColor = pct>=100 ? '#166534' : pct>=50 ? '#d97706' : '#991b1b';
+        const welfPaid = (j.welfareByYear||{})[String(yr)] || 0;
+        jHtml += `<div class="member-row" onclick="openJuniorDetail('${j.id}')" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700;flex-shrink:0">${ini}</div>
+            <div class="m-info" style="flex:1;min-width:0">
+              <div class="m-name">${j.name||'—'}</div>
+              <div class="m-sub">Parent: ${j.parentName||'—'} · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
+            </div>
+            <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
           </div>
-          <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
+          <div style="padding:0 4px">
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
+              <span>${yr}: UGX ${yrPaid.toLocaleString()} paid</span>
+              <span style="color:${barColor};font-weight:600">${pct}%</span>
+            </div>
+            <div style="background:var(--border);border-radius:3px;height:3px;overflow:hidden">
+              <div style="height:100%;background:${barColor};width:${pct}%;border-radius:3px"></div>
+            </div>
+            ${welfPaid > 0 ? `<div style="font-size:10px;color:var(--muted);margin-top:2px">Welfare ${yr}: UGX ${welfPaid.toLocaleString()}</div>` : ''}
+          </div>
         </div>`;
       });
-      document.getElementById('juniors-list').innerHTML = jHtml;
+      document.getElementById('juniors-list').innerHTML = jHtml || '<div class="empty">No junior records</div>';
+      document.getElementById('juniors-count').textContent = `(${juniors.length})`;
     }
   } catch(e) {
     list.innerHTML = '<div class="empty">Error loading members</div>';
@@ -942,7 +1036,7 @@ window.filterMembers = function(filter, btn) {
     renderMembers(allMembersCache.filter(m => ['inactive','exited','deceased'].includes(m.status)));
     return;
   }
-  renderMembers(allMembersCache.filter(m => m.status === filter || m.tier === filter));
+  renderMembers(allMembersCache.filter(m => m.status === filter || m.tier === filter || m.memberType === filter));
 };
 
 // ── INVESTMENTS ───────────────────────────────────────────────

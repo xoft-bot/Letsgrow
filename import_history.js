@@ -1,6 +1,10 @@
 // ── import_history.js — Let's Grow Investment Club ──────────────
 // Run ONCE from Codespaces: node import_history.js
 // Requires serviceAccount.json in the same folder.
+// NOTE: NAMPEWO WINNIEFRED appears in both the Diaspora Fees sheet
+// (2025, UGX 60,000) and the Fines sheet (Q2 2023). She HAS been
+// removed from this script per admin instruction. Verify manually
+// in the Firestore console if any records exist for her.
 
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
@@ -8,6 +12,7 @@ const serviceAccount = require('./serviceAccount.json');
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
+// ── CLUB INCOME ───────────────────────────────────────────────
 const clubIncome = {
   "2020": { subscriptions:4876000, welfare:0, gla:0, unitTrust:0, registration:0, diaspora:0, fines:0, roi:22850000, total:4876000 },
   "2021": { subscriptions:7376500, welfare:1475000, gla:0, unitTrust:0, registration:0, diaspora:0, fines:34000, total:8885500 },
@@ -18,6 +23,7 @@ const clubIncome = {
   "2026": { subscriptions:1240000, welfare:300000, gla:390000, unitTrust:300000, registration:0, diaspora:0, juniorSub:240000, juniorWelfare:60000, fines:0, total:2530000 },
 };
 
+// ── CLUB EXPENSES ─────────────────────────────────────────────
 const clubExpenses = [
   { date:"2021-03-28", description:"Meetings' welfare as at 28/03/2021", amount:132000, category:"welfare", year:2021 },
   { date:"2021-03-29", description:"Club Registration", amount:60000, category:"admin", year:2021 },
@@ -28,14 +34,14 @@ const clubExpenses = [
   { date:"2021-08-13", description:"Bank account opening fees", amount:50000, category:"admin", year:2021 },
   { date:"2021-08-13", description:"Transportation", amount:10000, category:"transport", year:2021 },
   { date:"2021-10-15", description:"Re-certification of club resolution to open bank account", amount:20000, category:"admin", year:2021 },
-  { date:"2021-10-20", description:"Bank closure fee for club's joint saving account", amount:25000, category:"admin", year:2021 },
+  { date:"2021-10-20", description:"Bank closure fee for club joint saving account", amount:25000, category:"admin", year:2021 },
   { date:"2021-10-20", description:"Money transfer fees to Lets Grow Investment A/C", amount:26000, category:"admin", year:2021 },
   { date:"2022-06-16", description:"Bought stamp for the Club", amount:55000, category:"admin", year:2022 },
   { date:"2022-06-16", description:"Bought three box files for the club", amount:18000, category:"admin", year:2022 },
   { date:"2022-06-16", description:"Transportation", amount:12000, category:"transport", year:2022 },
   { date:"2022-02-10", description:"Paid for design of the club official logo", amount:100000, category:"admin", year:2022 },
   { date:"2022-10-15", description:"Bought lunch for the constitution review committee", amount:63000, category:"welfare", year:2022 },
-  { date:"2022-10-29", description:"Paid for Club's reunion", amount:1440000, category:"social", year:2022 },
+  { date:"2022-10-29", description:"Paid for Club reunion", amount:1440000, category:"social", year:2022 },
   { date:"2023-01-29", description:"Hired venue for annual general meeting", amount:200000, category:"agm", year:2023 },
   { date:"2023-01-29", description:"Bought breakfast and lunch for members at AGM", amount:840000, category:"agm", year:2023 },
   { date:"2023-01-29", description:"Hired projector", amount:100000, category:"agm", year:2023 },
@@ -43,7 +49,7 @@ const clubExpenses = [
   { date:"2023-01-29", description:"Bought soft drinks", amount:40000, category:"agm", year:2023 },
   { date:"2023-01-29", description:"Transport", amount:20000, category:"transport", year:2023 },
   { date:"2023-08-01", description:"Paid off Mrs Nakimuli Annet (30% savings and dividends)", amount:294000, category:"member payout", year:2023 },
-  { date:"2023-06-03", description:"Condolences for Kenneth's burial", amount:1000000, category:"welfare", year:2023 },
+  { date:"2023-06-03", description:"Condolences for Kenneth burial", amount:1000000, category:"welfare", year:2023 },
   { date:"2023-03-26", description:"1st quarter cake to Faith", amount:100000, category:"welfare", year:2023 },
   { date:"2023-06-25", description:"2nd quarter cake to Jane", amount:100000, category:"welfare", year:2023 },
   { date:"2023-09-19", description:"Condolences for Fortunate", amount:1000000, category:"welfare", year:2023 },
@@ -52,7 +58,7 @@ const clubExpenses = [
   { date:"2023-12-17", description:"Printing annual general minutes 2023", amount:350000, category:"admin", year:2023 },
   { date:"2023-12-17", description:"4th quarter cake to Jane", amount:100000, category:"welfare", year:2023 },
   { date:"2024-08-02", description:"Paid back money used to recover Eldaz Meat Parlour", amount:1270000, category:"investment", year:2024 },
-  { date:"2024-11-03", description:"Condolences for Ms Hellen (Shammy & Rashidah's sister)", amount:500000, category:"welfare", year:2024 },
+  { date:"2024-11-03", description:"Condolences for Ms Hellen (Shammy and Rashidah sister)", amount:500000, category:"welfare", year:2024 },
   { date:"2024-03-24", description:"1st Quarter cake to Faith", amount:100000, category:"welfare", year:2024 },
   { date:"2024-06-30", description:"2nd Quarter cake to Faith", amount:100000, category:"welfare", year:2024 },
   { date:"2024-09-29", description:"3rd Quarter cake to Jane", amount:100000, category:"welfare", year:2024 },
@@ -60,6 +66,7 @@ const clubExpenses = [
   { date:"2024-12-22", description:"4th Quarter cake to Faith", amount:100000, category:"welfare", year:2024 },
 ];
 
+// ── FINES (Nampeewo removed per admin instruction) ─────────────
 const fines = [
   { memberName:"Naggayi Constance", reason:"Absent from meeting", date:"2022-03-31", amount:15000, status:"paid", year:2022 },
   { memberName:"Nakimuli Annet",    reason:"Absent from meeting", date:"2022-03-31", amount:15000, status:"paid", year:2022 },
@@ -96,7 +103,6 @@ const fines = [
   { memberName:"Nansubuga Jane F",  reason:"Absent from meeting", date:"2023-06-30", amount:15000, status:"paid", year:2023 },
   { memberName:"Nsubuga Moses",     reason:"Absent from meeting", date:"2023-06-30", amount:15000, status:"paid", year:2023 },
   { memberName:"Kyamulabi Diana",   reason:"Absent from meeting", date:"2023-06-30", amount:15000, status:"paid", year:2023 },
-  { memberName:"Nampewo Winifred",  reason:"Absent from meeting", date:"2023-06-30", amount:15000, status:"paid", year:2023 },
   { memberName:"Kyamulabi Diana",   reason:"Absent from meeting", date:"2023-09-30", amount:15000, status:"paid", year:2023 },
   { memberName:"Nagawa Ruth",       reason:"Absent from meeting", date:"2023-09-30", amount:15000, status:"paid", year:2023 },
   { memberName:"Ssetumba David",    reason:"Absent from meeting", date:"2023-09-30", amount:15000, status:"paid", year:2023 },
@@ -123,22 +129,23 @@ const fines = [
   { memberName:"Mrs Ssali",         reason:"Absent from meeting", date:"2025-09-30", amount:15000, status:"paid", year:2025 },
 ];
 
+// ── DIASPORA FEES (Nampeewo removed per admin instruction) ──────
 const diasporaFees = [
-  { memberName:"NALUKENGE RASHIDA",  year:2022, amount:160000 },
-  { memberName:"NAMUBIRU ROSE",      year:2022, amount:180000 },
-  { memberName:"NALUKENGE RASHIDA",  year:2023, amount:240000 },
-  { memberName:"NAMUBIRU ROSE",      year:2023, amount:100000 },
-  { memberName:"NAKIWALA RUTH",      year:2023, amount:160000 },
-  { memberName:"NALUKENGE RASHIDA",  year:2024, amount:220000 },
-  { memberName:"NAKIWALA RUTH",      year:2024, amount:240000 },
-  { memberName:"SSALI SIMON",        year:2024, amount:60000  },
-  { memberName:"NAKIWALA RUTH",      year:2025, amount:240000 },
-  { memberName:"NALUKENGE RASHIDA",  year:2025, amount:240000 },
-  { memberName:"SSALI SIMON",        year:2025, amount:240000 },
-  { memberName:"MATOVU JULIUS",      year:2025, amount:60000  },
-  { memberName:"NAMPEWO WINNIEFRED", year:2025, amount:60000  },
+  { memberName:"NALUKENGE RASHIDA", year:2022, amount:160000 },
+  { memberName:"NAMUBIRU ROSE",     year:2022, amount:180000 },
+  { memberName:"NALUKENGE RASHIDA", year:2023, amount:240000 },
+  { memberName:"NAMUBIRU ROSE",     year:2023, amount:100000 },
+  { memberName:"NAKIWALA RUTH",     year:2023, amount:160000 },
+  { memberName:"NALUKENGE RASHIDA", year:2024, amount:220000 },
+  { memberName:"NAKIWALA RUTH",     year:2024, amount:240000 },
+  { memberName:"SSALI SIMON",       year:2024, amount:60000  },
+  { memberName:"NAKIWALA RUTH",     year:2025, amount:240000 },
+  { memberName:"NALUKENGE RASHIDA", year:2025, amount:240000 },
+  { memberName:"SSALI SIMON",       year:2025, amount:240000 },
+  { memberName:"MATOVU JULIUS",     year:2025, amount:60000  },
 ];
 
+// ── DIVIDENDS ─────────────────────────────────────────────────
 const dividends = [
   { memberName:"MR & MRS LULE STEPHEN",  year:2023, amount:583493, status:"paid" },
   { memberName:"KYAMULABI DIANA",         year:2023, amount:288651, status:"paid" },
@@ -166,11 +173,12 @@ const dividends = [
   { memberName:"MR & MRS MATOVU",         year:2023, amount:84878,  status:"paid" },
 ];
 
+// ── REGISTRATION FEES ─────────────────────────────────────────
 const registrationFees = [
   { memberName:"MR & MRS LULE STEPHEN",  amount:20000, status:"paid" },
   { memberName:"KYAMULABI DIANA",         amount:10000, status:"paid" },
   { memberName:"CLAIRE NAMUTEBI",         amount:10000, status:"paid" },
-  { memberName:"CONSTANCE (WITH KIDS)",   amount:20000, status:"paid" },
+  { memberName:"CONSTANCE WITH KIDS",     amount:20000, status:"paid" },
   { memberName:"MR & MRS MWIDU",         amount:20000, status:"paid" },
   { memberName:"NAMUYIMBA KENNETH",       amount:10000, status:"paid" },
   { memberName:"MR & MRS SEKIRANDA",     amount:20000, status:"paid" },
@@ -188,6 +196,151 @@ const registrationFees = [
   { memberName:"NAMUBIRU ROSE",           amount:10000, status:"paid" },
 ];
 
+// ── JUNIORS (2024 & 2025 data with parent-child links) ──────────
+// Parent-child mappings confirmed by admin:
+//   Mr & Mrs Matovu   → Hezel Wenceslaus Adrian Matovu
+//   Mr & Mrs Ssali    → Jasper Ssali Ssewanonda + Bianca Ssali
+//   Mr & Mrs Kirabira → Nathan Jade Lule Luutu
+//   Mr & Mrs Kigonya  → Ryan Cyprian Lule Lwanga
+//   Mr & Mrs Sekiranda→ Sekiranda Fortunate Grace
+//   Nabunya Shamera   → Ndagire Catherine Skylar
+const juniors = [
+  {
+    name: "Nathan Jade Lule Luutu",
+    parentName: "Mr & Mrs Kirabira", parentMemberId: "mr-and-mrs-kirabira",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 240000, "2025": 240000 },
+    welfareByYear:      { "2024": 60000,  "2025": 60000  },
+  },
+  {
+    name: "Jasper Ssali Ssewanonda",
+    parentName: "Mr & Mrs Ssali", parentMemberId: "mr-and-mrs-ssali",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 240000, "2025": 240000 },
+    welfareByYear:      { "2024": 60000,  "2025": 60000  },
+  },
+  {
+    name: "Bianca Ssali",
+    parentName: "Mr & Mrs Ssali", parentMemberId: "mr-and-mrs-ssali",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 40000, "2025": 0 },
+    welfareByYear:      { "2024": 10000, "2025": 0 },
+  },
+  {
+    name: "Ndagire Catherine Skylar",
+    parentName: "Nabunya Shamera", parentMemberId: "nabunya-shamera",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 20000, "2025": 0 },
+    welfareByYear:      { "2024": 5000,  "2025": 0 },
+  },
+  {
+    name: "Ryan Cyprian Lule Lwanga",
+    parentName: "Mr & Mrs Kigonya", parentMemberId: "mr-and-mrs-kigonya",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 80000, "2025": 0 },
+    welfareByYear:      { "2024": 20000, "2025": 0 },
+  },
+  {
+    name: "Hezel Wenceslaus Adrian Matovu",
+    parentName: "Mr & Mrs Matovu", parentMemberId: "mr-and-mrs-matovu",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 240000, "2025": 240000 },
+    welfareByYear:      { "2024": 60000,  "2025": 60000  },
+  },
+  {
+    name: "Sekiranda Fortunate Grace",
+    parentName: "Mr & Mrs Sekiranda", parentMemberId: "mr-and-mrs-sekiranda",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 240000, "2025": 240000 },
+    welfareByYear:      { "2024": 60000,  "2025": 60000  },
+  },
+  {
+    name: "Erik Danil Nuwahereza",
+    parentName: "Nuwahereza Edson", parentMemberId: "nuwahereza-edson",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 0, "2025": 0 },
+    welfareByYear:      { "2024": 0, "2025": 0 },
+  },
+  {
+    name: "Elisha Joshua Nuwahereza",
+    parentName: "Nuwahereza Edson", parentMemberId: "nuwahereza-edson",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 0, "2025": 0 },
+    welfareByYear:      { "2024": 0, "2025": 0 },
+  },
+  {
+    name: "Alpha Rashida Kulumba",
+    parentName: "Nalukenge Rashida", parentMemberId: "nalukenge-rashida",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 240000, "2025": 240000 },
+    welfareByYear:      { "2024": 60000,  "2025": 60000  },
+  },
+  {
+    name: "Jayden Elvis Liam Izimba",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 100000, "2025": 0 },
+    welfareByYear:      { "2024": 25000,  "2025": 0 },
+  },
+  {
+    name: "Liam Joseph Luutu",
+    parentName: "Mr & Mrs Luutu", parentMemberId: "mr-and-mrs-luutu",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 200000, "2025": 200000 },
+    welfareByYear:      { "2024": 50000,  "2025": 50000  },
+  },
+  {
+    name: "Lael Orion Luutu",
+    parentName: "Mr & Mrs Luutu", parentMemberId: "mr-and-mrs-luutu",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 200000, "2025": 200000 },
+    welfareByYear:      { "2024": 50000,  "2025": 50000  },
+  },
+  {
+    name: "Ssentongo Remigius Smith",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 60000, "2025": 0 },
+    welfareByYear:      { "2024": 15000, "2025": 0 },
+  },
+  {
+    name: "Senyange Ziwa Jerome",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 120000, "2025": 0 },
+    welfareByYear:      { "2024": 30000,  "2025": 0 },
+  },
+  {
+    name: "Kyambadde Jayden",
+    parentName: "Kyamulabi Diana", parentMemberId: "kyamulabi-diana",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 120000, "2025": 0 },
+    welfareByYear:      { "2024": 30000,  "2025": 0 },
+  },
+  {
+    name: "Nsimbi Jayson",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 120000, "2025": 0 },
+    welfareByYear:      { "2024": 30000,  "2025": 0 },
+  },
+  {
+    name: "Nakirijja Esther Elyse",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 60000, "2025": 0 },
+    welfareByYear:      { "2024": 15000, "2025": 0 },
+  },
+  {
+    name: "Nambatya Elyna Jenkins",
+    parentName: "", parentMemberId: "",
+    monthlyRate: 20000, welfareRate: 5000, status: "active", joinYear: 2024,
+    subscriptionByYear: { "2024": 40000, "2025": 0 },
+    welfareByYear:      { "2024": 15000, "2025": 0 },
+  },
+];
+
+// ── IMPORT HELPERS ────────────────────────────────────────────
 async function importCollection(name, records, keyFn) {
   const snap = await db.collection(name).get();
   const existing = new Set(snap.docs.map(d => keyFn(d.data())));
@@ -197,28 +350,38 @@ async function importCollection(name, records, keyFn) {
     await db.collection(name).add({ ...rec, importedAt: Timestamp.now(), source: 'excel_import' });
     added++;
   }
-  console.log(`  ${name}: ${added} added, ${skipped} already existed`);
+  console.log(`  ${name}: +${added} added  (${skipped} already existed)`);
 }
 
 async function run() {
-  console.log('\nStarting import...\n');
-  console.log('clubIncome...');
+  console.log('\nStarting full import...\n');
+
+  console.log('clubIncome (by year doc)...');
   for (const [yr, data] of Object.entries(clubIncome)) {
     await db.collection('clubIncome').doc(yr).set({ ...data, importedAt: Timestamp.now() }, { merge: true });
     process.stdout.write(`  ${yr} `);
   }
   console.log('\n');
+
   console.log('clubExpenses...');
   await importCollection('clubExpenses', clubExpenses, r => `${r.date}|${r.description}`);
+
   console.log('fines...');
   await importCollection('fines', fines, r => `${r.date}|${r.memberName}|${r.amount}`);
+
   console.log('diasporaFees...');
   await importCollection('diasporaFees', diasporaFees, r => `${r.year}|${r.memberName}`);
+
   console.log('dividends...');
   await importCollection('dividends', dividends, r => `${r.year}|${r.memberName}`);
+
   console.log('registrationFees...');
   await importCollection('registrationFees', registrationFees, r => r.memberName);
-  console.log('\nDone. Refresh the app to see all Club Records data.\n');
+
+  console.log('juniors...');
+  await importCollection('juniors', juniors, r => r.name);
+
+  console.log('\nDone. Refresh the app to see all data.\n');
   process.exit(0);
 }
 run().catch(e => { console.error('Error:', e.message); process.exit(1); });
