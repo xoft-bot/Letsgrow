@@ -2156,6 +2156,27 @@ window.crAddDiaspora = async function(){
   try{await addDoc(collection(db,'diasporaFees'),{memberId,memberName,year:Number(year),amount:Number(amount),createdAt:serverTimestamp()});msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.diaspora=false;setTimeout(()=>{msg.textContent='';crLoadDiaspora();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
 
+// ── THE BRIDGE: Expose tools to sidebar, compliance, and session modules ──
+window.__lg = { 
+  db, 
+  STATE, 
+  fmt, 
+  toast, 
+  doc, 
+  getDoc, 
+  setDoc, 
+  updateDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc, 
+  serverTimestamp 
+};
+
+// Log to confirm bridge is active
+console.log("LGIC Bridge initialized.");
+
 // ── LOAD LOANS MODULE ─────────────────────────────────────────
 // loans.js is a separate file for all loan logic.
 // It reads window.__lg for shared state.
