@@ -210,15 +210,10 @@ onAuthStateChanged(auth, async user => {
       pill.className = `tier-badge tier-${memberTier}`;
     }
 
-    // Hide admin/loans tabs by default; only show for admins
-    const _navAdmin = document.getElementById('nav-admin');
-    const _navLoans = document.getElementById('nav-loans');
-    if (_navAdmin) _navAdmin.style.display = 'none';
-    if (_navLoans) _navLoans.style.display = 'none';
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
-      if (_navAdmin) _navAdmin.style.display = 'flex';
-      if (_navLoans) _navLoans.style.display = 'flex';
+      document.getElementById('nav-admin').style.display  = 'flex';
+      document.getElementById('nav-loans').style.display  = 'flex';
     }
 
     loading.style.display = 'none';
@@ -227,7 +222,11 @@ onAuthStateChanged(auth, async user => {
 
     await Promise.all([loadDashboard(), loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
-    _initFCM().catch(()=>{}); // request push permission (no-op if VAPID key not set)
+
+    // ── Session timeout ──────────────────────────────────────────
+    _startSessionTimer();
+    _registerDevice();
+    _initFCM().catch(()=>{});
 
   } catch(e) {
     log('Auth error: ' + e.message);
@@ -296,16 +295,27 @@ async function loadDashboard() {
     }
 
     // Hero
-    const _set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-    _set('h-balance',  fmt(bal));
-    _set('h-inflow',   fmt(inflow));
-    _set('h-invested', fmt(invested));
-    _set('h-roi',      fmt(roi));
-    _set('h-ut',       fmt(ut));
-    _set('s-invested', fmt(invested));
-    // Loan pool — admin only
+    const _setEl = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+    _setEl('h-balance',  fmt(bal));
+    _setEl('h-inflow',   fmt(inflow));
+    _setEl('h-invested', fmt(invested));
+    _setEl('h-roi',      fmt(roi));
+    _setEl('h-ut',       fmt(ut));
+    _setEl('s-invested', fmt(invested));
+    // Loan pool: admin-only visibility
     const _lpEl = document.getElementById('s-loanpool');
-    if (_lpEl) { if (STATE.isAdmin) { _lpEl.textContent = fmt(loanPool); _lpEl.closest?.('[data-loanpool-wrap]')?.style && (_lpEl.closest('[data-loanpool-wrap]').style.display='block'); } else { const _lpWrap = _lpEl.closest?.('[data-loanpool-wrap]') || _lpEl.parentElement?.closest?.('.stat-item'); if (_lpWrap) _lpWrap.style.display='none'; else _lpEl.textContent='—'; } }
+    if (_lpEl) {
+      if (STATE.isAdmin) {
+        _lpEl.textContent = fmt(loanPool);
+        // Also ensure parent wrapper is visible
+        let _lpWrap = _lpEl.closest('[data-lp]') || _lpEl.parentElement;
+        if (_lpWrap) _lpWrap.style.display = '';
+      } else {
+        // Replace loan pool stat with Committees link for members
+        let _lpWrap = _lpEl.closest('[data-lp]') || _lpEl.parentElement;
+        if (_lpWrap) _lpWrap.style.display = 'none';
+      }
+    }
 
     // Active member count + FY2026 progress
     const currentYear = new Date().getFullYear();
@@ -346,73 +356,11 @@ async function loadDashboard() {
       document.getElementById('balance-breakdown').style.display = 'block';
       const addEvtBtn = document.getElementById('add-event-btn');
       if (addEvtBtn) addEvtBtn.style.display = 'inline-block';
-    } else {
-      const addEvtBtn = document.getElementById('add-event-btn');
-      if (addEvtBtn) addEvtBtn.style.display = 'none';
     }
   } catch(e) { log('Dashboard: '+e.message); }
 
   // Load finances summary + events in parallel
   await Promise.all([loadFinancesSummary(), loadEvents()]);
-
-  // ── Member payment alert (non-admin only) ───────────────────
-  if (!STATE.isAdmin && STATE.member) {
-    const m = STATE.member;
-    const now = new Date();
-    const yr  = now.getFullYear();
-    const mo  = now.getMonth();
-    const rate = m.monthlySubscription || m.monthlyRate || 40000;
-    const paid = (m.subscriptionByYear||{})[String(yr)] || 0;
-    const expectedToDate = rate * (mo + 1);
-    const outstanding    = Math.max(0, expectedToDate - paid);
-    const monthsBehind   = outstanding > 0 ? Math.ceil(outstanding / rate) : 0;
-    const lastDay = new Date(yr, mo + 1, 0);
-    const daysLeft = Math.ceil((lastDay - now) / 86400000);
-
-    let alertEl = document.getElementById('member-payment-alert');
-    if (!alertEl) {
-      alertEl = document.createElement('div');
-      alertEl.id = 'member-payment-alert';
-      alertEl.style.cssText = 'margin:8px 0';
-      const dashSec = document.getElementById('sec-dashboard');
-      const firstCard = dashSec?.querySelector('.card');
-      if (firstCard) dashSec.insertBefore(alertEl, firstCard);
-      else dashSec?.appendChild(alertEl);
-    }
-
-    if (monthsBehind === 0) {
-      alertEl.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:10px">
-        <span style="font-size:18px">✅</span>
-        <div><div style="font-size:12px;font-weight:700;color:#166534">Contributions Up To Date</div>
-        <div style="font-size:10px;color:#166534;opacity:.8">Next payment due in ${daysLeft} day${daysLeft!==1?'s':''}</div></div>
-      </div>`;
-    } else {
-      const sev = monthsBehind >= 4 ? 3 : monthsBehind >= 2 ? 2 : 1;
-      const [bg,border,clr,icon] = sev===3
-        ? ['#fef2f2','#fecaca','#7f1d1d','🚨']
-        : sev===2
-        ? ['#fef2f2','#fecaca','#991b1b','⚠️']
-        : ['#fffbeb','#fde68a','#b45309','⚠️'];
-      alertEl.innerHTML = `<div style="background:${bg};border:1.5px solid ${border};border-radius:12px;padding:12px 14px">
-        <div style="display:flex;align-items:flex-start;gap:9px">
-          <span style="font-size:20px;flex-shrink:0">${icon}</span>
-          <div style="flex:1">
-            <div style="font-size:12px;font-weight:700;color:${clr}">${monthsBehind} Month${monthsBehind!==1?'s':''} Behind · UGX ${outstanding.toLocaleString()} Outstanding</div>
-            <div style="font-size:10px;color:${clr};opacity:.85;margin-top:2px">${daysLeft} day${daysLeft!==1?'s':''} remaining this month to avoid further arrears</div>
-            <div style="font-size:10px;color:${clr};opacity:.75;margin-top:2px">⚡ Late payment attracts a fine of UGX 15,000 per quarter</div>
-            ${sev===3?`<div style="font-size:10px;font-weight:700;color:#7f1d1d;margin-top:4px;padding:3px 7px;background:#fee2e2;border-radius:5px;display:inline-block">4+ months behind — account under review</div>`:''}
-          </div>
-        </div>
-        <div style="margin-top:8px;background:rgba(0,0,0,.08);border-radius:4px;height:4px;overflow:hidden">
-          <div style="height:100%;background:${clr};border-radius:4px;width:${Math.min(100,Math.round(paid/expectedToDate*100))}%"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:${clr};opacity:.65;margin-top:3px">
-          <span>UGX ${paid.toLocaleString()} of UGX ${expectedToDate.toLocaleString()} due</span>
-          <span>${Math.min(100,Math.round(paid/expectedToDate*100))}%</span>
-        </div>
-      </div>`;
-    }
-  }
 }
 
 // ── FINANCES: INCOME & EXPENDITURE ───────────────────────────
@@ -462,10 +410,21 @@ async function loadFinancesSummary() {
       tabsEl.innerHTML = '<div style="font-size:12px;color:var(--muted)">No data yet — admin can add entries below</div>';
     }
 
-    // Show admin add form
+    // fin-admin-add is permanently hidden — use Club Records tab to add expenses
+    const addEl = document.getElementById('fin-admin-add');
+    if (addEl) addEl.style.display = 'none';
+    // Show a redirect note for admin
     if (STATE.isAdmin) {
-      const addEl = document.getElementById('fin-admin-add');
-      if (addEl) addEl.style.display = 'block';
+      let noteEl = document.getElementById('fin-entry-note');
+      if (!noteEl) {
+        noteEl = document.createElement('div');
+        noteEl.id = 'fin-entry-note';
+        noteEl.style.cssText = 'font-size:11px;color:var(--muted);padding:8px 10px;border-top:1px solid var(--border);text-align:center;margin-top:4px';
+        noteEl.textContent = '✏️ Add expenses and income via the Club Records tab';
+        const detail = document.getElementById('finances-detail');
+        if (detail) detail.appendChild(noteEl);
+      }
+      noteEl.style.display = 'block';
     }
   } catch(e) { log('Finances: '+e.message); }
 }
@@ -630,9 +589,8 @@ async function loadEvents() {
 }
 
 window.toggleAddEvent = function() {
-  if (!STATE.isAdmin) return;
   const form = document.getElementById('add-event-form');
-  if (form) form.style.display = form.style.display === 'none' ? 'block' : 'none';
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
 };
 
 window.saveEvent = async function() {
@@ -679,14 +637,15 @@ function getMonthStatuses(subByYear, monthlyRate, year, currentMonth) {
   const statuses  = [];
 
   for (let mo = 0; mo < 12; mo++) {
-    if (mo > currentMonth) {
-      statuses.push('future');
+    const expectedByEOM = rate * (mo + 1);
+    const expectedByBOM = rate * mo;
+    if (totalPaid >= expectedByEOM) {
+      // paid — even if future month (member paid ahead)
+      statuses.push('paid');
+    } else if (totalPaid > expectedByBOM) {
+      statuses.push(mo > currentMonth ? 'future-partial' : 'partial');
     } else {
-      const expectedByEOM = rate * (mo + 1);
-      const expectedByBOM = rate * mo;
-      if (totalPaid >= expectedByEOM)       statuses.push('paid');
-      else if (totalPaid > expectedByBOM)   statuses.push('partial');
-      else                                   statuses.push('due');
+      statuses.push(mo > currentMonth ? 'future' : 'due');
     }
   }
   return statuses;
@@ -752,10 +711,11 @@ async function loadTracker() {
       for (let mo = 0; mo < 12; mo++) {
         const s = statuses[mo];
         let cls, lbl;
-        if      (s==='paid')    { cls='mo-paid';    lbl='✓'; }
-        else if (s==='partial') { cls='mo-partial'; lbl='~'; }
-        else if (s==='due')     { cls='mo-due';     lbl='!'; }
-        else                    { cls='mo-future';  lbl=moLabels[mo]||'·'; }
+        if      (s==='paid')           { cls='mo-paid';    lbl='✓'; }
+        else if (s==='partial')        { cls='mo-partial'; lbl='~'; }
+        else if (s==='future-partial') { cls='mo-partial'; lbl='~'; }
+        else if (s==='due')            { cls='mo-due';     lbl='!'; }
+        else                           { cls='mo-future';  lbl=moLabels[mo]||'·'; }
         dots += `<div class="mo ${cls}" title="${MONTHS[mo]} ${currentYear}">${lbl}</div>`;
       }
 
@@ -811,10 +771,11 @@ async function loadMyAccount() {
   for (let mo = 0; mo < 12; mo++) {
     const s = moStatuses[mo];
     let cls, lbl;
-    if      (s==='paid')    { cls='mo-paid';    lbl='✓'; }
-    else if (s==='partial') { cls='mo-partial'; lbl='~'; }
-    else if (s==='due')     { cls='mo-due';     lbl='!'; }
-    else                    { cls='mo-future';  lbl=MONTHS[mo][0]; }
+    if      (s==='paid')           { cls='mo-paid';    lbl='✓'; }
+    else if (s==='partial')        { cls='mo-partial'; lbl='~'; }
+    else if (s==='future-partial') { cls='mo-partial'; lbl='~'; }
+    else if (s==='due')            { cls='mo-due';     lbl='!'; }
+    else                           { cls='mo-future';  lbl=MONTHS[mo][0]; }
     dots += `<div class="mo ${cls}" title="${MONTHS[mo]}">${lbl}</div>`;
   }
 
@@ -858,12 +819,25 @@ async function loadMyAccount() {
       </div>
     </div>
 
+    <div class="card" style="padding:12px">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Outstanding Balance</div>
+      <div id="amount-due-card"><div style="color:var(--muted);font-size:12px">Calculating…</div></div>
+    </div>
+
     <div class="card" id="loan-request-card">
       <div onclick="toggleLoanCard()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
         <div class="card-title" style="margin-bottom:0">Loan</div>
         <span id="loan-card-chevron" style="font-size:18px;color:var(--muted);transition:transform .25s">›</span>
       </div>
       <div id="loan-status-wrap" style="display:none;margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div onclick="toggleCommitteesWidget()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
+        <div class="card-title" style="margin-bottom:0">Club Committees</div>
+        <span id="comm-chevron" style="font-size:18px;color:var(--muted);transition:transform .25s">›</span>
+      </div>
+      <div id="committees-widget" style="display:none;margin-top:10px"></div>
     </div>
 
     <div class="card">
@@ -917,6 +891,10 @@ async function loadMyAccount() {
       ${m.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${m.notes}</div>` : ''}
     </div>
   `;
+
+  // Async calls after HTML is set
+  _injectAmountDueCard(m).catch(()=>{});
+  window.loadLoanStatus?.();
 }
 
 window.toggleLoanCard = function() {
@@ -926,18 +904,23 @@ window.toggleLoanCard = function() {
   const isOpen = wrap.style.display !== 'none';
   wrap.style.display = isOpen ? 'none' : 'block';
   if (chev) chev.style.transform = isOpen ? '' : 'rotate(90deg)';
-  // Lazy-load loan status the first time it's opened
-  if (!isOpen && !wrap.dataset.loaded) {
-    wrap.dataset.loaded = '1';
-    window.loadLoanStatus?.();
-  }
+  if (!isOpen && !wrap.dataset.loaded) { wrap.dataset.loaded='1'; window.loadLoanStatus?.(); }
+};
+
+window.toggleCommitteesWidget = function() {
+  const el   = document.getElementById('committees-widget');
+  const chev = document.getElementById('comm-chevron');
+  if (!el) return;
+  const isOpen = el.style.display !== 'none';
+  el.style.display = isOpen ? 'none' : 'block';
+  if (chev) chev.style.transform = isOpen ? '' : 'rotate(90deg)';
+  if (!isOpen && !el.dataset.loaded) { el.dataset.loaded='1'; window.loadCommitteesWidget?.('committees-widget'); }
 };
 
 // ── MEMBERS ───────────────────────────────────────────────────
 let allMembersCache = [];
 async function loadMembers() {
   const list = document.getElementById('members-list');
-  if (!list) return;
   list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
 
   try {
@@ -945,55 +928,45 @@ async function loadMembers() {
       const snap = await getDocs(collection(db,'members'));
       snap.forEach(d => allMembersCache.push({ id: d.id, ...d.data() }));
     }
-    const mcEl = document.getElementById('member-count');
-    if (mcEl) mcEl.textContent = `(${allMembersCache.length})`;
+    document.getElementById('member-count').textContent = `(${allMembersCache.length})`;
     renderMembers(allMembersCache);
 
-    // ── Estates (cached for filter tab) ──────────────────────
-    window._estatesCache = [];
-    const eSnap = await getDocs(collection(db,'estates')).catch(()=>({empty:true,forEach:()=>{}}));
+    const eSnap = await getDocs(collection(db,'estates'));
     if (!eSnap.empty) {
-      eSnap.forEach(d => window._estatesCache.push({ id: d.id, ...d.data() }));
+      document.getElementById('estates-section').style.display = 'block';
+      let eHtml = '';
+      eSnap.forEach(d => {
+        const e = d.data();
+        eHtml += `<div class="estate-card">
+          <div class="estate-name">Estate of ${e.memberName}</div>
+          <div class="estate-sub">Principal Date: ${e.startDate||'—'} · Next of Kin: ${e.nextOfKin||'TBD'}</div>
+          <div class="estate-val">${fmtFull(e.principal)}</div>
+        </div>`;
+      });
+      document.getElementById('estates-list').innerHTML = eHtml;
     }
 
-    // ── Juniors (cached for filter tab) ──────────────────────
-    window._juniorsCache = [];
-    const jSnap = await getDocs(collection(db,'juniors')).catch(()=>({empty:true,forEach:()=>{}}));
+    const jSnap = await getDocs(collection(db,'juniors'));
     if (!jSnap.empty) {
-      jSnap.forEach(d => window._juniorsCache.push({ id: d.id, ...d.data() }));
+      document.getElementById('juniors-section').style.display = 'block';
+      let jHtml = '';
+      jSnap.forEach(d => {
+        const j = d.data();
+        const ini = (j.name||'?')[0].toUpperCase();
+        jHtml += `<div class="member-row" onclick="openJuniorDetail('${d.id}')" style="cursor:pointer">
+          <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700">${ini}</div>
+          <div class="m-info">
+            <div class="m-name">${j.name}</div>
+            <div class="m-sub">Junior · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo · Parent: ${j.parentName||'—'}</div>
+          </div>
+          <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
+        </div>`;
+      });
+      document.getElementById('juniors-list').innerHTML = jHtml;
     }
-
-    // inject filter tabs for Juniors + Estates if they exist and aren't there yet
-    _injectMemberFilterTabs();
-
   } catch(e) {
     list.innerHTML = '<div class="empty">Error loading members</div>';
     log('Members: '+e.message);
-  }
-}
-
-function _injectMemberFilterTabs() {
-  // Only inject once
-  if (document.getElementById('filter-btn-juniors')) return;
-  const filterBar = document.querySelector('#sec-members [onclick^="filterMembers"]')?.parentElement;
-  if (!filterBar) return;
-  if (window._juniorsCache?.length) {
-    const jBtn = document.createElement('button');
-    jBtn.id = 'filter-btn-juniors';
-    jBtn.className = 'pill';
-    jBtn.style.cssText = 'background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap';
-    jBtn.textContent = `Juniors (${window._juniorsCache.length})`;
-    jBtn.onclick = function(){ filterMembers('juniors', jBtn); };
-    filterBar.appendChild(jBtn);
-  }
-  if (window._estatesCache?.length) {
-    const eBtn = document.createElement('button');
-    eBtn.id = 'filter-btn-estates';
-    eBtn.className = 'pill';
-    eBtn.style.cssText = 'background:var(--border);color:var(--ink);border:none;cursor:pointer;white-space:nowrap';
-    eBtn.textContent = `Estates (${window._estatesCache.length})`;
-    eBtn.onclick = function(){ filterMembers('estates', eBtn); };
-    filterBar.appendChild(eBtn);
   }
 }
 
@@ -1023,73 +996,16 @@ function renderMembers(members) {
 }
 
 window.filterMembers = function(filter, btn) {
-  // Reset all filter button styles
-  document.querySelectorAll('#sec-members .pill').forEach(b => {
+  document.querySelectorAll('[onclick^="filterMembers"]').forEach(b => {
     b.style.background = 'var(--border)'; b.style.color = 'var(--ink)';
   });
-  if (btn) { btn.style.background = 'var(--ink)'; btn.style.color = '#fff'; }
-
-  const list = document.getElementById('members-list');
-
-  if (filter === 'juniors') {
-    // Show juniors list
-    const juniors = window._juniorsCache || [];
-    const yr = new Date().getFullYear();
-    if (!juniors.length) { list.innerHTML = '<div class="empty">No junior records</div>'; return; }
-    list.innerHTML = juniors.sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(j => {
-      const ini = (j.name||'?')[0].toUpperCase();
-      const yrPaid = (j.subscriptionByYear||{})[String(yr)] || 0;
-      const target = (j.monthlyRate||20000) * 12;
-      const pct = Math.min(100, Math.round(yrPaid/target*100));
-      const barColor = pct>=100?'#166534':pct>=50?'#d97706':'#991b1b';
-      return `<div class="member-row" onclick="openJuniorDetail('${j.id}')" style="cursor:pointer;flex-direction:column;align-items:stretch;gap:5px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div class="m-avatar" style="background:#f5f0e8;color:var(--gold);font-size:13px;font-weight:700;flex-shrink:0">${ini}</div>
-          <div class="m-info" style="flex:1;min-width:0">
-            <div class="m-name">${j.name||'—'}</div>
-            <div class="m-sub">Parent: ${j.parentName||'—'} · UGX ${Number(j.monthlyRate||20000).toLocaleString()}/mo</div>
-          </div>
-          <span class="status-badge s-${j.status||'active'}">${j.status||'active'}</span>
-        </div>
-        <div style="padding:0 4px">
-          <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:3px">
-            <span>${yr}: UGX ${yrPaid.toLocaleString()} paid</span>
-            <span style="color:${barColor};font-weight:600">${pct}%</span>
-          </div>
-          <div style="background:var(--border);border-radius:3px;height:3px;overflow:hidden">
-            <div style="height:100%;background:${barColor};width:${pct}%;border-radius:3px"></div>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
-    return;
-  }
-
-  if (filter === 'estates') {
-    // Show estates list
-    const estates = window._estatesCache || [];
-    if (!estates.length) { list.innerHTML = '<div class="empty">No estate records</div>'; return; }
-    list.innerHTML = estates.map(e => `
-      <div class="member-row" style="cursor:default;flex-direction:column;align-items:flex-start;gap:3px">
-        <div style="font-weight:700;font-size:13px;color:var(--ink)">Estate of ${e.memberName||'—'}</div>
-        <div style="font-size:11px;color:var(--muted)">Principal Date: ${e.startDate||'—'} · Next of Kin: ${e.nextOfKin||'TBD'}</div>
-        <div style="font-size:14px;font-weight:700;color:var(--gold)">${fmtFull(e.principal||0)}</div>
-      </div>`).join('');
-    return;
-  }
-
+  btn.style.background = 'var(--ink)'; btn.style.color = '#fff';
   if (filter === 'all') { renderMembers(allMembersCache); return; }
   if (filter === 'inactive') {
     renderMembers(allMembersCache.filter(m => ['inactive','exited','deceased'].includes(m.status)));
     return;
   }
-  // gold/golden normalisation
-  const normFilter = filter === 'gold' ? ['gold','golden'] : [filter];
-  renderMembers(allMembersCache.filter(m =>
-    m.status === filter ||
-    normFilter.includes(m.tier) ||
-    normFilter.includes(m.memberType)
-  ));
+  renderMembers(allMembersCache.filter(m => m.status === filter || m.tier === filter));
 };
 
 // ── INVESTMENTS ───────────────────────────────────────────────
@@ -1419,11 +1335,6 @@ window.inboxSend = async function() {
     });
     msgEl.style.color='#22c55e'; msgEl.textContent='✓ Sent!';
     document.getElementById('inbox-body').value='';
-    // ── Fire email + push notification ───────────────────────
-    if (STATE.isAdmin) {
-      _sendEmailNotification(toUid, toName, type, body).catch(()=>{});
-      _sendPushNotification(toUid, type, body).catch(()=>{});
-    }
     setTimeout(()=>{ document.getElementById('inbox-compose-form').style.display='none'; msgEl.textContent=''; loadInbox(); },1200);
   } catch(e){ msgEl.style.color='#ef4444'; msgEl.textContent='Failed: '+e.message; log('InboxSend: '+e.message); }
 };
@@ -1543,6 +1454,42 @@ window.recordContribution = async function() {
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
+// ── Inject auto-payment form into admin section (once) ─────────
+function _injectAutoPayForm() {
+  if (document.getElementById('auto-pay-form')) return;
+  const anchor = document.getElementById('c-member')?.closest('.card') || document.getElementById('admin-tab-general');
+  if (!anchor) return;
+  const div = document.createElement('div');
+  div.className = 'card';
+  div.style.marginTop = '12px';
+  div.innerHTML = `
+    <div class="card-title">Record Member Payment (Auto-Distribute)</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Enter the full amount paid — system distributes to Sub → Welfare → Unit Trust → GLA automatically.</div>
+    <div id="auto-pay-form">
+      <div class="form-group"><label>Member</label>
+        <select id="ap-member" style="width:100%"><option value="">Select member…</option></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div class="form-group"><label>Amount (UGX)</label><input type="number" id="ap-amount" placeholder="e.g. 150000" style="width:100%"></div>
+        <div class="form-group"><label>Date Paid</label><input type="date" id="ap-date" style="width:100%"></div>
+      </div>
+      <button class="btn-primary btn-gold" style="width:100%" onclick="recordAutoPayment()">Record & Distribute</button>
+      <div id="ap-msg" style="font-size:11px;margin-top:8px;min-height:16px"></div>
+    </div>`;
+  anchor.parentNode.insertBefore(div, anchor.nextSibling);
+  // Populate member dropdown
+  const sel = document.getElementById('ap-member');
+  getDocs(collection(db,'members')).then(snap => {
+    const members = [];
+    snap.forEach(d => { const m=d.data(); if(['active','diaspora','partial'].includes(m.status||'active')) members.push({id:d.id,...m}); });
+    members.sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+    members.forEach(m => { const o=document.createElement('option'); o.value=m.id; o.textContent=m.name||m.id; sel.appendChild(o); });
+  }).catch(()=>{});
+  // Default date to today
+  const today = new Date().toISOString().split('T')[0];
+  const dateEl = document.getElementById('ap-date');
+  if (dateEl) dateEl.value = today;
+}
+
 window.postNotification = async function() {
   if (!STATE.isAdmin) return;
   const title = document.getElementById('notif-title').value.trim();
@@ -1571,6 +1518,7 @@ window.showAdminTab = function(tab, btn) {
     if (b)  { b.style.background = t === tab ? 'var(--ink)' : 'var(--border)'; b.style.color = t === tab ? '#fff' : 'var(--ink)'; }
   });
   // Loan functions live in loans.js — called via window globals
+  if (tab === 'general')    { _injectAutoPayForm(); }
   if (tab === 'loans')      { window.loadLoansAdmin?.(); window.loadPendingLoans?.(); }
   if (tab === 'committees') loadCommittees();
 };
@@ -2318,100 +2266,273 @@ window.crAddDiaspora = async function(){
   try{await addDoc(collection(db,'diasporaFees'),{memberId,memberName,year:Number(year),amount:Number(amount),createdAt:serverTimestamp()});msg.style.color='#22c55e';msg.textContent='✓ Recorded';crLoaded.diaspora=false;setTimeout(()=>{msg.textContent='';crLoadDiaspora();},1000);}catch(e){msg.style.color='#ef4444';msg.textContent=e.message;}
 };
 
-// ── EMAIL NOTIFICATIONS (EmailJS) ────────────────────────────
-// EmailJS sends emails directly from the browser — no server needed.
-// Setup: sign up at emailjs.com → create a service + template → fill keys below.
-const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';   // e.g. 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';  // e.g. 'template_xyz456'
-const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';   // e.g. 'user_abcdef'
-let _emailJsLoaded = false;
+// ── COMMITTEES (public, members can view) ────────────────────
+// Loaded into a widget on the member dashboard
+window.loadCommitteesWidget = async function(targetId) {
+  const el = document.getElementById(targetId);
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:12px;padding:8px 0">Loading…</div>';
+  try {
+    const snap = await getDocs(collection(db,'committees'));
+    if (snap.empty) { el.innerHTML = '<div style="color:var(--muted);font-size:12px">No committee data on record</div>'; return; }
+    let html = '';
+    snap.forEach(d => {
+      const c = d.data();
+      html += `<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <summary style="padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center">
+          <span>${c.name||'Committee'}</span>
+          <span style="font-size:10px;color:var(--muted);font-weight:400">${c.term||''} ▾</span>
+        </summary>
+        <div style="padding:4px 12px 10px">
+          ${(c.members||[]).map(m=>`
+            <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px">
+              <span style="color:var(--muted)">${m.role||'—'}</span>
+              <span style="font-weight:600">${m.name||m.memberId?.replace(/-/g,' ').replace(/\w/g,s=>s.toUpperCase())||'—'}</span>
+            </div>`).join('')}
+        </div>
+      </details>`;
+    });
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = `<div style="color:var(--muted);font-size:12px">Could not load committees</div>`; }
+};
 
+// ── AMOUNT DUE CALCULATOR ────────────────────────────────────
+// Returns { totalDue, monthsBehind, finesOwed, breakdown }
+async function _getAmountDue(member) {
+  const now = new Date();
+  const yr  = now.getFullYear();
+  const mo  = now.getMonth(); // 0-indexed
+  const rate = member.monthlySubscription || member.monthlyRate || 40000;
+  const subPaid = (member.subscriptionByYear||{})[String(yr)] || 0;
+  const expectedToDate = rate * (mo + 1);
+  const subDue = Math.max(0, expectedToDate - subPaid);
+  const monthsBehind = subDue > 0 ? Math.ceil(subDue / rate) : 0;
+
+  // Check for unpaid fines
+  let finesOwed = 0;
+  try {
+    const fSnap = await getDocs(query(collection(db,'fines'), where('memberId','==',member.id), where('status','==','unpaid')));
+    fSnap.forEach(d => { finesOwed += Number(d.data().amount||0); });
+  } catch(e) {}
+
+  const totalDue = subDue + finesOwed;
+  return { totalDue, monthsBehind, subDue, finesOwed, rate, subPaid, expectedToDate };
+}
+
+// Inject "Amount Due" card in My Account
+async function _injectAmountDueCard(member) {
+  const card = document.getElementById('amount-due-card');
+  if (!card) return;
+  const d = await _getAmountDue(member);
+  if (d.totalDue === 0) {
+    card.innerHTML = `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px">
+      <div style="font-size:11px;font-weight:700;color:#166534">✅ No outstanding balance</div>
+      <div style="font-size:10px;color:#166534;opacity:.8;margin-top:2px">All payments up to date</div>
+    </div>`;
+  } else {
+    const sev = d.monthsBehind >= 4 ? '#7f1d1d' : d.monthsBehind >= 2 ? '#991b1b' : '#b45309';
+    card.innerHTML = `<div style="background:#fef9f0;border:1.5px solid #f59e0b;border-radius:10px;padding:13px">
+      <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:8px">💳 Total Amount Due</div>
+      <div style="font-size:22px;font-weight:800;color:${sev}">${fmtFull(d.totalDue)}</div>
+      <div style="margin-top:8px;border-top:1px solid var(--border);padding-top:8px">
+        ${d.subDue > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0"><span style="color:var(--muted)">Subscription arrears (${d.monthsBehind} mo)</span><span style="font-weight:600;color:${sev}">${fmtFull(d.subDue)}</span></div>` : ''}
+        ${d.finesOwed > 0 ? `<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0"><span style="color:var(--muted)">Outstanding fines</span><span style="font-weight:600;color:#991b1b">${fmtFull(d.finesOwed)}</span></div>` : ''}
+        <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-top:1px solid var(--border);margin-top:4px;font-weight:700"><span>Total</span><span style="color:${sev}">${fmtFull(d.totalDue)}</span></div>
+      </div>
+      <div style="font-size:10px;color:var(--muted);margin-top:6px">Pay promptly to avoid further fines (UGX 15,000/quarter for late payment)</div>
+    </div>`;
+  }
+}
+
+// ── AUTO-DISTRIBUTE PAYMENT (Admin: single amount → all categories) ──
+window.recordAutoPayment = async function() {
+  if (!STATE.isAdmin) return;
+  const memberId = document.getElementById('ap-member').value;
+  const totalAmt = Number(document.getElementById('ap-amount').value) || 0;
+  const date     = document.getElementById('ap-date').value;
+  const msgEl    = document.getElementById('ap-msg');
+  if (!memberId || !totalAmt || !date) { msgEl.style.color='#991b1b'; msgEl.textContent='Fill all fields.'; return; }
+
+  msgEl.style.color='var(--muted)'; msgEl.textContent='Processing…';
+  try {
+    const mSnap = await getDoc(doc(db,'members',memberId));
+    if (!mSnap.exists()) { msgEl.style.color='#991b1b'; msgEl.textContent='Member not found'; return; }
+    const m = mSnap.data();
+    const yr = new Date(date).getFullYear();
+    const rate       = m.monthlySubscription || m.monthlyRate || 40000;
+    const welRate    = m.welfareRate || Math.round(rate * 0.25);
+    const glaRate    = m.glaRate || Math.round(rate * 0.325);
+    const utRate     = m.utRate  || Math.round(rate * 0.25);
+
+    // Priority order: Sub → Welfare → Unit Trust → GLA → Diaspora → Fines
+    const buckets = [
+      { key:'subscriptionByYear', rate:rate, label:'Subscription' },
+      { key:'welfareByYear',      rate:welRate, label:'Welfare' },
+      { key:'unitTrustByYear',    rate:utRate,  label:'Unit Trust' },
+      { key:'glaByYear',          rate:glaRate, label:'GLA' },
+    ];
+
+    const updates = {};
+    const breakdown = [];
+    let remaining = totalAmt;
+
+    for (const b of buckets) {
+      if (remaining <= 0) break;
+      const alreadyPaid = (m[b.key]||{})[String(yr)] || 0;
+      const annualTarget = b.rate * 12;
+      const canAbsorb = Math.max(0, annualTarget - alreadyPaid);
+      const absorb = Math.min(remaining, canAbsorb);
+      if (absorb > 0) {
+        updates[`${b.key}.${yr}`] = alreadyPaid + absorb;
+        breakdown.push({ label: b.label, amount: absorb });
+        remaining -= absorb;
+      }
+    }
+
+    // Remaining goes to subscription (handle over-payment)
+    if (remaining > 0) {
+      const cur = (m.subscriptionByYear||{})[String(yr)] || 0;
+      updates[`subscriptionByYear.${yr}`] = (updates[`subscriptionByYear.${yr}`] || cur) + remaining;
+      breakdown.push({ label:'Subscription (excess)', amount:remaining });
+      remaining = 0;
+    }
+
+    // Also update totalSubscriptionUpTo2025 if year <= 2025
+    if (yr <= 2025 && updates[`subscriptionByYear.${yr}`]) {
+      const oldSub  = (m.subscriptionByYear||{})[String(yr)] || 0;
+      const newSub  = updates[`subscriptionByYear.${yr}`];
+      const delta   = newSub - oldSub;
+      if (delta > 0) updates['totalSubscriptionUpTo2025'] = (m.totalSubscriptionUpTo2025||0) + delta;
+    }
+
+    await setDoc(doc(db,'members',memberId), updates, { merge:true });
+
+    // Record in ledger
+    await addDoc(collection(db,'paymentLedger'), {
+      memberId, memberName: m.name||memberId,
+      totalAmount: totalAmt, date, year: yr,
+      breakdown, recordedBy: STATE.user.email,
+      recordedAt: serverTimestamp()
+    });
+
+    // Also update clubIncome
+    const yr_str = String(yr);
+    const incSnap = await getDoc(doc(db,'clubIncome',yr_str));
+    const inc = incSnap.exists() ? incSnap.data() : {};
+    const incUpdates = {};
+    for (const b of breakdown) {
+      const fieldMap = {'Subscription':'subscriptions','Subscription (excess)':'subscriptions','Welfare':'welfare','Unit Trust':'unitTrust','GLA':'gla'};
+      const f = fieldMap[b.label];
+      if (f) incUpdates[f] = (inc[f]||0) + b.amount;
+    }
+    if (Object.keys(incUpdates).length) {
+      incUpdates.total = Object.values({...inc,...incUpdates}).filter(v=>typeof v==='number'&&v>0).reduce((a,b)=>a+b,0);
+      await setDoc(doc(db,'clubIncome',yr_str), incUpdates, { merge:true });
+    }
+
+    const bdText = breakdown.map(b=>`${b.label}: ${fmtFull(b.amount)}`).join(' | ');
+    msgEl.style.color='#166534'; msgEl.textContent=`✅ Distributed: ${bdText}`;
+    _financesData = null;
+    setTimeout(()=>{ msgEl.textContent=''; },4000);
+  } catch(e) { msgEl.style.color='#991b1b'; msgEl.textContent='Error: '+e.message; log('AutoPay: '+e.message); }
+};
+
+// ── SESSION TIMEOUT ───────────────────────────────────────────
+let _sessionTimer = null;
+function _startSessionTimer() {
+  const TIMEOUT_MS = STATE.isAdmin ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000;
+  const resetTimer = () => {
+    clearTimeout(_sessionTimer);
+    _sessionTimer = setTimeout(async () => {
+      toast('Session expired — please sign in again', 'error');
+      await signOut(auth);
+    }, TIMEOUT_MS);
+  };
+  ['click','keydown','touchstart','scroll'].forEach(e => document.addEventListener(e, resetTimer, { passive:true }));
+  resetTimer();
+}
+
+// ── DEVICE LOGIN TRACKING (max 2 devices) ────────────────────
+async function _registerDevice() {
+  if (!STATE.user || !STATE.member) return;
+  try {
+    const deviceId = _getDeviceId();
+    const memberId = STATE.member.id;
+    const profSnap = await getDoc(doc(db,'memberLoginProfiles',memberId));
+    const prof     = profSnap.exists() ? profSnap.data() : { devices: [] };
+    const devices  = (prof.devices || []).filter(d => d.id !== deviceId);
+    // Enforce max 2 — evict oldest if over limit
+    if (devices.length >= 2) {
+      toast('⚠ Maximum 2 devices reached. Oldest session removed.', '');
+      devices.sort((a,b) => (a.lastSeen||0) - (b.lastSeen||0));
+      devices.shift();
+    }
+    devices.push({ id: deviceId, lastSeen: Date.now(), ua: navigator.userAgent.slice(0,60) });
+    await setDoc(doc(db,'memberLoginProfiles',memberId), { devices }, { merge:true });
+  } catch(e) { /* non-blocking */ }
+}
+
+function _getDeviceId() {
+  let id = localStorage.getItem('lgic_device_id');
+  if (!id) { id = Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('lgic_device_id', id); }
+  return id;
+}
+
+// ── EmailJS + FCM stubs (fill in keys to activate) ────────────
+const EMAILJS_SERVICE_ID  = 'YOUR_EMAILJS_SERVICE_ID';
+const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
+const EMAILJS_PUBLIC_KEY  = 'YOUR_EMAILJS_PUBLIC_KEY';
+let _emailJsLoaded = false;
 async function _loadEmailJs() {
-  if (_emailJsLoaded || typeof emailjs !== 'undefined') return;
-  return new Promise((res, rej) => {
+  if (_emailJsLoaded || typeof emailjs !== 'undefined') { if(!_emailJsLoaded){emailjs.init(EMAILJS_PUBLIC_KEY);_emailJsLoaded=true;} return; }
+  return new Promise((res,rej) => {
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js';
-    s.onload = () => { emailjs.init(EMAILJS_PUBLIC_KEY); _emailJsLoaded = true; res(); };
+    s.onload = () => { emailjs.init(EMAILJS_PUBLIC_KEY); _emailJsLoaded=true; res(); };
     s.onerror = rej;
     document.head.appendChild(s);
   });
 }
-
 async function _sendEmailNotification(toUid, toName, type, body) {
-  if (EMAILJS_SERVICE_ID === 'YOUR_EMAILJS_SERVICE_ID') return; // not configured
+  if (EMAILJS_SERVICE_ID === 'YOUR_EMAILJS_SERVICE_ID') return;
   try {
     await _loadEmailJs();
-    // Get recipient email from Firestore
     let toEmail = null;
     if (toUid === 'all') {
-      // Broadcast — send to all active members
       const snap = await getDocs(collection(db,'members'));
       const emails = [];
-      snap.forEach(d => { const m=d.data(); if(m.email && ['active','diaspora'].includes(m.status)) emails.push(m.email); });
+      snap.forEach(d=>{ const m=d.data(); if(m.email&&['active','diaspora'].includes(m.status)) emails.push(m.email); });
       for (const email of emails) {
-        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-          to_email: email, to_name: 'Member',
-          from_name: "Let's Grow Investment Club",
-          subject: `New message from the Club`,
-          message: body,
-        });
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email:email, to_name:'Member', from_name:"Let's Grow Investment Club", subject:'New club message', message:body });
       }
       return;
     }
-    // Find member email by uid
     const byUid = await getDocs(query(collection(db,'members'), where('uid','==',toUid)));
     if (!byUid.empty) toEmail = byUid.docs[0].data().email;
     if (!toEmail) return;
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: toEmail, to_name: toName,
-      from_name: "Let's Grow Investment Club",
-      subject: `New club message for you`,
-      message: body,
-    });
-    toast('Email sent to ' + toName, 'success');
-  } catch(e) { log('EmailJS: ' + e.message); }
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email:toEmail, to_name:toName, from_name:"Let's Grow Investment Club", subject:'New club message', message:body });
+    toast('Email sent to '+toName,'success');
+  } catch(e) { log('EmailJS: '+e.message); }
 }
-
-// ── PUSH NOTIFICATIONS (Firebase Cloud Messaging) ─────────────
-// Setup: Firebase Console → Project Settings → Cloud Messaging
-//        → Web Push Certificates → Generate Key Pair → paste below.
-const FCM_VAPID_KEY = 'YOUR_FCM_VAPID_KEY'; // paste your VAPID public key here
-
+const FCM_VAPID_KEY = 'YOUR_FCM_VAPID_KEY';
 async function _initFCM() {
-  if (FCM_VAPID_KEY === 'YOUR_FCM_VAPID_KEY') return;
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
+  if (FCM_VAPID_KEY==='YOUR_FCM_VAPID_KEY') return;
+  if (!('Notification' in window)||!('serviceWorker' in navigator)) return;
   try {
-    const { getMessaging, getToken, onMessage } =
-      await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
+    const { getMessaging, getToken, onMessage } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js');
     const messaging = getMessaging(fbApp);
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return;
     const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    const token = await getToken(messaging, { vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: swReg });
-    if (token && STATE.user) {
-      // Save token to member's Firestore doc
-      await setDoc(doc(db,'members',STATE.member?.id||STATE.user.uid), { fcmToken: token }, { merge: true });
-    }
-    // Foreground messages — show as in-app toast
-    onMessage(messaging, payload => {
-      const title = payload.notification?.title || 'New message';
-      const body  = payload.notification?.body  || '';
-      toast(`📣 ${title}: ${body}`);
-    });
-  } catch(e) { log('FCM: ' + e.message); }
+    const token = await getToken(messaging, { vapidKey:FCM_VAPID_KEY, serviceWorkerRegistration:swReg });
+    if (token && STATE.member) await setDoc(doc(db,'members',STATE.member.id), { fcmToken:token }, { merge:true });
+    onMessage(messaging, p => toast(`📣 ${p.notification?.title||''}: ${p.notification?.body||''}`));
+  } catch(e) { log('FCM: '+e.message); }
 }
-
 async function _sendPushNotification(toUid, type, body) {
-  // Reads FCM token from Firestore and writes a push job doc
-  // A Firebase Function (or Codespaces script) can consume these.
-  // For now we write a notification request to Firestore so it's queued.
-  if (FCM_VAPID_KEY === 'YOUR_FCM_VAPID_KEY') return;
-  try {
-    const title = `Let's Grow: ${type === 'broadcast' ? 'Announcement' : 'New Message'}`;
-    await addDoc(collection(db, 'pushQueue'), {
-      toUid, title, body, sentAt: serverTimestamp(), processed: false,
-    });
-  } catch(e) { log('PushQueue: ' + e.message); }
+  if (FCM_VAPID_KEY==='YOUR_FCM_VAPID_KEY') return;
+  try { await addDoc(collection(db,'pushQueue'), { toUid, title:"Let's Grow Club", body, sentAt:serverTimestamp(), processed:false }); }
+  catch(e) { log('PushQueue: '+e.message); }
 }
 
 // ── LOAD LOANS MODULE ─────────────────────────────────────────
