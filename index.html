@@ -852,5 +852,14 @@
   <link rel="stylesheet" href="sidebar.css">
 <script type="module" src="compliance.js"></script>
 <script type="module" src="sidebar.js"></script>
+  <!-- FIX: prevents _sendEmail crash — add BEFORE app.js -->
+<script src="emailstub.js"></script>
+
+<!-- Existing modules (keep as-is) -->
+<script type="module" src="app.js"></script>
+<link rel="stylesheet" href="sidebar.css">
+<script type="module" src="sidebar.js"></script>   ← replace old version
+<script type="module" src="compliance.js"></script> ← replace old version
+<script type="module" src="session.js"></script>    ← NEW
 </body>
 </html>
