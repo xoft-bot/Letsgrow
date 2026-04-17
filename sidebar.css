@@ -1,0 +1,58 @@
+/* ── sidebar.css — Let's Grow Investment Club ─────────────────
+   Sidebar drawer styles + app layout adjustments
+   ──────────────────────────────────────────────────────────── */
+
+/* Give the app a top-left breathing room for the hamburger */
+#app .section {
+  padding-top: 64px;
+}
+
+/* The trigger button pulses if there are unread messages */
+#sb-trigger.has-badge::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: #ef4444;
+  border-radius: 50%;
+  border: 2px solid #1a2332;
+}
+
+/* Smooth scrollbar for drawer on desktop */
+#sb-drawer::-webkit-scrollbar { width: 4px; }
+#sb-drawer::-webkit-scrollbar-track { background: transparent; }
+#sb-drawer::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
+/* Active nav item */
+#sb-drawer [data-active="1"] {
+  background: rgba(201,168,76,.18) !important;
+  color: #c9a84c !important;
+}
+
+/* Overlay fade */
+#sb-overlay {
+  opacity: 0;
+  transition: opacity .25s;
+}
+
+/* Ensure trigger stays above everything */
+#sb-trigger {
+  position: fixed !important;
+  top: 12px !important;
+  left: 12px !important;
+}
+
+/* On wider screens (tablet+), show sidebar permanently */
+@media (min-width: 768px) {
+  #sb-drawer {
+    left: 0 !important;
+    box-shadow: none;
+    border-right: 1px solid rgba(255,255,255,.08);
+  }
+  #sb-overlay,
+  #sb-trigger { display: none !important; }
+  #app { margin-left: 272px; }
+  #app .section { padding-top: 16px; }
+}
