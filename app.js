@@ -1,3 +1,4 @@
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, signOut, onAuthStateChanged, sendEmailVerification } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { db, auth } from "./firebase-config.js";
 let _inboxFilter = "all";
 window._inboxFilter = _inboxFilter;
