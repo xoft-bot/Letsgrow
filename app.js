@@ -32,8 +32,8 @@ const firebaseConfig = {
 };
 
 // Firebase init moved to firebase-config.js
-const auth  = getAuth(fbApp);
-const db    = getFirestore(fbApp);
+// auth - see firebase-config.js
+// db - see firebase-config.js
 
 // ── ERROR OVERLAY ─────────────────────────────────────────────
 window.addEventListener('error', e => log(`[ERR] ${e.message} line:${e.lineno}`));
