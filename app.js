@@ -884,8 +884,11 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = '<div class="empty">No members found</div>'; return; }
   let html = '';
   members.forEach(m => {
-    const displayName = m.name || m.displayName || m.primary?.name || '?';
-    const ini = displayName[0].toUpperCase();
+    const _raw = m.name || m.displayName || m.primary?.name || '';
+    const displayName = (_raw && _raw !== 'null' && _raw !== 'undefined')
+      ? _raw
+      : (m.id ? m.id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Member');
+    const ini = (displayName[0] || '?').toUpperCase();
     const tier = m.memberType || m.tier || '';
     const subLine = [
       tier ? (tier.charAt(0).toUpperCase()+tier.slice(1)) : '',
@@ -1980,6 +1983,9 @@ async function populateInboxMemberSelect() {
 
 // ── CLUB RECORDS ──────────────────────────────────────────────
 let crLoaded = {};
+
+// Stub so early taps don't throw before module finishes loading
+if (!window.toggleClubRecords) window.toggleClubRecords = function() {};
 
 window.toggleClubRecords = function(card) {
   const t=window.event&&window.event.target;
