@@ -31,7 +31,7 @@ const firebaseConfig = {
   measurementId: "G-L3215N99KY"
 };
 
-const fbApp = initializeApp(firebaseConfig);
+// Firebase init moved to firebase-config.js
 const auth  = getAuth(fbApp);
 const db    = getFirestore(fbApp);
 
