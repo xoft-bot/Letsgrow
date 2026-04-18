@@ -1,4 +1,3 @@
-import { db, auth } from "./firebase-config.js";
 let _inboxFilter = "all";
 window._inboxFilter = _inboxFilter;
 // ── app.js — Let's Grow Investment Club ──────────────────────
@@ -11,6 +10,8 @@ window._inboxFilter = _inboxFilter;
 // To debug styling: edit styles.css only.
 // ─────────────────────────────────────────────────────────────
 
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import {
   getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
   signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -30,8 +31,9 @@ const firebaseConfig = {
   measurementId: "G-L3215N99KY"
 };
 
-// auth - see firebase-config.js
-// db - see firebase-config.js
+// Firebase init moved to firebase-config.js
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
 
 // ── ERROR OVERLAY ─────────────────────────────────────────────
 window.addEventListener('error', e => log(`[ERR] ${e.message} line:${e.lineno}`));
