@@ -1,3 +1,4 @@
+let _inboxFilter = "all";
 // ── app.js — Let's Grow Investment Club ──────────────────────
 // Core: Firebase, Auth, Navigation, Dashboard, Tracker,
 //       Account, Members, Investments, Notifications,
