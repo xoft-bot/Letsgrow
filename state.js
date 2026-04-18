@@ -53,8 +53,3 @@ window.LG = {
                                                                                                                                                                                               };
 
                                                                                                                                                                                               window.LG.init();
-                                                                                                                                                                                              
-                                                                                                                                  )
-                                                                )
-      )                                          
-}
