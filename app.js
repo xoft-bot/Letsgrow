@@ -11,7 +11,6 @@ window._inboxFilter = _inboxFilter;
 // To debug styling: edit styles.css only.
 // ─────────────────────────────────────────────────────────────
 
-import {
   getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
   signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
