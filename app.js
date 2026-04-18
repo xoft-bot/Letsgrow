@@ -10,7 +10,6 @@ window._inboxFilter = _inboxFilter;
 // To debug styling: edit styles.css only.
 // ─────────────────────────────────────────────────────────────
 
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import {
   getAuth, signInWithEmailAndPassword, sendPasswordResetEmail,
   signOut, onAuthStateChanged, createUserWithEmailAndPassword, sendEmailVerification
@@ -31,7 +30,6 @@ const firebaseConfig = {
   measurementId: "G-L3215N99KY"
 };
 
-// Firebase init moved to firebase-config.js
 // auth - see firebase-config.js
 // db - see firebase-config.js
 
