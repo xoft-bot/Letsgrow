@@ -849,11 +849,24 @@
 })();
 </script>
 
+  <!-- ── Script loading order ──────────────────────────────────
+       1. stubs.js      — synchronous, defines safe no-op stubs for all
+                          HTML onclick handlers (prevents "not defined" errors)
+       2. emailstub.js  — synchronous, prevents _sendEmail crash
+       3. app.js        — module: Firebase, auth, navigation, core UI
+       4. compliance.js — module: compliance banners
+       5. sidebar.js    — module: sidebar navigation & extra sections
+       6. session.js    — module: session management
+       7. documents.js  — module: document upload & viewer
+       8. app-patch.js  — synchronous: safety patches applied after modules
+       ────────────────────────────────────────────────────────── -->
   <link rel="stylesheet" href="sidebar.css">
+  <script src="stubs.js"></script>
   <script src="emailstub.js"></script>
   <script type="module" src="compliance.js"></script>
   <script type="module" src="sidebar.js"></script>
   <script type="module" src="session.js"></script>
+  <script type="module" src="documents.js"></script>
   <script src="app-patch.js"></script>
 </body>
 </html>
