@@ -22,7 +22,7 @@ import {
 
 // ── FIREBASE INIT ─────────────────────────────────────────────
 const firebaseConfig = {
-  apiKey: "AIzaSyBAqSyHIn8IfwOKzWf0whgWwFP3-YUQ3vQ",
+  apiKey: "AIzaSyBAQsYHIn8IfwOKzWf0whgWwFP3-YUQ3vQ",
   authDomain: "letsgrowinvestmentclub-26878.firebaseapp.com",
   projectId: "letsgrowinvestmentclub-26878",
   storageBucket: "letsgrowinvestmentclub-26878.firebasestorage.app",
