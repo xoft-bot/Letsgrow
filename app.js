@@ -44,7 +44,8 @@ function log(msg) {
 // ── SHARED CONSTANTS & STATE ──────────────────────────────────
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const STATE  = { user: null, member: null, isAdmin: false, allMembers: [] };
-
+// Declare shared caches at module top — prevents TDZ when showSection fires early
+let allMembersCache = [];
 // ── HELPERS ───────────────────────────────────────────────────
 function fmt(n) {
   if (n === undefined || n === null) return '—';
@@ -224,7 +225,7 @@ onAuthStateChanged(auth, async user => {
     await Promise.all([loadDashboard(), loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
     import('./session.js').catch(()=>{});
-    import('./nav.js').catch(()=>{});
+    // nav.js is now handled by sidebar.js loaded from index.html
 
   } catch(e) {
     log('Auth error: ' + e.message);
@@ -846,8 +847,7 @@ window.toggleCommitteeCard=function(){const w=document.getElementById('committee
 async function _calcAmountDue(member){const el=document.getElementById('amount-due-card');if(!el)return;const now=new Date(),yr=now.getFullYear(),mo=now.getMonth(),rate=member.monthlySubscription||member.monthlyRate||40000,paid=(member.subscriptionByYear||{})[String(yr)]||0,subDue=Math.max(0,rate*(mo+1)-paid),months=subDue>0?Math.ceil(subDue/rate):0;let fines=0;try{const fs=await getDocs(query(collection(db,'fines'),where('memberId','==',member.id),where('status','==','unpaid')));fs.forEach(d=>fines+=Number(d.data().amount||0));}catch(e){}const total=subDue+fines;if(total===0){el.innerHTML=`<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 14px"><div style="font-size:11px;font-weight:700;color:#166534">✅ No outstanding balance</div><div style="font-size:10px;color:#15803d;opacity:.8;margin-top:2px">All payments up to date</div></div>`;return;}const sev=months>=4?'#7f1d1d':months>=2?'#991b1b':'#b45309';el.innerHTML=`<div style="background:#fef9f0;border:1.5px solid #f59e0b;border-radius:10px;padding:13px"><div style="font-size:22px;font-weight:800;color:${sev};margin-bottom:6px">${fmtFull(total)}</div><div style="border-top:1px solid var(--border);padding-top:8px">${subDue>0?`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0"><span style="color:var(--muted)">Subscription (${months} mo behind)</span><span style="font-weight:600;color:${sev}">${fmtFull(subDue)}</span></div>`:''} ${fines>0?`<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0"><span style="color:var(--muted)">Unpaid fines</span><span style="font-weight:600;color:#991b1b">${fmtFull(fines)}</span></div>`:''}<div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;padding:5px 0;border-top:1px solid var(--border);margin-top:4px"><span>Total Due</span><span style="color:${sev}">${fmtFull(total)}</span></div></div><div style="font-size:10px;color:var(--muted);margin-top:6px">Late payments attract UGX 15,000 fine per quarter</div></div>`;}
 async function _loadCommitteesWidget(){const el=document.getElementById('committees-widget');if(!el)return;el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0">Loading…</div>';try{const snap=await getDocs(collection(db,'committees'));if(snap.empty){el.innerHTML='<div style="color:var(--muted);font-size:12px">No committee data</div>';return;}let html='';snap.forEach(d=>{const c=d.data();html+=`<details style="margin-bottom:8px;border:1px solid var(--border);border-radius:8px;overflow:hidden"><summary style="padding:10px 12px;font-size:12px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center"><span>${c.name||'Committee'}</span><span style="font-size:10px;color:var(--muted);font-weight:400">${c.term||''} ▾</span></summary><div style="padding:4px 12px 10px">${(c.members||[]).map(m=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px"><span style="color:var(--muted)">${m.role||'—'}</span><span style="font-weight:600">${m.name||m.memberId?.replace(/-/g,' ')||'—'}</span></div>`).join('')}</div></details>`;});el.innerHTML=html;}catch(e){el.innerHTML='<div style="color:var(--muted);font-size:12px">Could not load committees</div>';}}
 
-// ── MEMBERS ───────────────────────────────────────────────────
-let allMembersCache = [];
+// ── MEMBERS ──────────────────────────────────────────────────
 async function loadMembers() {
   const list = document.getElementById('members-list');
   list.innerHTML = '<div class="empty"><div class="spinner" style="margin:0 auto"></div></div>';
@@ -884,10 +884,10 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = '<div class="empty">No members found</div>'; return; }
   let html = '';
   members.forEach(m => {
-    const _raw = m.name || m.displayName || m.primary?.name || '';
-    const displayName = (_raw && _raw !== 'null' && _raw !== 'undefined')
-      ? _raw
-      : (m.id ? m.id.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) : 'Member');
+    const _rawName = m.name || m.displayName || m.primary?.name || '';
+    const displayName = (_rawName && _rawName !== 'null' && _rawName !== 'undefined' && _rawName.trim())
+      ? _rawName.trim()
+      : (m.id || 'member').replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
     const ini = (displayName[0] || '?').toUpperCase();
     const tier = m.memberType || m.tier || '';
     const subLine = [
@@ -1105,9 +1105,6 @@ async function loadLoanHistory() {
 
 // ── NOTIFICATIONS ─────────────────────────────────────────────
 // ── INBOX SYSTEM ─────────────────────────────────────────────
-let _inboxFilter = 'inbox';
-let _inboxReplyTo = null;
-
 async function loadNotifications() {
   // Called on login — load inbox badge count
   try {
@@ -1983,9 +1980,7 @@ async function populateInboxMemberSelect() {
 
 // ── CLUB RECORDS ──────────────────────────────────────────────
 let crLoaded = {};
-
-// Stub so early taps don't throw before module finishes loading
-if (!window.toggleClubRecords) window.toggleClubRecords = function() {};
+if (!window.toggleClubRecords) window.toggleClubRecords = function(){};
 
 window.toggleClubRecords = function(card) {
   const t=window.event&&window.event.target;
@@ -2152,7 +2147,5 @@ window.recordAutoPayment=async function(){if(!STATE.isAdmin)return;const memberI
 function _injectAutoPayForm(){if(document.getElementById('auto-pay-form'))return;const anchor=document.getElementById('c-member')?.closest('.card');if(!anchor)return;const div=document.createElement('div');div.className='card';div.style.marginTop='12px';div.innerHTML=`<div class="card-title">Record Payment (Auto-Distribute)</div><div style="font-size:11px;color:var(--muted);margin-bottom:10px">Enter total received — splits Sub→Welfare→Unit Trust→GLA automatically.</div><div id="auto-pay-form"><div class="form-group"><label>Member</label><select id="ap-member" style="width:100%"><option value="">Select member…</option></select></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div class="form-group"><label>Amount (UGX)</label><input type="number" id="ap-amount" placeholder="e.g. 150000" style="width:100%"></div><div class="form-group"><label>Date Paid</label><input type="date" id="ap-date" style="width:100%"></div></div><button class="btn-primary btn-gold" style="width:100%" onclick="recordAutoPayment()">Record & Distribute</button><div id="ap-msg" style="font-size:11px;margin-top:8px;min-height:16px"></div></div>`;anchor.parentNode.insertBefore(div,anchor.nextSibling);const sel=document.getElementById('ap-member'),de=document.getElementById('ap-date');if(de)de.value=new Date().toISOString().split('T')[0];getDocs(collection(db,'members')).then(snap=>{const arr=[];snap.forEach(d=>{const m=d.data();if(['active','diaspora','partial'].includes(m.status||'active'))arr.push({id:d.id,...m});});arr.sort((a,b)=>(a.name||'').localeCompare(b.name||''));arr.forEach(m=>{const o=document.createElement('option');o.value=m.id;o.textContent=m.name||m.id;sel.appendChild(o);});}).catch(()=>{});}
 
 // ── LOAD MODULES ──────────────────────────────────────────────
+// Sidebar navigation is handled by sidebar.js (loaded from index.html)
 import('./loans.js').catch(e=>log('loans.js: '+e.message));
-import('./session.js').catch(e=>log('session.js: '+e.message));
-import('./compliance.js').catch(e=>log('compliance.js: '+e.message));
-import('./nav.js').catch(e=>log('nav.js: '+e.message));
