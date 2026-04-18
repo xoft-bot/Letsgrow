@@ -1,3 +1,4 @@
+import { db, auth } from "./firebase-config.js";
 let _inboxFilter = "all";
 window._inboxFilter = _inboxFilter;
 // ── app.js — Let's Grow Investment Club ──────────────────────
