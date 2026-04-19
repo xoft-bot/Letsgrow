@@ -17,7 +17,6 @@ import {
   getFirestore, doc, getDoc, setDoc, collection, getDocs,
   addDoc, serverTimestamp, query, where, orderBy, limit, deleteDoc
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
 // ── FIREBASE INIT ─────────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyBAQsYHIn8IfwOKzWf0whgWwFP3-YUQ3vQ",
