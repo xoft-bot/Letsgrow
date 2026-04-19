@@ -423,7 +423,7 @@ _ready(function() {
               </div>
             </div>
             ${membersArr.map(mb => {
-              const name = mb.name || (mb.memberId || '').replace(/-/g,' ').replace(/\b\w/g, cc => cc.toUpperCase());
+              const name = mb.name || (mb.memberId || '').replace(/[_-]/g,' ').replace(/\b\w/g, cc => cc.toUpperCase());
               return `<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px">
                 <span style="font-weight:600;color:var(--ink)">${mb.role}</span>
                 <span style="color:var(--muted)">${name}</span>
