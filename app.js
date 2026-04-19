@@ -136,6 +136,17 @@ window.doSignOut = async function() {
 };
 
 // ── AUTH STATE ────────────────────────────────────────────────
+
+// Safety fallback — hide spinner after 3 seconds if auth doesn't fire
+setTimeout(() => {
+  const l = document.getElementById('loading-screen');
+  const lg = document.getElementById('login-screen');
+  if (l && l.style.display !== 'none') {
+    l.style.display = 'none';
+    if (lg) lg.classList.add('visible');
+  }
+}, 3000);
+
 onAuthStateChanged(auth, async user => {
   const loading = document.getElementById('loading-screen');
   const loginEl = document.getElementById('login-screen');
