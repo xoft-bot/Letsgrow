@@ -849,9 +849,9 @@ async function loadMyAccount() {
       ${m.notes ? `<div style="font-size:11px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--border)">${m.notes}</div>` : ''}
     </div>
   `;
-}
   _calcAmountDue(m).catch(()=>{});
   window.loadLoanStatus?.();
+}
 
 window.toggleLoanCard=function(){const w=document.getElementById('loan-status-wrap'),c=document.getElementById('loan-card-chev');if(!w)return;const o=w.style.display!=='none';w.style.display=o?'none':'block';if(c)c.style.transform=o?'':'rotate(90deg)';if(!o&&!w.dataset.loaded){w.dataset.loaded='1';window.loadLoanStatus?.();}};
 window.toggleCommitteeCard=function(){const w=document.getElementById('committees-widget'),c=document.getElementById('comm-chev');if(!w)return;const o=w.style.display!=='none';w.style.display=o?'none':'block';if(c)c.style.transform=o?'':'rotate(90deg)';if(!o&&!w.dataset.loaded){w.dataset.loaded='1';_loadCommitteesWidget();}};

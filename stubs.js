@@ -73,3 +73,4 @@
 
   console.info('[stubs.js] Safety stubs loaded ✓');
 })();
+function openSignup(){document.getElementById('signup-overlay')?.classList.add('show');}
