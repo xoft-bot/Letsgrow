@@ -241,15 +241,11 @@
         // Only hide the bottom container, not individual nav-xxx links
         if(el.tagName==='NAV'||el.classList.contains('bottom-nav')||el.classList.contains('nav-tabs')) el.style.display='none';
       });
-      // Also hide any flex-row nav containing nav-btn elements
-      const navBtns = document.querySelectorAll('.nav-btn');
-      if(navBtns.length){
-        const navParent = navBtns[0]?.parentElement;
-        if(navParent&&navParent.tagName!=='BODY') navParent.style.display='none';
+        // bottom nav preserved — do not hide
       }
       const active = document.querySelector('.section.active');
       if(active) _setActive(active.id.replace('sec-',''));
-      else _setActive('dashboard');
+      else _setActive('account');
     }, 400);
 
     console.log('✓ nav.js loaded');
