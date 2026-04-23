@@ -249,6 +249,7 @@ onAuthStateChanged(auth, async user => {
 
 // ── NAVIGATION ────────────────────────────────────────────────
 window.showSection = function(name, btn) {
+  if (window.closeSidebar) closeSidebar();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-'+name)?.classList.add('active');
