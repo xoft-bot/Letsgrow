@@ -843,5 +843,23 @@
   <script type="module" src="sidebar.js"></script>
   <script type="module" src="session.js"></script>
   <script type="module" src="documents.js"></script>
+<script>
+function homeToggle(view) {
+  var acc = document.getElementById("account-content");
+  var dash = document.getElementById("home-dashboard-content");
+  var btnA = document.getElementById("toggle-myaccount");
+  var btnD = document.getElementById("toggle-dashboard");
+  if (view === "account") {
+    acc.style.display = ""; dash.style.display = "none";
+    btnA.style.background = "var(--ink)"; btnA.style.color = "#fff";
+    btnD.style.background = "var(--border)"; btnD.style.color = "var(--ink)";
+  } else {
+    acc.style.display = "none"; dash.style.display = "";
+    btnD.style.background = "var(--ink)"; btnD.style.color = "#fff";
+    btnA.style.background = "var(--border)"; btnA.style.color = "var(--ink)";
+    if (window.loadDashboard) loadDashboard();
+  }
+}
+</script>
 </body>
 </html>
