@@ -233,7 +233,7 @@ onAuthStateChanged(auth, async user => {
     loginEl.classList.remove('visible');
     appEl.classList.add('visible');
 
-    await Promise.all([loadDashboard(), loadNotifications()]);
+    await Promise.all([loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
     import('./session.js').catch(()=>{});
     // nav.js is now handled by sidebar.js loaded from index.html
