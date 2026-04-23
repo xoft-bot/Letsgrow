@@ -270,7 +270,7 @@ window.showSection = function(name, btn) {
     showAdminTab('general');
     if (STATE.isAdmin) document.getElementById('balance-breakdown').style.display='block';
   }
-  if (name === 'dashboard' && STATE.isAdmin) document.getElementById('balance-breakdown').style.display='block';
+  if (name === 'dashboard' && STATE.isAdmin) { document.getElementById('balance-breakdown').style.display='block'; loadDashboard(); }
 };
 
 // ── DASHBOARD ─────────────────────────────────────────────────
