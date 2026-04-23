@@ -89,7 +89,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 #toast.gold    { background: var(--gold); color: var(--ink); border-color: transparent; }
 
 /* ── APP SHELL ────────────────────────────────────────── */
-#app { display: none; flex-direction: column; min-height: 100vh; }
+#app { display: none; flex-direction: column; min-height: 100vh; overflow-y: auto; }
 #app.visible { display: flex; }
 
 /* ── TOPBAR ───────────────────────────────────────────── */

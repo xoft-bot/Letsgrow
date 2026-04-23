@@ -249,7 +249,7 @@ onAuthStateChanged(auth, async user => {
 
 // ── NAVIGATION ────────────────────────────────────────────────
 window.showSection = function(name, btn) {
-  document.getElementById('app').scrollTop = 0;
+  window.scrollTo(0, 0);
   if (window.closeSidebar) closeSidebar();
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
