@@ -2162,20 +2162,3 @@ function _injectAutoPayForm(){if(document.getElementById('auto-pay-form'))return
 // Sidebar navigation is handled by sidebar.js (loaded from index.html)
 import('./loans.js').catch(e=>log('loans.js: '+e.message));
 
-// — HOME TOGGLE ————————————————————————
-window.homeToggle = function(view) {
-  const acc = document.getElementById('account-content');
-  const dash = document.getElementById('home-dashboard-content');
-  const btnA = document.getElementById('toggle-myaccount');
-  const btnD = document.getElementById('toggle-dashboard');
-  if (view === 'account') {
-    acc.style.display = ''; dash.style.display = 'none';
-    btnA.style.background = 'var(--ink)'; btnA.style.color = '#fff';
-    btnD.style.background = 'var(--border)'; btnD.style.color = 'var(--ink)';
-  } else {
-    acc.style.display = 'none'; dash.style.display = '';
-    btnD.style.background = 'var(--ink)'; btnD.style.color = '#fff';
-    btnA.style.background = 'var(--border)'; btnA.style.color = 'var(--ink)';
-    if (window.loadDashboard) loadDashboard();
-  }
-};
