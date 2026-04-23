@@ -232,6 +232,7 @@ onAuthStateChanged(auth, async user => {
     loading.style.display = 'none';
     loginEl.classList.remove('visible');
     appEl.classList.add('visible');
+    showSection('account');
 
     await Promise.all([loadNotifications()]);
     if (STATE.isAdmin) populateMemberSelect();
