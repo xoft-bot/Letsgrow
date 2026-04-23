@@ -256,7 +256,7 @@ window.showSection = function(name, btn) {
   if (name === 'members')       loadMembers();
   if (name === 'investments')   loadInvestments();
   if (name === 'loans')         loadLoansSection();
-  if (name === 'account')       { homeToggle("account"); setTimeout(() => window.loadLoanStatus?.(), 400); }
+  if (name === 'account')       { loadMyAccount(); setTimeout(() => window.loadLoanStatus?.(), 400); }
   if (name === 'notifications') {
     markNotifsRead();
     loadInbox();
@@ -720,7 +720,7 @@ async function loadTracker() {
 }
 
 // ── MY ACCOUNT ────────────────────────────────────────────────
-window.loadMyAccount = async function loadMyAccount() {
+async function loadMyAccount() {
   const wrap = document.getElementById('account-content');
   if (!STATE.member) {
     wrap.innerHTML = '<div class="empty">Profile not linked to a member record.<br>Contact admin.</div>';
