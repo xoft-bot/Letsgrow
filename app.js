@@ -276,6 +276,35 @@ window.showSection = function(name, btn) {
 };
 
 // ── DASHBOARD ─────────────────────────────────────────────────
+async function loadNoticeBoard() {
+  try {
+    const { getDocs, collection, query, where, orderBy, limit } = window.__lg;
+    const q = query(
+      collection(db, 'notifications'),
+      where('pinned', '==', true),
+      orderBy('createdAt', 'desc'),
+      limit(5)
+    );
+    const snap = await getDocs(q);
+    const wrap = document.getElementById('dashboard-notices');
+    const list = document.getElementById('dashboard-notices-list');
+    if (!wrap || !list) return;
+    if (snap.empty) { wrap.style.display = 'none'; return; }
+    list.innerHTML = '';
+    snap.forEach(d => {
+      const n = d.data();
+      const date = n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const postedBy = n.postedBy || n.author || 'Admin';
+      list.innerHTML += `<div style="background:var(--card);border:0.5px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px">${n.title||''}</div>
+        <div style="font-size:12px;color:var(--ink);line-height:1.5;margin-bottom:6px">${n.body||n.message||''}</div>
+        <div style="font-size:10px;color:var(--muted)">Posted by ${postedBy} · ${date}</div>
+      </div>`;
+    });
+    wrap.style.display = 'block';
+  } catch(e) { console.log('NoticeBoard:', e.message); }
+}
+
 async function loadDashboard() {
   try {
     const [bankSnap, finSnap, membersSnap] = await Promise.all([
@@ -1356,7 +1385,7 @@ window.saveFinancials = async function() {
       }, { merge: true })
     ]);
     toast('Financials saved', 'success');
-    await loadDashboard();
+    await loadDashboard(); await loadNoticeBoard();
   } catch(e) { toast('Error: '+e.message,'error'); }
 };
 
