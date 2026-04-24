@@ -157,7 +157,7 @@ _ready(function() {
             </select>
           </div>
           <div class="form-group"><label>Year</label><input id="doc-year" type="number" value="${new Date().getFullYear()}" min="2020" max="2030"></div>
-          <div class="form-group"><label>Link / URL (Google Drive, etc.)</label><input id="doc-link" type="url" placeholder="https://drive.google.com/..."></div>
+          <div class="form-group"><label>File</label><input id="doc-file" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.png,.jpg" style="padding:6px 0"></div>
           <div class="form-group"><label>Description (optional)</label><textarea id="doc-desc" rows="2" placeholder="Brief description of the document"></textarea></div>
           <button class="btn-primary btn-gold" onclick="sbSaveDocument()">Save Document</button>
           <div id="doc-save-msg" style="font-size:11px;margin-top:8px;min-height:16px"></div>
@@ -515,7 +515,15 @@ _ready(function() {
     const title    = (document.getElementById('doc-title')?.value || '').trim();
     const category = document.getElementById('doc-category')?.value || 'other';
     const year     = Number(document.getElementById('doc-year')?.value) || new Date().getFullYear();
-    const link     = (document.getElementById('doc-link')?.value || '').trim();
+        const fileInput   = document.getElementById('doc-file');
+        const file        = fileInput?.files?.[0];
+        if (!file) { if (msgEl) { msgEl.style.color='#ef4444'; msgEl.textContent='Please select a file.'; } return; }
+        if (msgEl) { msgEl.style.color='var(--muted)'; msgEl.textContent='Uploading…'; }
+        const { getStorage, ref, uploadBytes, getDownloadURL } = await import('https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js');
+        const storage     = getStorage();
+        const storageRef  = ref(storage, 'documents/' + Date.now() + '_' + file.name);
+        const snapshot    = await uploadBytes(storageRef, file);
+        const link        = await getDownloadURL(snapshot.ref);
     const desc     = (document.getElementById('doc-desc')?.value || '').trim();
     const msgEl    = document.getElementById('doc-save-msg');
 
@@ -530,7 +538,7 @@ _ready(function() {
       });
       if (msgEl) { msgEl.style.color = '#22c55e'; msgEl.textContent = '✓ Document saved!'; }
       document.getElementById('doc-title').value = '';
-      document.getElementById('doc-link').value  = '';
+      document.getElementById('doc-file').value  = '';
       document.getElementById('doc-desc').value  = '';
       setTimeout(() => { if (msgEl) msgEl.textContent = ''; _loadDocumentsSection(); }, 1200);
     } catch (e) {
