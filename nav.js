@@ -239,7 +239,7 @@
       // Hide bottom nav
       document.querySelectorAll('.bottom-nav,nav.nav-bar,#bottom-nav,.nav-tabs,[id^="nav-"]:not(#nav-admin):not(#nav-loans)').forEach(el=>{
         // Only hide the bottom container, not individual nav-xxx links
-        if(el.tagName==='NAV'||el.classList.contains('bottom-nav')||el.classList.contains('nav-tabs')) el.style.display='none';
+        if((el.tagName==='NAV' && !el.classList.contains('bottomnav'))||el.classList.contains('bottom-nav')||el.classList.contains('nav-tabs')) el.style.display='none';
       });
         // bottom nav preserved — do not hide
       }
