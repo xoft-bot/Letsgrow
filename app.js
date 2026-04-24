@@ -826,7 +826,7 @@ async function loadMyAccount() {
       </div>
     </div>
 
-    <div class="card"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:8px">Outstanding Balance</div><div id="amount-due-card"><div style="color:var(--muted);font-size:12px">Calculating…</div></div></div>
+        <div id="amount-due-card"><div style="color:var(--muted);font-size:12px">Calculating…</div></div>
     <div class="card" id="loan-request-card"><div onclick="toggleLoanCard()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none"><div class="card-title" style="margin-bottom:0">Loan</div><span id="loan-card-chev" style="font-size:18px;color:var(--muted);transition:transform .25s">›</span></div><div id="loan-status-wrap" style="display:none;margin-top:12px"></div></div>
     <div class="card"><div onclick="toggleCommitteeCard()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none"><div class="card-title" style="margin-bottom:0">Club Committees</div><span id="comm-chev" style="font-size:18px;color:var(--muted);transition:transform .25s">›</span></div><div id="committees-widget" style="display:none;margin-top:10px"></div></div>
 
