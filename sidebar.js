@@ -204,7 +204,7 @@ _ready(function() {
     if (extraSections.includes(section)) {
       setTimeout(() => {
         // Hide all main + extra sections
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
         // Show extra section
         const el = document.getElementById('sec-' + section);
         if (el) {
