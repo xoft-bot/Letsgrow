@@ -118,7 +118,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .btn-out { padding: 5px 10px; border-radius: 6px; border: 1px solid #ffffff15; background: transparent; color: var(--muted); font-size: 11px; cursor: pointer; }
 
 /* ── MAIN CONTENT ─────────────────────────────────────── */
-.main { flex: 1; padding: 14px; max-width: 600px; margin: 0 auto; width: 100%; padding-bottom: 80px; }
+.main { flex: 1; padding: 14px; max-width: 600px; margin: 0 auto; width: 100%; padding-bottom: 0; }
 .section { display: none; }
 .section.active { display: block; }
 
@@ -306,7 +306,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .bottomnav {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--ink); border-top: 1px solid #ffffff10;
-  display: flex; padding: 6px 0 env(safe-area-inset-bottom,6px);
+  display: flex; padding: 0;
   z-index: 100;
 }
 .nav-btn {

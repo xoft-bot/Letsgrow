@@ -222,11 +222,11 @@ onAuthStateChanged(auth, async user => {
       pill.className = `tier-badge tier-${memberTier}`;
     }
 
-    const _na=document.getElementById('nav-admin'),_nl=document.getElementById('nav-loans');
-    if(_na)_na.style.display='none'; if(_nl)_nl.style.display='none';
+//     const _na=document.getElementById('nav-admin'),_nl=document.getElementById('nav-loans');
+//     if(_na)_na.style.display='none'; if(_nl)_nl.style.display='none';
     if (STATE.isAdmin) {
       document.getElementById('admin-pill').style.display = 'inline';
-      if(_na)_na.style.display='flex'; if(_nl)_nl.style.display='flex';
+//       if(_na)_na.style.display='flex'; if(_nl)_nl.style.display='flex';
     }
 
     loading.style.display = 'none';
