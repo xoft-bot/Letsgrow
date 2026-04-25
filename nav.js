@@ -22,7 +22,7 @@
       .sb-navbtn .icon { font-size:16px;width:22px;text-align:center;flex-shrink:0; }
       .sb-section-label { font-size:9px;font-weight:700;letter-spacing:1.5px;color:rgba(255,255,255,.3);text-transform:uppercase;padding:10px 10px 4px; }
       /* removed .bottom-nav, nav.nav-bar, #bottom-nav, [class*="bottom-nav"], .nav-tabs { display:none !important; }
-      #app .section { padding-top:58px; }
+      #app .section { padding-top:0; }
       @media(min-width:768px){ #sb-drawer{left:0!important;box-shadow:none;border-right:1px solid rgba(255,255,255,.08);} #sb-overlay,#sb-trigger{display:none!important;} #app{margin-left:278px;} #app .section{padding-top:16px;} #sb-inbox-btn{right:auto;left:298px;} }`;
     const style = document.createElement('style');
     style.textContent = css;
