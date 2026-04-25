@@ -212,6 +212,7 @@ _ready(function() {
           el.classList.add('active');
         }
         // Load content
+        document.getElementById('app')?.scrollTo(0, 0);
         if (section === 'juniors')    _loadJuniorsSection();
         if (section === 'committees') _loadCommitteesSection();
         if (section === 'documents')  _loadDocumentsSection();
