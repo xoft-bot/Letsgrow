@@ -171,7 +171,7 @@ _ready(function() {
   // Inject sidebar and extra section HTML
   const mount = document.createElement('div');
   mount.innerHTML = sidebarHTML;
-  document.body.appendChild(mount);
+  (document.getElementById('app') || document.body).appendChild(mount);
 
   // ── SIDEBAR OPEN / CLOSE ─────────────────────────────────────
   window.openSidebar = function() {
