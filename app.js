@@ -249,12 +249,13 @@ onAuthStateChanged(auth, async user => {
 
 // ── NAVIGATION ────────────────────────────────────────────────
 window.showSection = function(name, btn) {
-  document.getElementById('app')?.scrollTo(0, 0);
   if (window.closeSidebar) closeSidebar();
   document.querySelectorAll('.section').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
   const _js = document.getElementById('juniors-section'); if (_js) _js.style.display = 'none';
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('sec-'+name)?.classList.add('active');
+  const _sec = document.getElementById('sec-'+name);
+  if (_sec) { _sec.classList.add('active'); }
+  setTimeout(() => document.getElementById('app')?.scrollTo(0, 0), 10);
   btn?.classList.add('active');
   if (name === 'members')       loadMembers();
   if (name === 'investments')   loadInvestments();
