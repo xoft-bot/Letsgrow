@@ -205,6 +205,7 @@ _ready(function() {
       setTimeout(() => {
         // Hide all main + extra sections
         document.querySelectorAll('.section').forEach(s => { s.classList.remove('active'); s.style.display = ''; });
+  const _js = document.getElementById('juniors-section'); if (_js) _js.style.display = 'none';
         // Show extra section
         const el = document.getElementById('sec-' + section);
         if (el) {
